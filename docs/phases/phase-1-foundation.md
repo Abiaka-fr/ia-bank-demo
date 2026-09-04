@@ -9,32 +9,33 @@ avec des données mockées, pour valider que l'architecture tient avant de scale
 
 ## Portée (frontend uniquement)
 
-1. **Bootstrap du projet** dans `frontend/` :
-   ```
-   npx create-next-app@latest . --typescript --tailwind --app --eslint --src-dir --import-alias "@/*"
-   npx shadcn@latest init
-   ```
-   Puis ajouter : `@tanstack/react-query`, `zod` (validation des réponses API côté client),
-   `next-intl` (préparation i18n), `msw` (mock API), `vitest` + `@testing-library/react`.
-   Gestionnaire de paquets : `pnpm`.
-2. **Squelette de navigation** : sidebar + 5 routes vides (Dashboard, Analyse Réglementaire, Impact
+1. **Bootstrap du projet** dans `frontend/` — commande complète et setup MCP shadcn détaillés dans
+   `../../frontend/CLAUDE.md` section "Bootstrap". Gestionnaire de paquets : `pnpm`.
+2. **Bilingue FR/EN dès maintenant** (pas repoussé à plus tard) : configurer le routing i18n de
+   next-intl, créer `messages/fr.json` et `messages/en.json` (même structure de clés dans les deux
+   dès le départ) et le composant toggle FR/EN dans la top bar. Voir `../../frontend/CLAUDE.md`
+   section "Bilingue" pour les règles précises — à respecter pour tout le reste du projet, pas
+   seulement cette phase.
+3. **Squelette de navigation** : sidebar + 5 routes vides (Dashboard, Analyse Réglementaire, Impact
    Analysis, Evidence, Copilot) — voir `docs/ui-guidelines.md` pour le layout.
-3. **Client API typé** (`frontend/src/lib/api/`) généré à partir des types de
+4. **Client API typé** (`frontend/src/lib/api/`) généré à partir des types de
    `docs/api-contract.md` — copier/synchroniser ces types dans `frontend/src/types/`.
-4. **Couche de mock** (MSW) répondant sur tous les endpoints de `docs/api-contract.md`, alimentée
+5. **Couche de mock** (MSW) répondant sur tous les endpoints de `docs/api-contract.md`, alimentée
    par des données de démo cohérentes avec le corpus réel (`../IABank_*.docx`) — au moins 1
    régulation, 3 exigences, 3 procédures, 1 écart, preuves associées.
-5. **Slice verticale démontrable** : sélectionner une régulation → voir ses 3 exigences → ouvrir 1
+6. **Slice verticale démontrable** : sélectionner une régulation → voir ses 3 exigences → ouvrir 1
    finding → voir les preuves côte à côte → valider (Accept/Reject/Escalate) — tout en mock, mais
    l'UI et le flux de données réels.
-6. **Geler le contrat d'API v1** avec Thư (revue commune de `docs/api-contract.md`).
-7. Config déploiement Vercel (même vide/minimal, valider que le pipeline de déploiement marche tôt).
+7. **Geler le contrat d'API v1** avec Thư (revue commune de `docs/api-contract.md`).
+8. Config déploiement Vercel (même vide/minimal, valider que le pipeline de déploiement marche tôt).
 
 ## Definition of Done
 
 - [ ] `pnpm dev` lance l'app sans erreur, lint + typecheck passent
 - [ ] Les 5 routes existent (même si 4 sont des placeholders "à venir")
-- [ ] La slice verticale mock fonctionne de bout en bout, visible dans le navigateur
+- [ ] Toggle FR/EN fonctionnel, `messages/fr.json` et `messages/en.json` synchronisés (mêmes clés)
+- [ ] La slice verticale mock fonctionne de bout en bout, visible dans le navigateur (capture
+      d'écran prise, voir `../../frontend/CLAUDE.md` section "Vérification visuelle")
 - [ ] `docs/api-contract.md` marqué comme "v1 gelée" dans `PROGRESS.md` avec accord de Thư
 - [ ] Premier déploiement Vercel réussi (même minimal)
 - [ ] `PROGRESS.md` mis à jour (case à cocher + note de fin de session)
@@ -42,4 +43,5 @@ avec des données mockées, pour valider que l'architecture tient avant de scale
 ## Ne pas faire en Phase 1
 
 - Ne pas connecter au vrai backend de Thư (elle ne sera probablement pas prête) — rester sur mock.
-- Ne pas peaufiner le design — structure et flux d'abord, polish en Phase 5.
+- Ne pas peaufiner le design en détail — structure, flux et bilingue d'abord, polish visuel en
+  Phase 5.

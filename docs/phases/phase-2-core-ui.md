@@ -8,6 +8,8 @@ Construire les deux premiers écrans réels avec des données représentatives, 
 l'intégration API réelle si le backend de Thư expose déjà quelque chose (sinon rester sur mock,
 sans bloquer).
 
+
+> ⚠️ Rappel : toute nouvelle chaîne UI ajoutée dans cette phase va dans `messages/fr.json` ET `messages/en.json` (voir `frontend/CLAUDE.md` section Bilingue). Aucune exception.
 ## Portée (frontend uniquement)
 
 1. **Écran Dashboard** (`docs/ui-guidelines.md` + brief section 9.1) :

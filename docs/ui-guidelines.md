@@ -7,43 +7,86 @@ approximatifs. On s'appuie sur des primitives éprouvées plutôt que de tout r�
 
 - **Tailwind CSS** pour le styling
 - **shadcn/ui** (Radix UI + Tailwind) pour tous les composants de base — Table, Card, Badge, Dialog,
-  Tabs, Select, Sheet, etc. **Ne pas recoder un composant que shadcn fournit déjà.**
+  Tabs, Select, Sheet, etc. **Ne pas recoder un composant que shadcn fournit déjà.** Serveur MCP
+  shadcn configuré dans Claude Code pour un accès direct au registre de composants réel.
 - **lucide-react** pour les icônes (déjà inclus avec shadcn/ui)
 - **Recharts** pour les graphiques du Dashboard (via les composants `chart` de shadcn/ui)
 - Police : Inter (ou police système par défaut de shadcn) — pas de choix de police exotique
 
 ## Principes
 
-1. **French-first.** Tous les textes UI par défaut en français. Structurer les strings pour un
-   switch FR/EN futur (next-intl ou simple dictionnaire) sans bloquer dessus en P0.
+1. **Bilingue FR/EN obligatoire dès la Phase 1** (pas juste "French-first, EN si le temps le
+   permet"). Voir `frontend/CLAUDE.md` section Bilingue pour les règles précises. Français = langue
+   par défaut à l'ouverture, mais le toggle EN doit exister et être complet.
 2. **Densité d'information > décoration.** C'est un outil de travail pour un Responsable Conformité,
    pas une landing page marketing. Tables denses, badges clairs, peu d'animation.
 3. **Statuts = couleur constante partout.** Toujours utiliser le même mapping couleur pour les 5
-   valeurs d'`assessment` (voir `docs/glossary.md`) — Dashboard, table Impact Analysis, Evidence
-   view doivent utiliser EXACTEMENT les mêmes couleurs pour le même statut.
+   valeurs d'`assessment` (table ci-dessous) — Dashboard, table Impact Analysis, Evidence view
+   doivent utiliser EXACTEMENT les mêmes couleurs pour le même statut.
 4. **Traçabilité visible.** Toute preuve affichée doit montrer sa source (document + référence) —
    ne jamais afficher un extrait de texte sans dire d'où il vient.
 5. **Accessibilité de base.** Contraste suffisant sur les badges de statut, navigation clavier
-   possible sur les actions de validation (Accept/Reject/Escalate).
+   possible sur les actions de validation (Accept/Reject/Escalate). Un statut n'est jamais porté par
+   la couleur seule — toujours icône + label à côté du badge coloré.
+6. **Vérification visuelle obligatoire** avant de considérer une tâche UI terminée — voir
+   `frontend/CLAUDE.md` section "Vérification visuelle".
 
 ## Layout général
 
 - Sidebar de navigation gauche (5 écrans : Dashboard, Analyse Réglementaire, Impact Analysis,
-  Evidence, Copilot) + top bar avec le nom de la régulation sélectionnée.
+  Evidence, Copilot) + top bar avec le nom de la régulation sélectionnée + toggle FR/EN.
 - Écran "hero" = Impact Analysis (table dense, filtrable, tri par priorité) — c'est l'écran que le
   client regarde le plus longtemps en démo, soigner en priorité.
 
-## Graphiques / KPI (Dashboard)
+## Palette — couleurs validées (issues d'une méthode de data-viz avec vérification
+d'accessibilité CVD/contraste automatisée — ne pas improviser d'autres couleurs à côté)
 
-- KPI cards : chiffre + label court, pas de décoration inutile.
-- Pour tout graphique (répartition par domaine, par statut) : une seule palette catégorielle
-  cohérente dans toute l'app, jamais un dégradé arc-en-ciel improvisé par écran. Si une session a
-  accès à un skill/guide de data-visualisation, s'y référer pour la palette et les specs de graphes;
-  sinon rester sobre (2-6 couleurs distinctes maximum, légendes claires, pas de 3D/effets).
+### Statuts d'évaluation (`assessment`) — 5 valeurs fixes, mapping figé
+
+| Statut (code) | Couleur | Hex | Usage |
+|---|---|---|---|
+| `COVERED` | vert (good) | `#0ca30c` | badge + icône check |
+| `PARTIAL` | ambre (warning) | `#fab219` | badge + icône alerte triangle |
+| `POTENTIAL_GAP` | rouge (critical) | `#d03b3b` | badge + icône alerte cercle |
+| `NO_RELEVANT_PROCEDURE` | gris neutre | `#8a8a86` | badge + icône point d'interrogation |
+| `EXPERT_REVIEW` | violet | `#4a3aa7` | badge + icône personne/loupe |
+
+Ces 5 couleurs sont réservées à ce mapping — ne jamais les réutiliser pour autre chose (une série
+de graphique, un statut de document, etc.) afin qu'un statut reste immédiatement reconnaissable.
+
+### Palette catégorielle (graphiques du Dashboard — répartition par domaine, etc.)
+
+Ordre fixe, ne jamais permuter ni faire cycler au-delà de 8 séries (au-delà, regrouper en "Autres") :
+
+| Slot | Teinte | Hex |
+|---|---|---|
+| 1 | bleu | `#2a78d6` |
+| 2 | orange | `#eb6834` |
+| 3 | aqua | `#1baf7a` |
+| 4 | jaune | `#eda100` |
+| 5 | magenta | `#e87ba4` |
+| 6 | vert | `#008300` |
+| 7 | violet | `#4a3aa7` |
+| 8 | rouge | `#e34948` |
+
+Note : le slot 7 (violet) est intentionnellement la même teinte que `EXPERT_REVIEW` — si un
+graphique catégoriel affiche aussi une répartition par assessment, réutiliser directement les
+couleurs de statut ci-dessus plutôt que la palette catégorielle générique, pour rester cohérent.
+
+### Règles de graphique (rappel court)
+
+- Un seul axe Y — jamais de double axe.
+- Séquentiel (une magnitude) = une seule teinte, clair → foncé. Jamais d'arc-en-ciel.
+- Légende toujours présente à partir de 2 séries ; labels directs sélectifs, pas un chiffre sur
+  chaque point.
+- Traits fins, marqueurs ≥ 8px, coins arrondis 4px sur les extrémités de données.
 
 ## Ce qu'on évite
 
 - Composants UI faits maison quand shadcn/ui en fournit un équivalent
-- Couleurs codées en dur dispersées dans le code (utiliser les tokens Tailwind / variables CSS)
-- Textes UI en anglais mélangés au français dans un même écran
+- Couleurs codées en dur dispersées dans le code (utiliser les tokens Tailwind / variables CSS
+  définies à partir de la palette ci-dessus, une seule source)
+- Textes UI en anglais mélangés au français dans un même écran (ou clé de traduction manquante dans
+  l'un des deux fichiers `messages/*.json`)
 - Tableaux/formulaires sans état de chargement ni état vide géré
+- Un statut représenté uniquement par une couleur, sans icône ni label

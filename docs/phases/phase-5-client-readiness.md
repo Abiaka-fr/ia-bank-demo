@@ -9,7 +9,7 @@ Rendre le POC démontrable de façon fiable et répétable devant un client, san
 
 ## Portée (frontend uniquement)
 
-1. **Polish français** : relecture complète de tous les textes UI contre `docs/ui-guardrails.md`.
+1. **Polish bilingue** : relecture complète de tous les textes UI (FR ET EN) contre `docs/ui-guardrails.md`. Vérifier qu'aucune clé de `messages/fr.json` / `messages/en.json` n'est orpheline ou non traduite (le bilingue est en place depuis la Phase 1 — ici on le finalise/peaufine, on ne le découvre pas).
 2. **Stabilité de déploiement** : env vars Vercel propres, gestion des erreurs réseau, états de
    chargement partout, pas d'écran blanc en cas d'échec API.
 3. **États vides et erreurs** gérés sur chaque écran (pas de crash si un endpoint backend est down).

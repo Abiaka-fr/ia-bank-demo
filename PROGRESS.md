@@ -30,6 +30,14 @@ Prochaine phase : **Phase 1 — Fondations** (voir `docs/phases/phase-1-foundati
   conversation Cowork du 2026-09-04, à reporter dans `docs/glossary.md`/`docs/api-contract.md` si
   utile aux golden test cases).
 
+- **2026-09-04** — Bilingue FR/EN élevé de "P2 optionnel" (statut dans la brief originale) à
+  **exigence obligatoire dès la Phase 1** : next-intl configuré dès le bootstrap, toggle FR/EN dans
+  la top bar, `messages/fr.json`/`messages/en.json` toujours synchronisés. Décision de Giang.
+- **2026-09-04** — Outillage UI ajouté : serveur MCP shadcn/ui (accès direct au registre de
+  composants réel) + boucle obligatoire "coder → capturer une capture d'écran → comparer à
+  `docs/ui-guidelines.md` → corriger" avant de considérer une tâche UI terminée. Palette de couleurs
+  validée (statuts + graphiques) figée dans `docs/ui-guidelines.md`.
+
 ## Blocages / Questions ouvertes
 
 - Stack backend de Thư pas encore choisie → le frontend doit démarrer avec des données mockées

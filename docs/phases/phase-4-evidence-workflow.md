@@ -7,6 +7,8 @@ Source : Full Project Guide, section 17, semaine 4 ; écran détaillé section 9
 L'écran de confiance du produit : preuve visible + décision humaine explicite. C'est ce qui rend le
 produit crédible plutôt qu'une "boîte noire IA".
 
+
+> ⚠️ Rappel : toute nouvelle chaîne UI ajoutée dans cette phase va dans `messages/fr.json` ET `messages/en.json` (voir `frontend/CLAUDE.md` section Bilingue). Aucune exception.
 ## Portée (frontend uniquement)
 
 1. **Écran Evidence & Explainability** :

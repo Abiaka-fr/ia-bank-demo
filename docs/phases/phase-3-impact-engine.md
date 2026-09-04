@@ -7,6 +7,8 @@ Source : Full Project Guide, section 17, semaine 3 ; écran détaillé section 9
 L'écran le plus regardé pendant la démo client (7 minutes, voir section 19 de la brief). Doit être
 rapide, lisible, crédible.
 
+
+> ⚠️ Rappel : toute nouvelle chaîne UI ajoutée dans cette phase va dans `messages/fr.json` ET `messages/en.json` (voir `frontend/CLAUDE.md` section Bilingue). Aucune exception.
 ## Portée (frontend uniquement)
 
 1. **Table Impact Analysis** (colonnes : Requirement, Matched Procedure, Assessment, Confidence,
