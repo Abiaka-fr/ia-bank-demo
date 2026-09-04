@@ -1,0 +1,173 @@
+{
+  "app": {
+    "name": "IA Bank — Regulatory AI Copilot",
+    "shortName": "Regulatory Copilot",
+    "tagline": "Aide à la décision conformité — validation humaine requise",
+    "demoCorpus": "Corpus de démonstration fictif"
+  },
+  "common": {
+    "loading": "Chargement…",
+    "retry": "Réessayer",
+    "cancel": "Annuler",
+    "back": "Retour",
+    "close": "Fermer",
+    "all": "Tous",
+    "source": "Source",
+    "document": "Document",
+    "section": "Section",
+    "version": "Version",
+    "effectiveDate": "Entrée en vigueur",
+    "publicationDate": "Date de publication",
+    "domain": "Domaine",
+    "language": "Langue",
+    "updatedAt": "Mis à jour le",
+    "notAvailable": "Non renseigné",
+    "resultCount": "{count, plural, =0 {Aucun résultat} one {# résultat} other {# résultats}}"
+  },
+  "nav": {
+    "sectionAnalysis": "Analyse",
+    "sectionAssistance": "Assistance",
+    "dashboard": "Tableau de bord",
+    "regulations": "Analyse réglementaire",
+    "impactAnalysis": "Analyse d'impact",
+    "evidence": "Preuves",
+    "copilot": "Copilot",
+    "toggleSidebar": "Afficher ou masquer la navigation"
+  },
+  "topBar": {
+    "regulationLabel": "Régulation analysée",
+    "selectRegulation": "Sélectionner une régulation",
+    "noRegulation": "Aucune régulation sélectionnée",
+    "languageLabel": "Langue de l'interface",
+    "french": "Français",
+    "english": "English",
+    "humanInTheLoop": "Constats proposés par le système — la conclusion finale relève du Responsable Conformité."
+  },
+  "documentStatus": {
+    "NOT_ANALYZED": "Non analysée",
+    "ANALYZING": "Analyse en cours",
+    "ANALYZED": "Analysée"
+  },
+  "assessment": {
+    "COVERED": "Couvert",
+    "PARTIAL": "Couverture partielle",
+    "POTENTIAL_GAP": "Écart potentiel",
+    "NO_RELEVANT_PROCEDURE": "Aucune procédure pertinente",
+    "EXPERT_REVIEW": "Revue expert requise"
+  },
+  "assessmentHelp": {
+    "COVERED": "Preuve identifiée dans le corpus interne — validation par un expert requise.",
+    "PARTIAL": "La procédure interne ne semble pas couvrir intégralement l'exigence.",
+    "POTENTIAL_GAP": "Écart potentiel détecté — revue de conformité requise.",
+    "NO_RELEVANT_PROCEDURE": "Aucune procédure interne pertinente trouvée dans le corpus indexé.",
+    "EXPERT_REVIEW": "Élément ambigu — interprétation par un expert conformité requise."
+  },
+  "priority": {
+    "label": "Priorité",
+    "HIGH": "Haute",
+    "MEDIUM": "Moyenne",
+    "LOW": "Basse"
+  },
+  "humanStatus": {
+    "label": "Validation",
+    "PENDING": "En attente",
+    "ACCEPTED": "Accepté",
+    "REJECTED": "Rejeté",
+    "ESCALATED": "Escaladé"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "subtitle": "Vue d'ensemble des constats pour la régulation sélectionnée",
+    "kpi": {
+      "requirementsIdentified": "Exigences identifiées",
+      "proceduresImpacted": "Procédures impactées",
+      "potentialGaps": "Écarts potentiels",
+      "expertReviewsRequired": "Revues expert requises",
+      "actionsPending": "Validations en attente"
+    },
+    "byDomain": "Exigences par domaine",
+    "byAssessment": "Constats par statut d'évaluation",
+    "topPriority": "Constats prioritaires",
+    "topPriorityEmpty": "Aucun constat à prioriser pour cette régulation.",
+    "openFinding": "Ouvrir le constat"
+  },
+  "regulations": {
+    "title": "Analyse réglementaire",
+    "subtitle": "Régulations chargées dans le corpus de démonstration",
+    "listHeading": "Régulations",
+    "authority": "Autorité",
+    "select": "Sélectionner cette régulation",
+    "selected": "Régulation sélectionnée",
+    "empty": "Aucune régulation dans le corpus indexé.",
+    "detailHeading": "Détail de la régulation",
+    "sourceText": "Texte source extrait",
+    "requirementsHeading": "Exigences extraites",
+    "requirementsEmpty": "Cette régulation n'a pas encore été analysée — aucune exigence extraite dans le corpus indexé.",
+    "requirementCount": "{count, plural, =0 {Aucune exigence} one {# exigence} other {# exigences}}",
+    "viewFindings": "Voir les constats",
+    "impactedActivity": "Activités impactées",
+    "normalized": "Exigence reformulée"
+  },
+  "impact": {
+    "title": "Analyse d'impact",
+    "subtitle": "Constats proposés par le système, à valider par le Responsable Conformité",
+    "filterAssessment": "Statut d'évaluation",
+    "filterPriority": "Priorité",
+    "filterStatus": "Validation",
+    "filterAll": "Tous",
+    "resetFilters": "Réinitialiser les filtres",
+    "columnRequirement": "Exigence",
+    "columnAssessment": "Statut",
+    "columnProcedures": "Procédures internes",
+    "columnPriority": "Priorité",
+    "columnStatus": "Validation",
+    "columnStrength": "Force de la preuve",
+    "columnAction": "",
+    "open": "Ouvrir",
+    "noProcedure": "—",
+    "empty": "Aucun constat ne correspond aux filtres sélectionnés.",
+    "emptyNoRegulation": "Sélectionnez une régulation analysée pour afficher ses constats.",
+    "sortedByPriority": "Trié par priorité décroissante"
+  },
+  "evidence": {
+    "title": "Preuves",
+    "subtitle": "Comparaison exigence réglementaire / procédure interne",
+    "pickerHeading": "Constats disponibles",
+    "empty": "Sélectionnez un constat dans l'analyse d'impact pour afficher ses preuves.",
+    "notFound": "Constat introuvable dans le corpus indexé.",
+    "regulatorySide": "Preuve réglementaire",
+    "internalSide": "Preuve interne",
+    "noInternalEvidence": "Aucune procédure interne pertinente trouvée dans le corpus indexé.",
+    "explanation": "Constat proposé",
+    "missingElements": "Éléments manquants ou ambigus",
+    "noMissingElements": "Aucun élément manquant relevé.",
+    "recommendedAction": "Action recommandée",
+    "evidenceStrength": "Force de la preuve",
+    "evidenceStrengthHelp": "Indicateur d'aide à la décision, ce n'est pas une probabilité juridique.",
+    "sourceLanguageNote": "Extrait affiché dans sa langue d'origine ({language}).",
+    "validationHeading": "Validation humaine",
+    "validationHelp": "La décision finale appartient au Responsable Conformité.",
+    "commentLabel": "Commentaire du relecteur (facultatif)",
+    "commentPlaceholder": "Motif de la décision, contexte, suite à donner…",
+    "accept": "Accepter",
+    "reject": "Rejeter",
+    "escalate": "Escalader",
+    "saving": "Enregistrement…",
+    "saved": "Décision enregistrée",
+    "saveFailed": "La décision n'a pas pu être enregistrée.",
+    "currentDecision": "Décision enregistrée : {status}",
+    "reviewerComment": "Commentaire du relecteur"
+  },
+  "copilot": {
+    "title": "Copilot",
+    "subtitle": "Assistant conversationnel adossé au corpus indexé",
+    "placeholderHeading": "Écran prévu pour une phase ultérieure",
+    "placeholderBody": "Cet écran est prévu après la mise en place des écrans d'analyse. Toute réponse produite ici devra citer sa preuve, ou indiquer explicitement qu'aucune preuve n'a été trouvée."
+  },
+  "errors": {
+    "title": "Le chargement a échoué",
+    "generic": "Les données n'ont pas pu être récupérées.",
+    "contract": "La réponse reçue ne correspond pas au contrat d'API attendu.",
+    "notFound": "Ressource introuvable."
+  }
+}

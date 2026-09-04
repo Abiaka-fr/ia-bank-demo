@@ -1,0 +1,173 @@
+{
+  "app": {
+    "name": "IA Bank — Regulatory AI Copilot",
+    "shortName": "Regulatory Copilot",
+    "tagline": "Compliance decision support — human validation required",
+    "demoCorpus": "Fictional demonstration corpus"
+  },
+  "common": {
+    "loading": "Loading…",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "back": "Back",
+    "close": "Close",
+    "all": "All",
+    "source": "Source",
+    "document": "Document",
+    "section": "Section",
+    "version": "Version",
+    "effectiveDate": "Effective date",
+    "publicationDate": "Publication date",
+    "domain": "Domain",
+    "language": "Language",
+    "updatedAt": "Updated on",
+    "notAvailable": "Not provided",
+    "resultCount": "{count, plural, =0 {No results} one {# result} other {# results}}"
+  },
+  "nav": {
+    "sectionAnalysis": "Analysis",
+    "sectionAssistance": "Assistance",
+    "dashboard": "Dashboard",
+    "regulations": "Regulatory analysis",
+    "impactAnalysis": "Impact analysis",
+    "evidence": "Evidence",
+    "copilot": "Copilot",
+    "toggleSidebar": "Show or hide navigation"
+  },
+  "topBar": {
+    "regulationLabel": "Regulation under analysis",
+    "selectRegulation": "Select a regulation",
+    "noRegulation": "No regulation selected",
+    "languageLabel": "Interface language",
+    "french": "Français",
+    "english": "English",
+    "humanInTheLoop": "Findings proposed by the system — the final conclusion rests with the Head of Compliance."
+  },
+  "documentStatus": {
+    "NOT_ANALYZED": "Not analyzed",
+    "ANALYZING": "Analysis in progress",
+    "ANALYZED": "Analyzed"
+  },
+  "assessment": {
+    "COVERED": "Covered",
+    "PARTIAL": "Partial coverage",
+    "POTENTIAL_GAP": "Potential gap",
+    "NO_RELEVANT_PROCEDURE": "No relevant procedure",
+    "EXPERT_REVIEW": "Expert review required"
+  },
+  "assessmentHelp": {
+    "COVERED": "Evidence identified in the internal corpus — expert validation required.",
+    "PARTIAL": "The internal procedure does not appear to fully cover the requirement.",
+    "POTENTIAL_GAP": "Potential gap detected — compliance review required.",
+    "NO_RELEVANT_PROCEDURE": "No relevant internal procedure found in the indexed corpus.",
+    "EXPERT_REVIEW": "Ambiguous item — interpretation by a compliance expert required."
+  },
+  "priority": {
+    "label": "Priority",
+    "HIGH": "High",
+    "MEDIUM": "Medium",
+    "LOW": "Low"
+  },
+  "humanStatus": {
+    "label": "Validation",
+    "PENDING": "Pending",
+    "ACCEPTED": "Accepted",
+    "REJECTED": "Rejected",
+    "ESCALATED": "Escalated"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Overview of findings for the selected regulation",
+    "kpi": {
+      "requirementsIdentified": "Requirements identified",
+      "proceduresImpacted": "Procedures impacted",
+      "potentialGaps": "Potential gaps",
+      "expertReviewsRequired": "Expert reviews required",
+      "actionsPending": "Validations pending"
+    },
+    "byDomain": "Requirements by domain",
+    "byAssessment": "Findings by assessment status",
+    "topPriority": "Priority findings",
+    "topPriorityEmpty": "No finding to prioritize for this regulation.",
+    "openFinding": "Open finding"
+  },
+  "regulations": {
+    "title": "Regulatory analysis",
+    "subtitle": "Regulations loaded in the demonstration corpus",
+    "listHeading": "Regulations",
+    "authority": "Authority",
+    "select": "Select this regulation",
+    "selected": "Selected regulation",
+    "empty": "No regulation in the indexed corpus.",
+    "detailHeading": "Regulation detail",
+    "sourceText": "Extracted source text",
+    "requirementsHeading": "Extracted requirements",
+    "requirementsEmpty": "This regulation has not been analyzed yet — no requirement extracted in the indexed corpus.",
+    "requirementCount": "{count, plural, =0 {No requirement} one {# requirement} other {# requirements}}",
+    "viewFindings": "View findings",
+    "impactedActivity": "Impacted activities",
+    "normalized": "Normalized requirement"
+  },
+  "impact": {
+    "title": "Impact analysis",
+    "subtitle": "Findings proposed by the system, to be validated by the Head of Compliance",
+    "filterAssessment": "Assessment status",
+    "filterPriority": "Priority",
+    "filterStatus": "Validation",
+    "filterAll": "All",
+    "resetFilters": "Reset filters",
+    "columnRequirement": "Requirement",
+    "columnAssessment": "Status",
+    "columnProcedures": "Internal procedures",
+    "columnPriority": "Priority",
+    "columnStatus": "Validation",
+    "columnStrength": "Evidence strength",
+    "columnAction": "",
+    "open": "Open",
+    "noProcedure": "—",
+    "empty": "No finding matches the selected filters.",
+    "emptyNoRegulation": "Select an analyzed regulation to display its findings.",
+    "sortedByPriority": "Sorted by descending priority"
+  },
+  "evidence": {
+    "title": "Evidence",
+    "subtitle": "Side-by-side regulatory requirement and internal procedure",
+    "pickerHeading": "Available findings",
+    "empty": "Select a finding in the impact analysis to display its evidence.",
+    "notFound": "Finding not found in the indexed corpus.",
+    "regulatorySide": "Regulatory evidence",
+    "internalSide": "Internal evidence",
+    "noInternalEvidence": "No relevant internal procedure found in the indexed corpus.",
+    "explanation": "Proposed finding",
+    "missingElements": "Missing or ambiguous elements",
+    "noMissingElements": "No missing element reported.",
+    "recommendedAction": "Recommended action",
+    "evidenceStrength": "Evidence strength",
+    "evidenceStrengthHelp": "A decision-support indicator, not a legal probability.",
+    "sourceLanguageNote": "Excerpt shown in its original language ({language}).",
+    "validationHeading": "Human validation",
+    "validationHelp": "The final decision belongs to the Head of Compliance.",
+    "commentLabel": "Reviewer comment (optional)",
+    "commentPlaceholder": "Reason for the decision, context, next step…",
+    "accept": "Accept",
+    "reject": "Reject",
+    "escalate": "Escalate",
+    "saving": "Saving…",
+    "saved": "Decision saved",
+    "saveFailed": "The decision could not be saved.",
+    "currentDecision": "Recorded decision: {status}",
+    "reviewerComment": "Reviewer comment"
+  },
+  "copilot": {
+    "title": "Copilot",
+    "subtitle": "Conversational assistant grounded in the indexed corpus",
+    "placeholderHeading": "Screen planned for a later phase",
+    "placeholderBody": "This screen is planned once the analysis screens are in place. Any answer produced here must cite its evidence, or state explicitly that no evidence was found."
+  },
+  "errors": {
+    "title": "Loading failed",
+    "generic": "The data could not be retrieved.",
+    "contract": "The response received does not match the expected API contract.",
+    "notFound": "Resource not found."
+  }
+}
