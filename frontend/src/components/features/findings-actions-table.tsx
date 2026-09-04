@@ -1,17 +1,11 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
-import { FindingsTable } from "@/components/features/findings-table";
-import {
-  EmptyState,
-  ErrorState,
-  LoadingState,
-} from "@/components/features/query-state";
-import { useSelectedRegulation } from "@/components/providers/selected-regulation-provider";
+import { FindingActionRow } from "@/components/features/finding-action-row";
+import { EmptyState } from "@/components/features/query-state";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -20,16 +14,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fetchFindingsByRegulation } from "@/lib/api/findings";
-import { queryKeys } from "@/lib/api/query-keys";
-import { fetchRegulationRequirements } from "@/lib/api/regulations";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   assessmentValues,
   humanStatusValues,
   priorityValues,
   sortByPriority,
 } from "@/lib/assessment";
-import type { Assessment, HumanStatus, Priority } from "@/types/api";
+import type { Assessment, Finding, HumanStatus, Priority, Requirement } from "@/types/api";
 
 const ALL = "ALL";
 
@@ -45,44 +43,37 @@ const NO_FILTERS: Filters = {
   humanStatus: ALL,
 };
 
-export function ImpactAnalysisView() {
-  const t = useTranslations("impact");
+/**
+ * Écran « hero » : une ligne par couple (exigence × procédure), avec l'action
+ * recommandée, l'action que le relecteur souhaite retenir, et sa décision.
+ */
+export function FindingsActionsTable({
+  findings,
+  requirements,
+  regulationId,
+}: {
+  findings: readonly Finding[];
+  requirements: readonly Requirement[];
+  regulationId: string;
+}) {
+  const t = useTranslations("actions");
+  const impact = useTranslations("impact");
+  const common = useTranslations("common");
   const assessmentLabels = useTranslations("assessment");
   const priorityLabels = useTranslations("priority");
   const statusLabels = useTranslations("humanStatus");
-  const common = useTranslations("common");
 
-  const { selectedRegulationId } = useSelectedRegulation();
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
 
-  const findingsQuery = useQuery({
-    queryKey: queryKeys.findings(selectedRegulationId ?? undefined),
-    queryFn: () => fetchFindingsByRegulation(selectedRegulationId!),
-    enabled: Boolean(selectedRegulationId),
-  });
-
-  const requirementsQuery = useQuery({
-    queryKey: queryKeys.regulationRequirements(selectedRegulationId ?? ""),
-    queryFn: () => fetchRegulationRequirements(selectedRegulationId!),
-    enabled: Boolean(selectedRegulationId),
-  });
-
   const requirementsById = useMemo(
-    () =>
-      new Map(
-        (requirementsQuery.data ?? []).map((requirement) => [
-          requirement.requirement_id,
-          requirement,
-        ]),
-      ),
-    [requirementsQuery.data],
+    () => new Map(requirements.map((item) => [item.requirement_id, item])),
+    [requirements],
   );
 
-  const allFindings = findingsQuery.data;
   const visibleFindings = useMemo(
     () =>
       sortByPriority(
-        (allFindings ?? []).filter(
+        findings.filter(
           (finding) =>
             (filters.assessment === ALL ||
               finding.assessment === filters.assessment) &&
@@ -91,28 +82,8 @@ export function ImpactAnalysisView() {
               finding.human_status === filters.humanStatus),
         ),
       ),
-    [allFindings, filters],
+    [findings, filters],
   );
-
-  if (!selectedRegulationId) {
-    return <EmptyState message={t("emptyNoRegulation")} />;
-  }
-
-  if (findingsQuery.isPending || requirementsQuery.isPending) {
-    return <LoadingState rows={6} />;
-  }
-
-  if (findingsQuery.isError || requirementsQuery.isError) {
-    return (
-      <ErrorState
-        error={findingsQuery.error ?? requirementsQuery.error}
-        onRetry={() => {
-          void findingsQuery.refetch();
-          void requirementsQuery.refetch();
-        }}
-      />
-    );
-  }
 
   const hasActiveFilter =
     filters.assessment !== ALL ||
@@ -131,11 +102,13 @@ export function ImpactAnalysisView() {
             }))
           }
         >
-          <SelectTrigger size="sm" aria-label={t("filterAssessment")} className="w-56">
+          <SelectTrigger size="sm" aria-label={impact("filterAssessment")} className="w-56">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>{t("filterAssessment")}: {t("filterAll")}</SelectItem>
+            <SelectItem value={ALL}>
+              {impact("filterAssessment")}: {impact("filterAll")}
+            </SelectItem>
             {assessmentValues.map((value) => (
               <SelectItem key={value} value={value}>
                 {assessmentLabels(value)}
@@ -153,11 +126,13 @@ export function ImpactAnalysisView() {
             }))
           }
         >
-          <SelectTrigger size="sm" aria-label={t("filterPriority")} className="w-44">
+          <SelectTrigger size="sm" aria-label={impact("filterPriority")} className="w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>{t("filterPriority")}: {t("filterAll")}</SelectItem>
+            <SelectItem value={ALL}>
+              {impact("filterPriority")}: {impact("filterAll")}
+            </SelectItem>
             {priorityValues.map((value) => (
               <SelectItem key={value} value={value}>
                 {priorityLabels(value)}
@@ -175,11 +150,13 @@ export function ImpactAnalysisView() {
             }))
           }
         >
-          <SelectTrigger size="sm" aria-label={t("filterStatus")} className="w-44">
+          <SelectTrigger size="sm" aria-label={impact("filterStatus")} className="w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>{t("filterStatus")}: {t("filterAll")}</SelectItem>
+            <SelectItem value={ALL}>
+              {impact("filterStatus")}: {impact("filterAll")}
+            </SelectItem>
             {humanStatusValues.map((value) => (
               <SelectItem key={value} value={value}>
                 {statusLabels(value)}
@@ -191,23 +168,49 @@ export function ImpactAnalysisView() {
         {hasActiveFilter ? (
           <Button size="sm" variant="ghost" onClick={() => setFilters(NO_FILTERS)}>
             <RotateCcw aria-hidden />
-            {t("resetFilters")}
+            {impact("resetFilters")}
           </Button>
         ) : null}
 
         <p className="ml-auto text-xs text-muted-foreground">
           {common("resultCount", { count: visibleFindings.length })} ·{" "}
-          {t("sortedByPriority")}
+          {t("expandHint")}
         </p>
       </div>
 
       {visibleFindings.length === 0 ? (
-        <EmptyState message={t("empty")} />
+        <EmptyState message={impact("empty")} />
       ) : (
-        <FindingsTable
-          findings={visibleFindings}
-          requirementsById={requirementsById}
-        />
+        <div className="rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[26%] min-w-[15rem]">
+                  {t("columnRequirement")}
+                </TableHead>
+                <TableHead className="w-[12%]">{t("columnProcedure")}</TableHead>
+                <TableHead className="w-[22%]">{t("columnRecommended")}</TableHead>
+                <TableHead className="w-[22%] whitespace-normal">
+                  {t("columnCustom")}
+                  <span className="block text-[11px] font-normal text-muted-foreground">
+                    {t("customActionHelp")}
+                  </span>
+                </TableHead>
+                <TableHead className="w-[18%]">{t("columnDecision")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {visibleFindings.map((finding) => (
+                <FindingActionRow
+                  key={finding.finding_id}
+                  finding={finding}
+                  requirement={requirementsById.get(finding.requirement_id)}
+                  regulationId={regulationId}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   );

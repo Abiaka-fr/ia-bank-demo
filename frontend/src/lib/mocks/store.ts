@@ -1,27 +1,35 @@
 /**
- * État mutable de la couche de mock (validations humaines saisies pendant la démo).
+ * État mutable de la couche de mock : validations humaines, assignations et
+ * régulations uploadées pendant la démo.
  *
- * Le tableau n'est jamais muté en place : chaque écriture remplace la référence par
- * une nouvelle liste, conformément aux règles de style du projet.
+ * Rien n'est muté en place — chaque écriture remplace la référence par une nouvelle
+ * liste, conformément aux règles de style du projet.
  *
- * Les décisions sont persistées dans `sessionStorage` afin de survivre à un
- * rechargement de page pendant une démo. La portée "session" est volontaire : un
- * nouvel onglet repart du corpus d'origine.
+ * Persistance en `sessionStorage` pour survivre à un rechargement de page. La portée
+ * "session" est volontaire : un nouvel onglet repart du corpus d'origine.
  */
 import { z } from "zod";
 
-import { findingSchema, type Finding, type ValidateFindingBody } from "@/types/api";
+import {
+  documentDetailSchema,
+  findingSchema,
+  type DocumentDetail,
+  type Finding,
+  type ValidateFindingBody,
+} from "@/types/api";
 
+import { regulations as seedRegulations } from "./data/documents";
 import { seedFindings } from "./data/findings";
 
-const STORAGE_KEY = "ia-bank.mock-findings";
+const FINDINGS_KEY = "ia-bank.mock-findings";
+const REGULATIONS_KEY = "ia-bank.mock-regulations";
 
-function readPersisted(): readonly Finding[] | null {
+function read<T>(key: string, schema: z.ZodType<T>): T | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.sessionStorage.getItem(STORAGE_KEY);
+    const raw = window.sessionStorage.getItem(key);
     if (!raw) return null;
-    const parsed = z.array(findingSchema).safeParse(JSON.parse(raw));
+    const parsed = schema.safeParse(JSON.parse(raw));
     // Un état persisté obsolète (corpus modifié depuis) est ignoré, pas propagé.
     return parsed.success ? parsed.data : null;
   } catch {
@@ -29,16 +37,22 @@ function readPersisted(): readonly Finding[] | null {
   }
 }
 
-function persist(next: readonly Finding[]): void {
+function write(key: string, value: unknown): void {
   if (typeof window === "undefined") return;
   try {
-    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    window.sessionStorage.setItem(key, JSON.stringify(value));
   } catch {
-    // Sans persistance, les décisions restent valables jusqu'au rechargement.
+    // Sans persistance, l'état reste valable jusqu'au rechargement.
   }
 }
 
-let findings: readonly Finding[] = readPersisted() ?? seedFindings;
+let findings: readonly Finding[] =
+  read(FINDINGS_KEY, z.array(findingSchema)) ?? seedFindings;
+
+let regulations: readonly DocumentDetail[] =
+  read(REGULATIONS_KEY, z.array(documentDetailSchema)) ?? seedRegulations;
+
+// --- Constats -------------------------------------------------------------
 
 export function listFindings(): readonly Finding[] {
   return findings;
@@ -58,24 +72,60 @@ export function applyValidation(
   const updated: Finding = {
     ...current,
     human_status: body.human_status,
+    custom_action: body.custom_action,
     reviewer_comment: body.reviewer_comment,
+    // L'assignation n'a de sens qu'à l'escalade ; ailleurs on la remet à zéro.
+    assignee_id: body.human_status === "ESCALATED" ? body.assignee_id : undefined,
     updated_at: new Date().toISOString(),
   };
 
   findings = findings.map((finding) =>
     finding.finding_id === findingId ? updated : finding,
   );
-  persist(findings);
+  write(FINDINGS_KEY, findings);
 
+  return updated;
+}
+
+// --- Régulations ----------------------------------------------------------
+
+export function listRegulations(): readonly DocumentDetail[] {
+  return regulations;
+}
+
+export function findRegulation(id: string): DocumentDetail | undefined {
+  return regulations.find((regulation) => regulation.document_id === id);
+}
+
+export function addRegulation(regulation: DocumentDetail): DocumentDetail {
+  regulations = [regulation, ...regulations];
+  write(REGULATIONS_KEY, regulations);
+  return regulation;
+}
+
+export function updateRegulationAssignee(
+  id: string,
+  assigneeId: string,
+): DocumentDetail | undefined {
+  const current = findRegulation(id);
+  if (!current) return undefined;
+
+  const updated: DocumentDetail = { ...current, assignee_id: assigneeId };
+  regulations = regulations.map((regulation) =>
+    regulation.document_id === id ? updated : regulation,
+  );
+  write(REGULATIONS_KEY, regulations);
   return updated;
 }
 
 /** Utilisé par les tests pour repartir d'un état propre. */
 export function resetStore(): void {
   findings = seedFindings;
+  regulations = seedRegulations;
   if (typeof window === "undefined") return;
   try {
-    window.sessionStorage.removeItem(STORAGE_KEY);
+    window.sessionStorage.removeItem(FINDINGS_KEY);
+    window.sessionStorage.removeItem(REGULATIONS_KEY);
   } catch {
     // Rien à nettoyer si le stockage est indisponible.
   }

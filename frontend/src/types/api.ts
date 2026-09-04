@@ -38,6 +38,14 @@ export const documentStatusSchema = z.enum([
   "ANALYZED",
 ]);
 
+/** v1.1 — utilisateurs et assignation. */
+export const userSchema = z.object({
+  user_id: z.string(),
+  full_name: z.string(),
+  email: z.string(),
+  role: z.string(),
+});
+
 export const evidenceRefSchema = z.object({
   document_id: z.string(),
   document_title: z.string(),
@@ -58,6 +66,9 @@ export const documentMetaSchema = z.object({
   publication_date: z.string().optional(),
   effective_date: z.string().optional(),
   status: documentStatusSchema,
+  uploaded_by_id: z.string().optional(),
+  uploaded_at: z.string().optional(),
+  assignee_id: z.string().optional(),
 });
 
 export const documentDetailSchema = documentMetaSchema.extend({
@@ -79,16 +90,20 @@ export const requirementSchema = z.object({
 export const findingSchema = z.object({
   finding_id: z.string(),
   requirement_id: z.string(),
-  matched_procedure_ids: z.array(z.string()),
+  // v1.1 : un constat porte UNE procédure (ou aucune), pas une liste.
+  procedure_id: z.string().nullable(),
   assessment: assessmentSchema,
   regulatory_evidence: z.array(evidenceRefSchema),
   internal_evidence: z.array(evidenceRefSchema),
   explanation: z.string(),
   missing_or_ambiguous_elements: z.array(z.string()),
   recommended_action: z.string(),
+  /** Action retenue par le relecteur ; vide = `recommended_action` fait foi. */
+  custom_action: z.string().optional(),
   priority: prioritySchema,
   confidence_or_evidence_strength: z.number().min(0).max(1).optional(),
   human_status: humanStatusSchema,
+  assignee_id: z.string().optional(),
   reviewer_comment: z.string().optional(),
   updated_at: z.string(),
 });
@@ -99,11 +114,47 @@ export const dashboardSummarySchema = z.object({
   potential_gaps: z.number(),
   expert_reviews_required: z.number(),
   actions_pending: z.number(),
+  actions_total: z.number(),
   by_domain: z.array(z.object({ domain: z.string(), count: z.number() })),
   by_assessment: z.array(
     z.object({ assessment: assessmentSchema, count: z.number() }),
   ),
   top_priority_findings: z.array(findingSchema),
+});
+
+/** v1.1 — agrégats d'une régulation, utilisés aussi par les cartes de la liste. */
+export const regulationSummarySchema = z.object({
+  regulation_id: z.string(),
+  title: z.string(),
+  status: documentStatusSchema,
+  assignee_id: z.string().optional(),
+  requirements_identified: z.number(),
+  potential_gaps: z.number(),
+  expert_reviews_required: z.number(),
+  actions_pending: z.number(),
+  actions_total: z.number(),
+  /** Assignés par escalade, quand ils diffèrent de `assignee_id`. */
+  escalated_assignee_ids: z.array(z.string()),
+});
+
+/** v1.1 — agrégats sur toutes les régulations (écran Dashboard d'accueil). */
+export const portfolioSummarySchema = z.object({
+  regulations_total: z.number(),
+  regulations_analyzed: z.number(),
+  requirements_identified: z.number(),
+  potential_gaps: z.number(),
+  expert_reviews_required: z.number(),
+  actions_pending: z.number(),
+  by_regulation: z.array(regulationSummarySchema),
+  by_domain: z.array(z.object({ domain: z.string(), count: z.number() })),
+  by_assessment: z.array(
+    z.object({ assessment: assessmentSchema, count: z.number() }),
+  ),
+});
+
+export const loginResponseSchema = z.object({
+  user: userSchema,
+  token: z.string(),
 });
 
 export const copilotAnswerSchema = z.object({
@@ -127,12 +178,26 @@ export type DocumentDetail = z.infer<typeof documentDetailSchema>;
 export type Requirement = z.infer<typeof requirementSchema>;
 export type Finding = z.infer<typeof findingSchema>;
 export type DashboardSummary = z.infer<typeof dashboardSummarySchema>;
+export type User = z.infer<typeof userSchema>;
+export type RegulationSummary = z.infer<typeof regulationSummarySchema>;
+export type PortfolioSummary = z.infer<typeof portfolioSummarySchema>;
+export type LoginResponse = z.infer<typeof loginResponseSchema>;
 export type CopilotAnswer = z.infer<typeof copilotAnswerSchema>;
 
 /** Body attendu par `POST /api/findings/:id/validate`. */
 export const validateFindingBodySchema = z.object({
   human_status: humanStatusSchema,
+  custom_action: z.string().optional(),
   reviewer_comment: z.string().optional(),
+  /** Renseigné à l'escalade : à qui le constat est confié. */
+  assignee_id: z.string().optional(),
 });
 
 export type ValidateFindingBody = z.infer<typeof validateFindingBodySchema>;
+
+export const loginBodySchema = z.object({
+  email: z.string(),
+  password: z.string(),
+});
+
+export type LoginBody = z.infer<typeof loginBodySchema>;

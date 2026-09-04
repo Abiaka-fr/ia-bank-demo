@@ -31,8 +31,10 @@ export class ApiContractError extends Error {
 }
 
 type RequestOptions = {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "PATCH";
   body?: unknown;
+  /** Envoyé tel quel : le navigateur pose lui-même le Content-Type multipart. */
+  formData?: FormData;
   searchParams?: Record<string, string | undefined>;
 };
 
@@ -71,12 +73,12 @@ export async function apiFetch<TSchema extends z.ZodType>(
   schema: TSchema,
   options: RequestOptions = {},
 ): Promise<z.infer<TSchema>> {
-  const { method = "GET", body, searchParams } = options;
+  const { method = "GET", body, formData, searchParams } = options;
 
   const response = await fetch(buildUrl(path, searchParams), {
     method,
     headers: body ? { "Content-Type": "application/json" } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
+    body: formData ?? (body ? JSON.stringify(body) : undefined),
   });
 
   if (!response.ok) throw await readError(response);

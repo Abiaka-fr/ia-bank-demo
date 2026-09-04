@@ -8,8 +8,11 @@ Next.js (App Router) + TypeScript. Règles de travail : `CLAUDE.md` (ce dossier)
 corepack enable pnpm       # pnpm 9, une seule fois par machine
 pnpm install
 cp .env.example .env.local # facultatif : les valeurs par défaut suffisent
-pnpm dev                   # http://localhost:3000 -> redirige vers /fr/dashboard
+pnpm dev                   # ouvrir l'URL affichée (3000 si le port est libre)
 ```
+
+Compte de démonstration : `marie.lefevre@iabank.fr` / `demo1234` (rappelé sous le formulaire).
+L'authentification est **simulée côté frontend** — ce n'est pas un contrôle d'accès.
 
 Node 22 recommandé (`.nvmrc`). Sur Node 20 tout fonctionne, mais Vitest et jsdom
 sortent de leur plage `engines` : `jsdom` est volontairement épinglé en 26.
@@ -50,12 +53,13 @@ de corrompre l'écran silencieusement.
 
 ```
 src/
-├── app/[locale]/          # 5 écrans : dashboard, regulations, impact-analysis, evidence, copilot
+├── app/[locale]/login/    # connexion (hors coquille applicative)
+├── app/[locale]/(app)/    # coquille avec sidebar : dashboard, regulations (+ détail), copilot
 ├── components/
 │   ├── ui/                # primitives shadcn/ui générées
-│   ├── layout/            # sidebar, top bar, toggle FR/EN, sélecteur de régulation
+│   ├── layout/            # sidebar, top bar, toggle FR/EN, menu utilisateur
 │   ├── features/          # composants métier
-│   └── providers/         # MSW, TanStack Query, régulation sélectionnée
+│   └── providers/         # MSW, TanStack Query, session
 ├── i18n/                  # routing next-intl (+ src/proxy.ts pour le middleware)
 ├── lib/api/               # client typé, un fichier par ressource
 ├── lib/mocks/             # handlers MSW + corpus de démo

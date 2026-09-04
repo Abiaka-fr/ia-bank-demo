@@ -24,12 +24,23 @@ describe("buildDashboardSummary", () => {
   });
 
   it("ne compte chaque procédure impactée qu'une seule fois", () => {
+    // Plusieurs exigences peuvent viser la même procédure (contrat v1.1 : un
+    // constat = un couple exigence × procédure).
     const summary = buildDashboardSummary(requirements, seedFindings);
     const distinctProcedures = new Set(
-      seedFindings.flatMap((finding) => finding.matched_procedure_ids),
+      seedFindings
+        .map((finding) => finding.procedure_id)
+        .filter((id): id is string => id !== null),
     );
 
     expect(summary.procedures_impacted).toBe(distinctProcedures.size);
+  });
+
+  it("compte les actions totales et celles restant à traiter", () => {
+    const summary = buildDashboardSummary(requirements, seedFindings);
+
+    expect(summary.actions_total).toBe(seedFindings.length);
+    expect(summary.actions_pending).toBe(seedFindings.length);
   });
 
   it("expose les 5 statuts d'évaluation même à zéro", () => {

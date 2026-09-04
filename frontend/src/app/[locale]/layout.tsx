@@ -4,15 +4,14 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { AppSidebar } from "@/components/layout/app-sidebar";
-import { TopBar } from "@/components/layout/top-bar";
 import { AppProviders } from "@/components/providers/app-providers";
 import { Toaster } from "@/components/ui/sonner";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { routing } from "@/i18n/routing";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+// Le nom de la variable doit correspondre à `--font-sans` lu par globals.css,
+// sinon `font-sans` est vide et le navigateur retombe sur une police à empattements.
+const geistSans = Geist({ variable: "--font-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export function generateStaticParams() {
@@ -49,15 +48,7 @@ export default async function LocaleLayout({
       <body className="min-h-full">
         <NextIntlClientProvider>
           <AppProviders>
-            <TooltipProvider>
-              <SidebarProvider>
-                <AppSidebar />
-                <SidebarInset className="min-w-0">
-                  <TopBar />
-                  <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
-                </SidebarInset>
-              </SidebarProvider>
-            </TooltipProvider>
+            <TooltipProvider>{children}</TooltipProvider>
             <Toaster />
           </AppProviders>
         </NextIntlClientProvider>

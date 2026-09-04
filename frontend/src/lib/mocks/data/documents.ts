@@ -84,6 +84,9 @@ export const regulations: readonly DocumentDetail[] = [
     publication_date: "2026-01-14",
     effective_date: "2026-04-01",
     status: "ANALYZED",
+    uploaded_by_id: "USR-001",
+    uploaded_at: "2026-01-20T08:15:00.000Z",
+    assignee_id: "USR-002",
     extracted_text: acprExtractedText,
   },
   {
@@ -98,6 +101,9 @@ export const regulations: readonly DocumentDetail[] = [
     publication_date: "2026-01-22",
     effective_date: "2026-04-01",
     status: "NOT_ANALYZED",
+    uploaded_by_id: "USR-001",
+    uploaded_at: "2026-01-26T14:40:00.000Z",
+    assignee_id: "USR-004",
     extracted_text: ebaExtractedText,
   },
 ];

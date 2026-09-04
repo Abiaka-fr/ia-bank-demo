@@ -15,27 +15,66 @@ const VIEWPORT = { width: 1440, height: 900 } as const;
 /** Laisse à MSW + TanStack Query le temps de peupler l'écran. */
 const SETTLE_MS = 1200;
 
-const routes = [
+const DEMO_EMAIL = "marie.lefevre@iabank.fr";
+const DEMO_PASSWORD = "demo1234";
+const ACPR_ID = "REG-ACPR-2026-04";
+
+/** Onglet à ouvrir sur la page de détail d'une régulation, par libellé visible. */
+type Route = { name: string; path: string; tab?: string };
+
+const routes: readonly Route[] = [
   { name: "fr-dashboard", path: "/fr/dashboard" },
   { name: "fr-regulations", path: "/fr/regulations" },
-  { name: "fr-regulation-detail", path: "/fr/regulations/REG-ACPR-2026-04" },
-  { name: "fr-impact-analysis", path: "/fr/impact-analysis" },
-  { name: "fr-evidence-gap", path: "/fr/evidence/FND-003" },
-  { name: "fr-evidence-no-procedure", path: "/fr/evidence/FND-004" },
+  { name: "fr-regulation-overview", path: `/fr/regulations/${ACPR_ID}` },
+  {
+    name: "fr-regulation-actions",
+    path: `/fr/regulations/${ACPR_ID}`,
+    tab: "Analyse d'impact",
+  },
+  {
+    name: "fr-regulation-requirements",
+    path: `/fr/regulations/${ACPR_ID}`,
+    tab: "Exigences extraites",
+  },
   { name: "fr-copilot", path: "/fr/copilot" },
   { name: "en-dashboard", path: "/en/dashboard" },
-  { name: "en-impact-analysis", path: "/en/impact-analysis" },
-  { name: "en-evidence-gap", path: "/en/evidence/FND-003" },
-] as const;
+  { name: "en-regulations", path: "/en/regulations" },
+  {
+    name: "en-regulation-actions",
+    path: `/en/regulations/${ACPR_ID}`,
+    tab: "Impact analysis",
+  },
+];
 
-async function capture(page: Page, name: string, routePath: string) {
-  await page.goto(`${BASE_URL}${routePath}`, { waitUntil: "networkidle" });
+async function signIn(page: Page) {
+  await page.goto(`${BASE_URL}/fr/login`, { waitUntil: "networkidle" });
   await page.waitForTimeout(SETTLE_MS);
   await page.screenshot({
-    path: path.join(OUTPUT_DIR, `${name}.png`),
+    path: path.join(OUTPUT_DIR, "fr-login.png"),
     fullPage: true,
   });
-  console.log(`✓ ${name} — ${routePath}`);
+
+  await page.getByLabel("Adresse e-mail").fill(DEMO_EMAIL);
+  await page.getByLabel("Mot de passe").fill(DEMO_PASSWORD);
+  await page.getByRole("button", { name: "Se connecter" }).click();
+  await page.waitForURL("**/dashboard", { timeout: 15_000 });
+  console.log("✓ fr-login — /fr/login (connecté)");
+}
+
+async function capture(page: Page, route: Route) {
+  await page.goto(`${BASE_URL}${route.path}`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(SETTLE_MS);
+
+  if (route.tab) {
+    await page.getByRole("tab", { name: new RegExp(route.tab) }).click();
+    await page.waitForTimeout(SETTLE_MS);
+  }
+
+  await page.screenshot({
+    path: path.join(OUTPUT_DIR, `${route.name}.png`),
+    fullPage: true,
+  });
+  console.log(`✓ ${route.name} — ${route.path}${route.tab ? ` (${route.tab})` : ""}`);
 }
 
 async function main() {
@@ -50,8 +89,9 @@ async function main() {
   });
 
   try {
+    await signIn(page);
     for (const route of routes) {
-      await capture(page, route.name, route.path);
+      await capture(page, route);
     }
   } finally {
     await browser.close();

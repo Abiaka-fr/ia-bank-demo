@@ -22,7 +22,10 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 - [x] Slice verticale de bout en bout (1 régulation → 9 exigences → 12 procédures → constats
       couvrant les 5 statuts → preuves côte à côte → Accepter/Rejeter/Escalader) fonctionnelle en
       mock, vérifiée dans le navigateur
-- [ ] Contrat d'API v1 validé avec Thư (backend) — **à faire en réunion, 3 points ouverts ci-dessous**
+- [x] Authentification de démonstration (écran de connexion, session, utilisateurs assignables)
+- [x] Upload de régulation (.docx uniquement) avec assignation, modifiable sur la carte
+- [x] Dashboard consolidé sur toutes les régulations + détail par régulation
+- [ ] Contrat d'API **v1.1** validé avec Thư (backend) — **à faire en réunion, voir ci-dessous**
 - [ ] Backend / pipeline IA (Thư — stack à définir par elle)
 - [ ] Déploiement Vercel (frontend) — `vercel.json` prêt, déploiement réel non effectué
 
@@ -50,19 +53,36 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 - Stack backend de Thư pas encore choisie → le frontend doit démarrer avec des données mockées
   respectant `docs/api-contract.md` en attendant.
-- **Gel du contrat d'API v1 (Phase 1, point 7) — non fait, nécessite une revue avec Thư.** Trois
-  points ont été relevés en construisant le client typé et la couche de mock :
-  1. **Pas de `GET /api/findings/:id`.** L'écran Preuves est centré sur un constat unique ; il doit
-     aujourd'hui charger `GET /api/findings?regulation_id=…` puis filtrer côté client. Proposition :
-     ajouter `GET /api/findings/:id` au contrat.
-  2. **`Finding.explanation` / `recommended_action` / `Requirement.normalized_requirement` ne sont
+- **Contrat d'API v1.1 — proposition écrite, non validée. Revue avec Thư à programmer.** Le
+  contrat porte désormais un bandeau « v1.1 » et les blocs modifiés sont marqués `// v1.1`. Le
+  frontend et la couche de mock sont déjà alignés dessus ; le backend ne doit s'y aligner qu'après
+  la revue commune. Changements demandés par Giang le 2026-09-04 :
+  1. **`Finding` devient un couple (exigence × procédure)** — `procedure_id: string | null` remplace
+     `matched_procedure_ids: string[]`. Une exigence touchant deux procédures produit deux constats,
+     chacun avec son action recommandée et sa propre validation humaine. C'était la question
+     ouverte : que faire quand une exigence impacte deux procédures et demande deux actions.
+  2. **`custom_action`** — le relecteur peut retenir une action différente de celle proposée.
+     Champ vide = l'action recommandée s'applique.
+  3. **Utilisateurs et assignation** — type `User`, endpoints `/api/auth/*` et `/api/users`,
+     `assignee_id` sur `DocumentMeta` (qui traite la régulation) et sur `Finding` (à qui un constat
+     est confié lors d'une escalade).
+  4. **`GET /api/dashboard/overview`** — agrégats sur toutes les régulations (`PortfolioSummary`),
+     qui alimentent aussi les cartes de la liste pour éviter un appel par carte.
+  5. **`POST /api/regulations`** prend `file` (.docx), `file_name`, `assignee_id`, `uploaded_by_id` ;
+     ajout de `PATCH /api/regulations/:id` pour changer l'assignation.
+- **Points du contrat encore ouverts (à trancher avec Thư) :**
+  1. **`Finding.explanation` / `recommended_action` / `Requirement.normalized_requirement` ne sont
      pas localisables.** Ces textes viennent du backend et s'affichent tels quels : en interface EN,
      l'utilisateur voit du français. À trancher : le backend génère-t-il dans la langue demandée
      (paramètre `?language=`), ou renvoie-t-il un objet `{ FR, EN }` ? (Ne concerne pas
      `EvidenceRef.excerpt`, qui reste par principe dans sa langue source.)
-  3. **`POST /api/regulations/:id/analyze` est asynchrone mais aucun moyen de suivre l'avancement
+  2. **`POST /api/regulations/:id/analyze` est asynchrone mais aucun moyen de suivre l'avancement
      n'est documenté.** Le frontend ne sait pas quand repasser `status` de `ANALYZING` à `ANALYZED`.
-     À définir : polling sur `GET /api/regulations/:id`, ou endpoint de statut dédié.
+     À définir : polling sur `GET /api/regulations/:id`, ou endpoint de statut dédié. Devient
+     bloquant maintenant que l'upload existe : une régulation importée reste en `NOT_ANALYZED`.
+  3. **Authentification réelle.** L'écran de connexion actuel est une simulation frontend (mot de
+     passe unique de démo, session en `sessionStorage`). Aucun contrôle d'accès réel. À décider si
+     le POC en a besoin, ou si cela reste hors périmètre.
 - **Déploiement Vercel (Phase 1, point 8) — non fait.** `frontend/vercel.json` est prêt, mais le
   déploiement demande un accès au compte Vercel. Point d'attention : le dépôt contenant aussi
   `backend/`, il faut régler **Root Directory = `frontend`** dans le projet Vercel.
@@ -129,3 +149,55 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
   **Reste à faire pour clore la Phase 1 :** les deux points « Blocages » ci-dessus (revue du contrat
   d'API avec Thư — 3 questions listées ; premier déploiement Vercel avec Root Directory = `frontend`).
+
+- **2026-09-04 (Claude Code — revue Giang, refonte v1.1)** : sept demandes de correction après la
+  revue visuelle de la Phase 1. Toutes traitées.
+
+  1. **Police à empattements corrigée.** `globals.css` (preset shadcn) lit `--font-sans`, alors que
+     `next/font` déclarait la variable `--font-geist-sans` : `font-sans` était vide et le navigateur
+     retombait sur une police à empattements. Une seule ligne, mais invisible à la lecture du code.
+  2. **Écran de connexion** (`/[locale]/login`) : formulaire e-mail + mot de passe, 4 utilisateurs
+     de démonstration, mot de passe unique affiché sous le formulaire. Session en `sessionStorage`,
+     garde de route sur tout le groupe `(app)`. **Ce n'est pas de la sécurité** — voir le point
+     ouvert dans « Blocages ».
+  3. **Dashboard consolidé** : l'écran d'accueil agrège désormais toutes les régulations (KPI global
+     + tableau détaillé par régulation). L'ancien dashboard par régulation est devenu l'onglet
+     « Vue d'ensemble » de la page de détail.
+  4. **Upload de régulation** : bouton dans la liste, `.docx` uniquement (filtré côté client ET
+     refusé côté serveur), champ « personne en charge » au moment de l'import. Conformément à la
+     décision de Giang, **aucune exigence n'est fabriquée** : la régulation importée reste en
+     `NOT_ANALYZED` en attendant l'extraction par le backend.
+  5. **Cartes de régulation enrichies** : statut d'analyse, personne ayant importé, personne en
+     charge modifiable directement sur la carte, progression « constats traités », et bloc
+     « Confié par escalade à » listant les personnes désignées lors d'une escalade lorsqu'elles
+     diffèrent du responsable de la régulation.
+  6. **Après l'upload**, redirection automatique vers la page de détail de la régulation créée ;
+     accessible aussi par « Détail de la régulation » sur chaque carte.
+  7. **Écran Preuves refondu en tableau d'actions** (la demande la plus structurante) :
+     `Finding` devient un couple (exigence × procédure). Une exigence touchant deux procédures
+     produit deux lignes, chacune avec son action recommandée, son champ « action retenue » et ses
+     boutons Accepter / Rejeter / Escalader. Champ « action retenue » vide = l'action recommandée
+     s'applique. L'escalade exige de choisir la personne à qui le constat est confié. Chaque ligne
+     se déplie pour afficher les preuves source côte à côte — un constat n'est jamais affiché sans
+     sa traçabilité (`docs/ui-guardrails.md`).
+
+  **Navigation revue** (décision de Giang) : la sidebar passe de 5 à 3 entrées — Tableau de bord,
+  Analyse réglementaire, Copilot. « Analyse d'impact » et « Preuves » sont devenus des onglets de la
+  page de détail d'une régulation : on ne consulte des constats qu'après avoir choisi la régulation.
+
+  **Corpus de démo** : 9 exigences → 11 constats (REQ-001 et REQ-005 touchent chacune deux
+  procédures), couvrant toujours les 5 valeurs d'`assessment`.
+
+  **Vérifié :** `pnpm lint`, `pnpm typecheck`, `pnpm test` (29 tests / 6 fichiers), `pnpm build`
+  passent. Parcours complet rejoué dans un navigateur piloté, sans erreur console : connexion,
+  mot de passe erroné, escalade avec assignation, remontée de l'assigné sur la carte, refus d'un
+  fichier `.txt`, import d'un `.docx` puis redirection vers le détail, bascule FR/EN.
+
+  **Bug réel trouvé par les tests :** la validation « .docx uniquement » s'appuyait sur le nom porté
+  par la partie multipart, que certains runtimes ne conservent pas — le contrôle laissait alors
+  passer n'importe quel format. Le client envoie désormais `file_name` explicitement et le serveur
+  valide dessus (ajouté au contrat).
+
+  **Reste à faire :** revue du contrat v1.1 avec Thư (voir « Blocages »), et premier déploiement
+  Vercel (Root Directory = `frontend`).
+

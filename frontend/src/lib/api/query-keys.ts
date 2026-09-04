@@ -9,6 +9,8 @@ export const queryKeys = {
   findings: (regulationId?: string) => ["findings", regulationId ?? null] as const,
   dashboardSummary: (regulationId?: string) =>
     ["dashboard", "summary", regulationId ?? null] as const,
+  portfolioSummary: () => ["dashboard", "overview"] as const,
+  users: () => ["users"] as const,
   procedures: () => ["procedures"] as const,
   procedure: (id: string) => ["procedures", id] as const,
 } as const;
