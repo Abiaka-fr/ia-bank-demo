@@ -1,0 +1,22 @@
+# Node / Next.js
+node_modules/
+.next/
+out/
+.vercel/
+
+# Python (backend, si applicable)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Env
+.env
+.env.local
+.env*.local
+
+# OS
+.DS_Store
+
+# Logs
+*.log
