@@ -133,6 +133,119 @@ GET /api/documents/EXT-EU-AML-001
 
 ---
 
+### Update Document Content & Create New Version
+
+#### `POST /api/documents/{document_id}/update`
+Update document content, create a new version, and auto-increment the version number. All chunks must be provided.
+
+**Path Parameters**
+- `document_id` (required): The ID of the document to update (e.g., EXT-EU-AML-001)
+
+**Request Body**
+- `change_reason` (required): Reason/description of the changes
+- `created_by` (required): User or system that made the update  
+- `file_path` (optional): Path to the updated document file (for audit trail reference)
+- `chunks` (required): Array of document chunks with updated content
+
+**Chunk Structure (each chunk requires):**
+```json
+{
+  "chunk_no": 1,
+  "section_title": "Document Header",
+  "content": "# Document Content...",
+  "language": "EN",
+  "domain": "AML/CFT"
+}
+```
+
+**Authentication** Required (Bearer token)
+
+**Request Example**
+```json
+POST /api/documents/EXT-EU-AML-001/update
+{
+  "change_reason": "Updated KYC procedures for new regulatory requirements",
+  "created_by": "compliance.officer@bank.com",
+  "file_path": "documents/external/EXT-EU-AML-001__v3_0__EN.md",
+  "chunks": [
+    {
+      "chunk_no": 1,
+      "section_title": "Document Header",
+      "content": "# EU AML/CFT Standard v3.0...",
+      "language": "EN",
+      "domain": "AML/CFT"
+    },
+    {
+      "chunk_no": 2,
+      "section_title": "Purpose and Scope",
+      "content": "## Purpose...",
+      "language": "EN",
+      "domain": "AML/CFT"
+    }
+  ]
+}
+```
+
+**Response (201 Created)**
+```json
+{
+  "version_id": "VER-EXT-EU-AML-001-03",
+  "document_id": "EXT-EU-AML-001",
+  "version_no": "3.0",
+  "status": "ACTIVE",
+  "created_by": "compliance.officer@bank.com",
+  "change_reason": "Updated KYC procedures for new regulatory requirements",
+  "total_chunks": 2,
+  "chunks": [
+    {
+      "chunk_id": "CHK-EXT-EU-AML-001-03-001",
+      "document_id": "EXT-EU-AML-001",
+      "version_id": "VER-EXT-EU-AML-001-03",
+      "chunk_no": 1,
+      "section_title": "Document Header",
+      "content": "# EU AML/CFT Standard v3.0...",
+      "language": "EN",
+      "domain": "AML/CFT"
+    },
+    {
+      "chunk_id": "CHK-EXT-EU-AML-001-03-002",
+      "document_id": "EXT-EU-AML-001",
+      "version_id": "VER-EXT-EU-AML-001-03",
+      "chunk_no": 2,
+      "section_title": "Purpose and Scope",
+      "content": "## Purpose...",
+      "language": "EN",
+      "domain": "AML/CFT"
+    }
+  ]
+}
+```
+
+**Response (400 Bad Request)**
+```json
+{
+  "detail": "Chunks must be numbered sequentially starting from 1"
+}
+```
+
+**Response (404 Not Found)**
+```json
+{
+  "detail": "Document not found"
+}
+```
+
+**Notes:**
+- Version number is auto-incremented (e.g., 1.0 → 2.0 → 3.0)
+- New version_id is generated automatically (VER-{doc_id}-{version_no_padded})
+- New chunk_ids are generated (CHK-{doc_id}-{version_no}-{chunk_no_padded})
+- All previous ACTIVE versions are marked as SUPERSEDED
+- Document.current_version is updated to the new version
+- Chunks must be numbered sequentially starting from 1
+- All chunks from the previous version should be re-submitted (it's a full replacement)
+
+---
+
 ### Get Document Content by Version ID
 
 #### `GET /api/documents/content/{version_id}`

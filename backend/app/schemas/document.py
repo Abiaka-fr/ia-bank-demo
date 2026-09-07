@@ -73,3 +73,67 @@ class DocumentListResponse(BaseModel):
     items: list[DocumentRead]
     limit: int
     offset: int
+
+
+class DocumentChunkInput(BaseModel):
+    """Input for creating/updating a document chunk."""
+
+    chunk_no: int
+    section_title: str
+    content: str
+    language: str
+    domain: str
+
+
+class DocumentUpdateRequest(BaseModel):
+    """Request body for updating document content and creating new version.
+
+    SHA256 is calculated automatically from chunk content by the backend.
+    User provides only the content and metadata.
+    """
+
+    change_reason: str
+    created_by: str
+    file_path: str | None = None
+    chunks: list[DocumentChunkInput]
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "change_reason": "Updated KYC procedures for new regulation",
+                "created_by": "compliance.officer@bank.com",
+                "file_path": "documents/internal/INT-PROC-KYC__v2_0__EN.md",
+                "chunks": [
+                    {
+                        "chunk_no": 1,
+                        "section_title": "Document Header",
+                        "content": "# KYC Procedure v2.0\n\n...",
+                        "language": "EN",
+                        "domain": "KYC"
+                    },
+                    {
+                        "chunk_no": 2,
+                        "section_title": "Customer Risk Assessment",
+                        "content": "## Risk Assessment Process\n\n...",
+                        "language": "EN",
+                        "domain": "KYC"
+                    }
+                ]
+            }
+        }
+
+
+class DocumentVersionResponse(BaseModel):
+    """Response after updating document."""
+
+    version_id: str
+    document_id: str
+    version_no: str
+    status: str
+    created_by: str
+    change_reason: str
+    total_chunks: int
+    chunks: list[DocumentChunkRead]
+
+    class Config:
+        from_attributes = True
