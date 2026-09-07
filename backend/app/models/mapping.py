@@ -19,6 +19,7 @@ class RequirementProcedureMap(Base):
     explanation = Column(Text)
     recommended_action = Column(Text)
     human_status = Column(String)  # PENDING_REVIEW, ACCEPTED, REJECTED, ESCALATED
+    assignee = Column(String, nullable=True)  # User ID or email, optional
 
     # Indexes
     __table_args__ = (

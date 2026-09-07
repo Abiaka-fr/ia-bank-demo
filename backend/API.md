@@ -435,6 +435,117 @@ GET /api/requirements/REQ-0001
 
 ## 4. Requirement-Procedure Mappings
 
+### Update Mapping Human Review Status
+
+#### `PUT /api/mappings/{mapping_id}/human-status`
+Update the human review status of a requirement-procedure mapping.
+
+**Path Parameters**
+- `mapping_id` (required): The ID of the mapping (e.g., MAP-0001)
+
+**Request Body**
+- `human_status` (required): One of the following:
+  - `PENDING_REVIEW` — Awaiting human review (default)
+  - `ESCALATE` — Escalate to senior review/approval
+  - `ACCEPT` — Approved by human reviewer
+  - `REJECT` — Rejected by human reviewer
+
+**Authentication** Required (Bearer token)
+
+**Request Examples**
+```json
+PUT /api/mappings/MAP-0001/human-status
+{"human_status": "ACCEPT"}
+
+PUT /api/mappings/MAP-0001/human-status
+{"human_status": "ESCALATE"}
+
+PUT /api/mappings/MAP-0001/human-status
+{"human_status": "REJECT"}
+```
+
+**Response (200 OK)**
+```json
+{
+  "mapping_id": "MAP-0001",
+  "requirement_id": "REQ-0001",
+  "procedure_id": "PRC-AML-007",
+  "assessment": "COVERED",
+  "confidence": 0.93,
+  "explanation": "The internal procedure contains explicit controls...",
+  "recommended_action": "No immediate update proposed...",
+  "human_status": "ACCEPT",
+  "assignee": null
+}
+```
+
+**Response (400 Bad Request)**
+```json
+{
+  "detail": "Invalid human_status. Allowed values: PENDING_REVIEW, ESCALATE, ACCEPT, REJECT"
+}
+```
+
+**Response (404 Not Found)**
+```json
+{
+  "detail": "Mapping not found"
+}
+```
+
+---
+
+### Update Mapping Assignee
+
+#### `PUT /api/mappings/{mapping_id}/assignee`
+Update the assignee of a requirement-procedure mapping to assign compliance work to a specific team member.
+
+**Path Parameters**
+- `mapping_id` (required): The ID of the mapping (e.g., MAP-0001)
+
+**Request Body**
+- `assignee` (optional): User ID or email to assign (can be null to clear assignment)
+
+**Authentication** Required (Bearer token)
+
+**Request Examples**
+```json
+PUT /api/mappings/MAP-0001/assignee
+{"assignee": "compliance.officer@bank.com"}
+
+PUT /api/mappings/MAP-0001/assignee
+{"assignee": "junior.analyst@bank.com"}
+
+PUT /api/mappings/MAP-0001/assignee
+{"assignee": null}
+```
+
+**Response (200 OK)**
+```json
+{
+  "mapping_id": "MAP-0001",
+  "requirement_id": "REQ-0001",
+  "procedure_id": "PRC-AML-007",
+  "assessment": "COVERED",
+  "confidence": 0.93,
+  "explanation": "The internal procedure contains explicit controls...",
+  "recommended_action": "No immediate update proposed...",
+  "human_status": "ACCEPT",
+  "assignee": "compliance.officer@bank.com"
+}
+```
+
+**Response (404 Not Found)**
+```json
+{
+  "detail": "Mapping not found"
+}
+```
+
+---
+
+## Old Requirement-Procedure Mappings (Keep reading below)
+
 ### List All Mappings (Flat)
 
 #### `GET /api/mappings/all`
@@ -471,7 +582,8 @@ GET /api/mappings/all?human_status=PENDING_REVIEW
       "confidence": 0.93,
       "explanation": "The internal procedure contains explicit controls...",
       "recommended_action": "No immediate update proposed...",
-      "human_status": "PENDING_REVIEW"
+      "human_status": "PENDING_REVIEW",
+      "assignee": null
     }
   ],
   "limit": 50,
@@ -528,7 +640,9 @@ GET /api/mappings/requirements-to-procedures?requirement_ids=REQ-0001&assessment
             "mapping_id": "MAP-0001",
             "assessment": "COVERED",
             "confidence": 0.93,
-            "explanation": "..."
+            "explanation": "...",
+            "human_status": "PENDING_REVIEW",
+            "assignee": null
           }
         }
       ],
@@ -585,7 +699,9 @@ GET /api/mappings/procedures-to-requirements?procedure_ids=PRC-KYC-002&domain=KY
           "mapping": {
             "mapping_id": "MAP-0001",
             "assessment": "COVERED",
-            "confidence": 0.93
+            "confidence": 0.93,
+            "human_status": "PENDING_REVIEW",
+            "assignee": "compliance.officer@bank.com"
           }
         }
       ],
@@ -999,6 +1115,33 @@ curl -H "Authorization: Bearer $TOKEN" \
 # Get procedures with their requirements (nested)
 curl -H "Authorization: Bearer $TOKEN" \
   "http://localhost:8000/api/mappings/procedures-to-requirements?procedure_ids=PRC-AML-007"
+
+### Update Mapping Human Status
+```bash
+# Accept a mapping
+curl -X PUT -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"human_status":"ACCEPT"}' \
+  "http://localhost:8000/api/mappings/MAP-0001/human-status"
+
+# Escalate a mapping for senior review
+curl -X PUT -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"human_status":"ESCALATE"}' \
+  "http://localhost:8000/api/mappings/MAP-0001/human-status"
+
+# Reject a mapping
+curl -X PUT -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"human_status":"REJECT"}' \
+  "http://localhost:8000/api/mappings/MAP-0001/human-status"
+
+# Reset to pending review
+curl -X PUT -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"human_status":"PENDING_REVIEW"}' \
+  "http://localhost:8000/api/mappings/MAP-0001/human-status"
+```
 
 ### Get Users
 ```bash

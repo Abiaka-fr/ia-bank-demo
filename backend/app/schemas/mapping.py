@@ -14,6 +14,7 @@ class MappingRead(BaseModel):
     explanation: str | None = None
     recommended_action: str | None = None
     human_status: str | None = None
+    assignee: str | None = None
 
     class Config:
         from_attributes = True
@@ -88,3 +89,36 @@ class MappingListResponse(BaseModel):
     items: list[MappingRead]
     limit: int
     offset: int
+
+
+class HumanStatusUpdate(BaseModel):
+    """Update human review status of a mapping."""
+
+    human_status: str
+
+    class Config:
+        json_schema_extra = {
+            "example": {"human_status": "ACCEPT"}
+        }
+
+
+class AssigneeUpdate(BaseModel):
+    """Update assignee of a mapping."""
+
+    assignee: str | None = None
+
+    class Config:
+        json_schema_extra = {
+            "example": {"assignee": "compliance.officer@bank.com"}
+        }
+
+
+class HumanStatusEnum:
+    """Allowed values for human_status field."""
+
+    PENDING_REVIEW = "PENDING_REVIEW"
+    ESCALATE = "ESCALATE"
+    ACCEPT = "ACCEPT"
+    REJECT = "REJECT"
+
+    ALLOWED = [PENDING_REVIEW, ESCALATE, ACCEPT, REJECT]

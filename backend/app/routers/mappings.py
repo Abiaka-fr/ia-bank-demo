@@ -10,6 +10,9 @@ from app.models.procedure import Procedure
 from app.models.requirement import RegulatoryRequirement
 from app.models.user import User
 from app.schemas.mapping import (
+    AssigneeUpdate,
+    HumanStatusEnum,
+    HumanStatusUpdate,
     MappingListResponse,
     MappingRead,
     NestedMappingResponse,
@@ -218,3 +221,90 @@ def list_mappings(
         limit=limit,
         offset=offset,
     )
+
+
+@router.put("/{mapping_id}/human-status", response_model=MappingRead)
+def update_mapping_human_status(
+    mapping_id: str,
+    payload: HumanStatusUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MappingRead:
+    """
+    Update the human review status of a requirement-procedure mapping.
+
+    **Path Parameters:**
+    - `mapping_id`: The ID of the mapping to update (e.g., MAP-0001)
+
+    **Request Body:**
+    - `human_status` (required): One of PENDING_REVIEW, ESCALATE, ACCEPT, REJECT
+
+    **Allowed Values:**
+    - `PENDING_REVIEW` — Awaiting human review (default)
+    - `ESCALATE` — Escalate to senior review/approval
+    - `ACCEPT` — Approved by human reviewer
+    - `REJECT` — Rejected by human reviewer
+
+    **Example URLs:**
+    - `PUT /api/mappings/MAP-0001/human-status`
+
+    **Example Request:**
+    ```json
+    {"human_status": "ACCEPT"}
+    ```
+    """
+    # Validate human_status value
+    if payload.human_status not in HumanStatusEnum.ALLOWED:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid human_status. Allowed values: {', '.join(HumanStatusEnum.ALLOWED)}",
+        )
+
+    mapping = db.get(RequirementProcedureMap, mapping_id)
+    if mapping is None:
+        raise HTTPException(status_code=404, detail="Mapping not found")
+
+    mapping.human_status = payload.human_status
+    db.commit()
+    db.refresh(mapping)
+
+    return MappingRead.model_validate(mapping)
+
+
+@router.put("/{mapping_id}/assignee", response_model=MappingRead)
+def update_mapping_assignee(
+    mapping_id: str,
+    payload: AssigneeUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MappingRead:
+    """
+    Update the assignee of a requirement-procedure mapping.
+
+    **Path Parameters:**
+    - `mapping_id`: The ID of the mapping to update (e.g., MAP-0001)
+
+    **Request Body:**
+    - `assignee` (optional): User ID or email to assign (null to clear assignment)
+
+    **Example URLs:**
+    - `PUT /api/mappings/MAP-0001/assignee`
+
+    **Example Requests:**
+    ```json
+    {"assignee": "compliance.officer@bank.com"}
+    ```
+    or to clear:
+    ```json
+    {"assignee": null}
+    ```
+    """
+    mapping = db.get(RequirementProcedureMap, mapping_id)
+    if mapping is None:
+        raise HTTPException(status_code=404, detail="Mapping not found")
+
+    mapping.assignee = payload.assignee
+    db.commit()
+    db.refresh(mapping)
+
+    return MappingRead.model_validate(mapping)

@@ -6,8 +6,8 @@ This is Thư's zone. Stack: **FastAPI + PostgreSQL 18 (native local) + SQLAlchem
 
 1. **Create virtual environment:**
    ```bash
-   python -m venv venv
-   .\venv\Scripts\activate  # Windows
+   python -m venv .venv
+   .\.venv\Scripts\activate  # Windows
    ```
 
 2. **Install dependencies:**
@@ -30,6 +30,8 @@ This is Thư's zone. Stack: **FastAPI + PostgreSQL 18 (native local) + SQLAlchem
    uvicorn app.main:app --reload
    ```
    App runs at `http://localhost:8000` — visit `/docs` for interactive API docs, `/health` to check database connection.
+
+**Note:** Always use `.venv` (with leading dot) for the virtual environment name. When running backend tests or lint checks, use `.venv/Scripts/python` or activate `.venv` directly — do not create a new `venv` directory.
 
 ## 1. Before Writing Code
 
@@ -86,10 +88,10 @@ backend/
 
 ## 4. Checklist: Before Ending a Task
 
-- [ ] **Lint passes:** `ruff check app/`
-- [ ] **Format passes:** `black app/` (and check via `git diff` — don't commit style-only changes)
-- [ ] **Type hints:** New code has `def func(...) -> ReturnType:` where `ReturnType` is not `Any`. Run `mypy app/` if strict checking is on.
-- [ ] **Tests pass:** `pytest tests/` (if tests exist)
+- [ ] **Lint passes:** `.venv/Scripts/python -m ruff check app/`
+- [ ] **Format passes:** `.venv/Scripts/python -m black app/` (and check via `git diff` — don't commit style-only changes)
+- [ ] **Type hints:** New code has `def func(...) -> ReturnType:` where `ReturnType` is not `Any`. Run `.venv/Scripts/python -m mypy app/` if strict checking is on.
+- [ ] **Tests pass:** `.venv/Scripts/python -m pytest tests/` (if tests exist)
 - [ ] **App starts:** `uvicorn app.main:app --reload` runs without error
 - [ ] **Contract is correct:** Any new endpoint/field matches `../docs/api-contract.md` exactly
 - [ ] **No dead code:** Remove unused imports, commented-out code, temp `print()` statements
