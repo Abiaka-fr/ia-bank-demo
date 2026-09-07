@@ -29,7 +29,10 @@ describe("EvidenceCard", () => {
   it("ne traduit pas l'extrait et le marque dans sa langue d'origine", () => {
     renderWithProviders(<EvidenceCard evidence={englishEvidence} />);
 
+    // L'extrait est rendu ligne par ligne (mise en forme Markdown minimale) : `lang`
+    // reste porté par le conteneur (`<blockquote>`), pas par le nœud de texte le plus
+    // profond — on vérifie donc le plus proche ancêtre porteur de l'attribut.
     const quote = screen.getByText(englishEvidence.excerpt);
-    expect(quote).toHaveAttribute("lang", "en");
+    expect(quote.closest("[lang]")).toHaveAttribute("lang", "en");
   });
 });

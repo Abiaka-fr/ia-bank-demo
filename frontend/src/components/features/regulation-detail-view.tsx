@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl";
 import { AssigneeName } from "@/components/features/assignee-select";
 import { DocumentStatusBadge } from "@/components/features/document-status-badge";
 import { FindingsActionsTable } from "@/components/features/findings-actions-table";
+import { MarkdownLine } from "@/components/features/markdown-line";
+import { RegulationHistoryTab } from "@/components/features/regulation-history-tab";
 import {
   EmptyState,
   ErrorState,
@@ -18,6 +20,9 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchFindingsByRegulation } from "@/lib/api/findings";
+import { ReviewProgressBar } from "@/components/features/review-progress";
+import { useRegulationTab } from "@/lib/use-regulation-tab";
+import { humanStatusValues } from "@/lib/assessment";
 import { queryKeys } from "@/lib/api/query-keys";
 import {
   fetchRegulation,
@@ -29,6 +34,7 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
   const common = useTranslations("common");
   const assigneeT = useTranslations("assignee");
   const actionsT = useTranslations("actions");
+  const historyT = useTranslations("history");
 
   const regulationQuery = useQuery({
     queryKey: queryKeys.regulation(regulationId),
@@ -45,6 +51,13 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
     queryFn: () => fetchFindingsByRegulation(regulationId),
   });
 
+  // Le backend réel ne renseigne jamais `status: ANALYZED` (voir
+  // docs/backend-integration.md — aucun champ d'avancement d'analyse côté serveur) :
+  // se fier à la présence de vraies exigences plutôt qu'à ce champ pour décider si
+  // l'onglet « Vue d'ensemble » a quelque chose à montrer.
+  const hasAnalysisData = (requirementsQuery.data?.length ?? 0) > 0;
+  const { tab, focus, setTab } = useRegulationTab(hasAnalysisData ? "overview" : "source");
+
   if (regulationQuery.isPending) return <LoadingState rows={5} />;
   if (regulationQuery.isError) {
     return (
@@ -58,7 +71,12 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
   const regulation = regulationQuery.data;
   const requirements = requirementsQuery.data ?? [];
   const findings = findingsQuery.data ?? [];
-  const isAnalyzed = regulation.status === "ANALYZED";
+
+  const reviewCounts = humanStatusValues.map((human_status) => ({
+    human_status,
+    count: findings.filter((finding) => finding.human_status === human_status)
+      .length,
+  }));
 
   return (
     <div className="space-y-6">
@@ -71,7 +89,10 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
         <Badge variant="secondary" className="font-mono text-[11px]">
           {regulation.document_id}
         </Badge>
-        <DocumentStatusBadge status={regulation.status} />
+        {/* Le badge de statut ne s'affiche que là où il n'y a encore rien à traiter :
+            dès qu'il existe des constats, la barre de progression ci-dessous (même
+            condition, `findings.length`) prend le relais. */}
+        {findings.length === 0 ? <DocumentStatusBadge status={regulation.status} /> : null}
         {regulation.domain.map((domain) => (
           <Badge key={domain} variant="outline" className="text-[11px]">
             {domain}
@@ -89,7 +110,11 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
         </span>
       </div>
 
-      <Tabs defaultValue={isAnalyzed ? "overview" : "source"}>
+      {findings.length ? (
+        <ReviewProgressBar counts={reviewCounts} className="max-w-xl" />
+      ) : null}
+
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="overview">{t("tabOverview")}</TabsTrigger>
           <TabsTrigger value="requirements">
@@ -99,10 +124,11 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
             {actionsT("tabLabel")} ({findings.length})
           </TabsTrigger>
           <TabsTrigger value="source">{t("sourceText")}</TabsTrigger>
+          <TabsTrigger value="history">{historyT("tabLabel")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
-          {isAnalyzed ? (
+          {hasAnalysisData ? (
             <RegulationOverviewTab regulationId={regulationId} />
           ) : (
             <EmptyState message={t("requirementsEmpty")} />
@@ -115,7 +141,11 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
           ) : requirements.length === 0 ? (
             <EmptyState message={t("requirementsEmpty")} />
           ) : (
-            <RequirementsTab requirements={requirements} findings={findings} />
+            <RequirementsTab
+              requirements={requirements}
+              findings={findings}
+              regulationId={regulationId}
+            />
           )}
         </TabsContent>
 
@@ -129,23 +159,30 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
               findings={findings}
               requirements={requirements}
               regulationId={regulationId}
+              focus={focus}
             />
           )}
         </TabsContent>
 
         <TabsContent value="source" className="mt-4">
           {regulation.extracted_text ? (
-            <ScrollArea className="h-[32rem] rounded-lg border">
-              <pre
+            <ScrollArea className="h-[calc(100svh-22rem)] min-h-80 rounded-lg border">
+              <div
                 lang={regulation.language.toLowerCase()}
-                className="whitespace-pre-wrap p-4 font-sans text-sm leading-relaxed"
+                className="space-y-2 p-4 text-sm leading-relaxed"
               >
-                {regulation.extracted_text}
-              </pre>
+                {regulation.extracted_text.split("\n").map((line, index) => (
+                  <MarkdownLine key={index} text={line} />
+                ))}
+              </div>
             </ScrollArea>
           ) : (
             <EmptyState message={t("noExtractedText")} />
           )}
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-4">
+          <RegulationHistoryTab regulationId={regulationId} />
         </TabsContent>
       </Tabs>
     </div>

@@ -10,14 +10,20 @@ import { requirements } from "./data/requirements";
 import { DEMO_PASSWORD, findUserByEmail, users } from "./data/users";
 import {
   addRegulation,
+  appendHistoryEntry,
   applyValidation,
   findFinding,
   findRegulation,
   listFindings,
+  listHistory,
   listRegulations,
   updateRegulationAssignee,
 } from "./store";
-import { buildDashboardSummary, buildPortfolioSummary } from "./summary";
+import {
+  buildDashboardSummary,
+  buildPortfolioSummary,
+  buildRegulationMap,
+} from "./summary";
 import { validateFindingBodySchema, type DocumentDetail } from "@/types/api";
 
 /** Latence simulée : rend visibles les états de chargement pendant la démo. */
@@ -194,7 +200,33 @@ export const handlers = [
 
     const updated = applyValidation(findingId, parsed.data);
     if (!updated) return notFound(`Constat ${findingId} inconnu`);
+
+    // PENDING n'est jamais journalisé : ce n'est pas une décision, c'est
+    // l'absence d'une (ex. remise à zéro, si un jour l'UI le permet).
+    if (updated.human_status !== "PENDING") {
+      const requirement = requirements.find(
+        (candidate) => candidate.requirement_id === updated.requirement_id,
+      );
+      if (requirement) {
+        appendHistoryEntry({
+          regulation_id: requirement.source_document_id,
+          requirement_id: updated.requirement_id,
+          finding_id: updated.finding_id,
+          procedure_id: updated.procedure_id,
+          action: updated.human_status,
+          actor_id: parsed.data.actor_id,
+          custom_action: parsed.data.custom_action,
+          reviewer_comment: parsed.data.reviewer_comment,
+        });
+      }
+    }
+
     return HttpResponse.json(updated);
+  }),
+
+  http.get("/api/regulations/:id/history", async ({ params }) => {
+    await delay();
+    return HttpResponse.json(listHistory(String(params.id)));
   }),
 
   // --- Dashboard ----------------------------------------------------------
@@ -203,6 +235,17 @@ export const handlers = [
     await delay();
     return HttpResponse.json(
       buildPortfolioSummary(
+        listRegulations().map(toMeta),
+        requirementsForRegulation,
+        findingsForRegulation,
+      ),
+    );
+  }),
+
+  http.get("/api/dashboard/map", async () => {
+    await delay();
+    return HttpResponse.json(
+      buildRegulationMap(
         listRegulations().map(toMeta),
         requirementsForRegulation,
         findingsForRegulation,

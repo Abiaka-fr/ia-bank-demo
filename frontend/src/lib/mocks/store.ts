@@ -11,8 +11,10 @@
 import { z } from "zod";
 
 import {
+  auditHistoryEntrySchema,
   documentDetailSchema,
   findingSchema,
+  type AuditHistoryEntry,
   type DocumentDetail,
   type Finding,
   type ValidateFindingBody,
@@ -23,6 +25,7 @@ import { seedFindings } from "./data/findings";
 
 const FINDINGS_KEY = "ia-bank.mock-findings";
 const REGULATIONS_KEY = "ia-bank.mock-regulations";
+const HISTORY_KEY = "ia-bank.mock-history";
 
 function read<T>(key: string, schema: z.ZodType<T>): T | null {
   if (typeof window === "undefined") return null;
@@ -51,6 +54,9 @@ let findings: readonly Finding[] =
 
 let regulations: readonly DocumentDetail[] =
   read(REGULATIONS_KEY, z.array(documentDetailSchema)) ?? seedRegulations;
+
+let history: readonly AuditHistoryEntry[] =
+  read(HISTORY_KEY, z.array(auditHistoryEntrySchema)) ?? [];
 
 // --- Constats -------------------------------------------------------------
 
@@ -85,6 +91,33 @@ export function applyValidation(
   write(FINDINGS_KEY, findings);
 
   return updated;
+}
+
+// --- Historique -------------------------------------------------------------
+
+/**
+ * Une entrée par décision humaine (Accepter / Rejeter / Escalader) — jamais pour
+ * `PENDING`, qui est l'absence de décision. `regulationId` est fourni par
+ * l'appelant (le handler MSW, qui connaît déjà l'exigence liée au constat) plutôt
+ * que recalculé ici : ce module ne connaît pas le corpus des exigences.
+ */
+export function appendHistoryEntry(
+  entry: Omit<AuditHistoryEntry, "entry_id" | "created_at">,
+): AuditHistoryEntry {
+  const created: AuditHistoryEntry = {
+    ...entry,
+    entry_id: `AUD-${Date.now()}-${Math.round(Math.random() * 1000)}`,
+    created_at: new Date().toISOString(),
+  };
+
+  history = [created, ...history];
+  write(HISTORY_KEY, history);
+  return created;
+}
+
+/** Plus récent en premier — c'est un journal, pas une liste à trier par l'écran. */
+export function listHistory(regulationId: string): readonly AuditHistoryEntry[] {
+  return history.filter((entry) => entry.regulation_id === regulationId);
 }
 
 // --- Régulations ----------------------------------------------------------
@@ -122,10 +155,12 @@ export function updateRegulationAssignee(
 export function resetStore(): void {
   findings = seedFindings;
   regulations = seedRegulations;
+  history = [];
   if (typeof window === "undefined") return;
   try {
     window.sessionStorage.removeItem(FINDINGS_KEY);
     window.sessionStorage.removeItem(REGULATIONS_KEY);
+    window.sessionStorage.removeItem(HISTORY_KEY);
   } catch {
     // Rien à nettoyer si le stockage est indisponible.
   }

@@ -13,6 +13,10 @@ import { useTranslations } from "next-intl";
 import { AssessmentChart } from "@/components/features/assessment-chart";
 import { DomainChart } from "@/components/features/domain-chart";
 import { KpiCard } from "@/components/features/kpi-card";
+import {
+  MindmapLegend,
+  RegulationMindmap,
+} from "@/components/features/regulation-mindmap";
 import { ErrorState, LoadingState } from "@/components/features/query-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchDashboardSummary } from "@/lib/api/dashboard";
@@ -21,6 +25,7 @@ import { queryKeys } from "@/lib/api/query-keys";
 /** Onglet « Vue d'ensemble » — les KPI d'UNE régulation (ancien écran Dashboard). */
 export function RegulationOverviewTab({ regulationId }: { regulationId: string }) {
   const t = useTranslations("dashboard");
+  const mindmapT = useTranslations("mindmap");
 
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.dashboardSummary(regulationId),
@@ -81,6 +86,20 @@ export function RegulationOverviewTab({ regulationId }: { regulationId: string }
           </CardContent>
         </Card>
       </div>
+
+      {/* Réutilise le même composant que le tableau de bord d'accueil, filtré sur
+          cette seule régulation — jamais de carte mentale dupliquée
+          (frontend/CLAUDE.md § anti-duplication). */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{mindmapT("title")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{mindmapT("subtitle")}</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <RegulationMindmap regulationId={regulationId} />
+          <MindmapLegend />
+        </CardContent>
+      </Card>
     </div>
   );
 }

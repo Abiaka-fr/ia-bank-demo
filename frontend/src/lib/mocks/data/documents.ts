@@ -9,7 +9,6 @@
 import { documentMetaSchema, type DocumentDetail, type DocumentMeta } from "@/types/api";
 
 export const ACPR_REGULATION_ID = "REG-ACPR-2026-04";
-export const EBA_REGULATION_ID = "REG-EBA-GL-2026-03";
 
 const acprExtractedText = `Instruction ACPR n° 2026-04 — Mesures de vigilance en matière de connaissance de la clientèle et de lutte contre le blanchiment de capitaux et le financement du terrorisme.
 
@@ -90,7 +89,7 @@ export const regulations: readonly DocumentDetail[] = [
     extracted_text: acprExtractedText,
   },
   {
-    document_id: EBA_REGULATION_ID,
+    document_id: "REG-EBA-GL-2026-03",
     title:
       "EBA/GL/2026/03 — Customer Risk Classification, EDD and Wire Transfer Information",
     document_type: "REGULATION",
@@ -131,7 +130,8 @@ const procedureSeeds: readonly ProcedureSeed[] = [
 3. Un seul justificatif de domicile (actuel ou permanent) est exigé à l'ouverture du compte ou lors d'une mise à jour périodique. En cas de changement d'adresse, le client dispose d'un délai de six mois pour transmettre un nouveau justificatif.
 4. À défaut de justificatif correspondant à l'adresse de résidence effective, une déclaration d'adresse de correspondance est recueillie ; celle-ci est confirmée par une méthode de confirmation positive.
 5. L'identité doit être vérifiée pour : (i) le titulaire du compte, (ii) le ou les bénéficiaires effectifs, (iii) les mandataires et signataires autorisés, et (iv) tout intermédiaire agissant pour le compte du client.
-6. Un identifiant client unique (UCIC) est attribué à chaque client.`,
+6. Un identifiant client unique (UCIC) est attribué à chaque client afin de centraliser le suivi de la relation et des transactions associées.
+7. Le transfert d'un compte d'une agence à une autre au sein de la Banque ne nécessite pas de nouvelle collecte de justificatif de domicile, sous réserve d'une auto-déclaration du client relative à son adresse actuelle.`,
   },
   {
     id: "KYC-002",
@@ -141,8 +141,10 @@ const procedureSeeds: readonly ProcedureSeed[] = [
     effective_date: "2023-03-15",
     owner: "IA Bank - Direction Conformité",
     text: `1. La Banque n'ouvre ni ne maintient de compte anonyme, de compte sous nom fictif, ou de compte pour le compte d'un tiers dont l'identité n'a pas été divulguée ou ne peut être vérifiée.
+2. L'ouverture de compte pour le compte d'un client par un intermédiaire professionnel (avocat, expert-comptable, etc.) est refusée lorsque cet intermédiaire invoque une obligation de confidentialité l'empêchant de révéler l'identité réelle du titulaire ou du bénéficiaire des fonds.
 3. Préalablement à l'ouverture, des contrôles sont réalisés afin de s'assurer que l'identité du client ne correspond à aucune personne recensée pour antécédents criminels ou figurant sur une liste d'entités visées par des mesures restrictives (cf. procédure SAN-001).
-4. Chaque client est classé dans une catégorie de risque — Faible, Moyen ou Élevé.
+4. Chaque client est classé dans une catégorie de risque — Faible, Moyen ou Élevé — sur la base de critères tels que la nature de l'activité, la localisation géographique, et le profil social et financier.
+5. Un profil est constitué pour chaque nouveau client, incluant son identité, son statut social et financier, la nature de son activité et, le cas échéant, les informations relatives à sa propre clientèle et à sa localisation. Seules les informations pertinentes au regard de la catégorie de risque sont sollicitées.
 6. La Banque n'ouvre pas de compte lorsqu'elle n'est pas en mesure d'appliquer les mesures de vigilance appropriées, notamment en cas de non-coopération du client ou de non-fiabilité des informations fournies.`,
   },
   {
@@ -152,7 +154,8 @@ const procedureSeeds: readonly ProcedureSeed[] = [
     version: "1.4",
     effective_date: "2024-01-10",
     owner: "IA Bank - Direction Conformité",
-    text: `2. Pour les personnes morales, la Banque identifie toute personne physique détenant, directement ou indirectement, plus de 25 % du capital ou des droits de vote, ou exerçant par tout autre moyen un pouvoir de contrôle.
+    text: `1. Le bénéficiaire effectif s'entend de toute personne physique qui, en dernier ressort, possède ou contrôle le client, ou pour le compte de laquelle une transaction est exécutée.
+2. Pour les personnes morales, la Banque identifie toute personne physique détenant, directement ou indirectement, plus de 25 % du capital ou des droits de vote, ou exerçant par tout autre moyen un pouvoir de contrôle.
 3. À défaut d'identification d'une personne physique répondant à ces critères, la personne physique occupant la fonction de dirigeant principal est considérée comme bénéficiaire effectif par défaut.
 4. L'identité du ou des bénéficiaires effectifs est vérifiée au moyen de documents, données ou informations issus d'une source fiable et indépendante, dans les mêmes conditions que pour le client lui-même.
 5. La vérification du ou des bénéficiaires effectifs est renouvelée lors de toute mise à jour périodique du dossier KYC du client, selon la fréquence applicable définie en KYC-004.`,
@@ -166,7 +169,9 @@ const procedureSeeds: readonly ProcedureSeed[] = [
     owner: "IA Bank - Direction Conformité",
     text: `1. La Banque procède à la mise à jour périodique du dossier de connaissance client (KYC) selon la fréquence suivante, fonction de la catégorie de risque : tous les deux (2) ans pour les clients à risque élevé, tous les huit (8) ans pour les clients à risque moyen, et tous les dix (10) ans pour les clients à risque faible.
 2. La révision périodique comprend la confirmation de l'identité, de l'adresse, et de tout autre élément jugé raisonnablement nécessaire au regard du profil de risque du client.
-4. Les délais mentionnés au point 1 courent à compter de la date d'ouverture du compte ou de la date de la dernière vérification KYC effectuée.`,
+3. Pour les clients classés à risque faible, en l'absence de changement de situation, une auto-certification du client peut se substituer à la production de nouveaux justificatifs.
+4. Les délais mentionnés au point 1 courent à compter de la date d'ouverture du compte ou de la date de la dernière vérification KYC effectuée.
+5. La présente procédure s'applique à l'ensemble des clients existants, selon une approche fondée sur le risque et la matérialité.`,
   },
   {
     id: "KYC-005",
@@ -175,8 +180,10 @@ const procedureSeeds: readonly ProcedureSeed[] = [
     version: "1.2",
     effective_date: "2023-06-01",
     owner: "IA Bank - Direction Conformité",
-    text: `1. Une diligence renforcée est appliquée à tout client classé en catégorie de risque élevé.
+    text: `1. Une diligence renforcée est appliquée à tout client classé en catégorie de risque élevé, ainsi qu'à toute relation présentant des facteurs de risque particuliers liés au produit, à la zone géographique ou au canal de distribution.
+2. La classification du risque repose sur les paramètres définis dans la procédure AML-001.
 3. Pour les clients à haut risque, la Banque recueille des informations complémentaires relatives à l'origine des fonds, au patrimoine du client, et à la justification économique de la relation d'affaires.
+4. La revue du dossier des clients à haut risque est réalisée selon la fréquence définie en KYC-004.
 5. Toute relation présentant un profil de risque élevé fait l'objet d'une validation par un responsable habilité avant l'entrée en relation.`,
   },
   {
@@ -187,7 +194,9 @@ const procedureSeeds: readonly ProcedureSeed[] = [
     effective_date: "2023-06-01",
     owner: "IA Bank - Direction Conformité",
     text: `1. Le niveau de risque de chaque client est déterminé sur la base des paramètres suivants : code produit, code pays, type de client, mode de fonctionnement du compte, origine des fonds, profession, patrimoine net, statut du compte, chiffre d'affaires mensuel moyen, antécédents de déclaration de soupçon.
-3. La classification de risque est révisée à une fréquence au moins semestrielle.`,
+2. Chaque client est classé Faible, Moyen ou Élevé sur la base d'une évaluation individuelle, et non uniquement en fonction d'une catégorie ou d'un groupe de clients (non-résidents, négociants en métaux précieux, clients fortunés, etc.).
+3. La classification de risque est révisée à une fréquence au moins semestrielle.
+4. Le risque associé à un client correspond au niveau de risque le plus élevé constaté parmi l'ensemble de ses comptes.`,
   },
   {
     id: "AML-002",
@@ -197,7 +206,10 @@ const procedureSeeds: readonly ProcedureSeed[] = [
     effective_date: "2023-06-01",
     owner: "IA Bank - Direction Conformité",
     text: `1. La Banque exerce une surveillance continue des opérations afin de détecter toute transaction s'écartant du profil habituel du client.
-3. Des seuils d'alerte sont définis par catégorie de compte ; toute opération dépassant ces seuils fait l'objet d'un examen approfondi.`,
+2. Une attention particulière est portée aux opérations complexes, aux montants inhabituellement élevés, et aux schémas ne présentant pas de justification économique ou licite apparente.
+3. Des seuils d'alerte sont définis par catégorie de compte ; toute opération dépassant ces seuils fait l'objet d'un examen approfondi.
+4. Les comptes classés à risque élevé font l'objet d'une surveillance renforcée, tenant compte du pays d'origine, de l'origine des fonds et du type d'opérations concernées.
+5. La revue de la classification du risque des comptes est réalisée à une fréquence au moins semestrielle, en coordination avec la procédure AML-001.`,
   },
   {
     id: "AML-003",
@@ -207,7 +219,9 @@ const procedureSeeds: readonly ProcedureSeed[] = [
     effective_date: "2023-06-01",
     owner: "IA Bank - Responsable Conformité (RCCI)",
     text: `1. Toute opération suspectée de constituer le produit d'une infraction, ou de participer au financement du terrorisme, fait l'objet d'une déclaration de soupçon (DS) auprès de Tracfin.
-2. L'alerte est initialement analysée par l'agence ou le service concerné, puis transmise au Responsable de la Conformité pour décision finale.`,
+2. L'alerte est initialement analysée par l'agence ou le service concerné, puis transmise au Responsable de la Conformité pour décision finale sur l'opportunité de déclarer.
+3. La procédure de déclaration est confidentielle : aucune information relative à l'existence ou au contenu d'une déclaration de soupçon ne doit être communiquée au client concerné.
+4. Un registre des alertes traitées, incluant la décision motivée de déclarer ou non, est conservé conformément aux règles de conservation documentaire en vigueur.`,
   },
   {
     id: "SAN-001",
@@ -217,7 +231,8 @@ const procedureSeeds: readonly ProcedureSeed[] = [
     effective_date: "2023-06-01",
     owner: "IA Bank - Direction Conformité",
     text: `1. La Banque met à jour, sur une base au moins quotidienne, la liste consolidée des personnes et entités faisant l'objet de mesures de gel des avoirs.
-2. Avant toute ouverture de compte, il est vérifié que l'identité du client ne figure pas sur ces listes.
+2. Avant toute ouverture de compte, il est vérifié que l'identité du client ne figure pas sur ces listes. L'ensemble du portefeuille de comptes existants fait l'objet d'un criblage périodique contre ces mêmes listes.
+3. Toute correspondance identifiée entre un client et une personne ou entité listée est immédiatement signalée au Responsable de la Conformité et, le cas échéant, aux autorités compétentes.
 4. La Banque applique des mesures de vigilance renforcée aux clients identifiés comme Personnes Politiquement Exposées (PPE) de nationalité étrangère, incluant la détermination de l'origine du patrimoine et l'approbation de la direction avant l'entrée en relation.`,
   },
   {
@@ -240,7 +255,8 @@ const procedureSeeds: readonly ProcedureSeed[] = [
     effective_date: "2023-06-01",
     owner: "IA Bank - Direction des Opérations",
     text: `1. La Banque veille à ce que les virements électroniques ne puissent être utilisés par des auteurs d'infractions pour transférer des fonds de manière anonyme.
-2. La Banque se tient prête à fournir, sur demande des autorités compétentes, les informations de base relatives au donneur d'ordre d'un virement.`,
+2. La Banque se tient prête à fournir, sur demande des autorités compétentes, les informations de base relatives au donneur d'ordre d'un virement, aux fins d'enquête ou de poursuite.
+3. Les informations relatives au donneur d'ordre collectées sont conservées conformément aux règles générales de conservation documentaire de la Banque.`,
   },
   {
     id: "CTRL-001",
@@ -251,7 +267,9 @@ const procedureSeeds: readonly ProcedureSeed[] = [
     owner: "IA Bank - Direction Conformité / Inspection Générale",
     text: `1. Le Conseil d'administration s'assure de la mise en place d'un dispositif KYC/LCB-FT effectif, incluant une supervision appropriée, une séparation des tâches, et un programme de formation continue du personnel.
 2. Le Département Inspection réalise des contrôles indépendants de l'application des procédures KYC/AML au sein des agences et services.
-4. Un bilan de conformité KYC/AML est présenté au Comité d'Audit du Conseil d'administration à une fréquence trimestrielle.`,
+3. Les anomalies constatées par les auditeurs internes ou permanents sont portées à la connaissance du Responsable de la Conformité.
+4. Un bilan de conformité KYC/AML est présenté au Comité d'Audit du Conseil d'administration à une fréquence trimestrielle.
+5. Le Responsable de la Conformité désigné assure la coordination de la mise en œuvre du dispositif KYC/AML. Le Dirigeant Effectif désigné est responsable de la conformité globale aux obligations légales et réglementaires applicables.`,
   },
 ];
 

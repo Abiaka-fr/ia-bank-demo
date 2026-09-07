@@ -40,7 +40,3 @@ export function findUserByEmail(email: string): User | undefined {
   const normalized = email.trim().toLowerCase();
   return users.find((user) => user.email.toLowerCase() === normalized);
 }
-
-export function findUserById(userId: string): User | undefined {
-  return users.find((user) => user.user_id === userId);
-}

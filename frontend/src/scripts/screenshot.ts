@@ -36,6 +36,16 @@ const routes: readonly Route[] = [
     path: `/fr/regulations/${ACPR_ID}`,
     tab: "Exigences extraites",
   },
+  // Mise en avant venue de la carte mentale : REQ-005 touche deux procédures,
+  // les deux lignes doivent ressortir.
+  {
+    name: "fr-focus-requirement",
+    path: `/fr/regulations/${ACPR_ID}?tab=actions&focus=REQ-005`,
+  },
+  {
+    name: "fr-regulation-source",
+    path: `/fr/regulations/${ACPR_ID}?tab=source`,
+  },
   { name: "fr-copilot", path: "/fr/copilot" },
   { name: "en-dashboard", path: "/en/dashboard" },
   { name: "en-regulations", path: "/en/regulations" },
@@ -77,6 +87,26 @@ async function capture(page: Page, route: Route) {
   console.log(`✓ ${route.name} — ${route.path}${route.tab ? ` (${route.tab})` : ""}`);
 }
 
+/**
+ * La fenêtre de procédure ne s'atteint que par interaction : on la capture à part
+ * pour qu'elle reste couverte par la boucle de vérification visuelle.
+ */
+async function captureProcedureDialog(page: Page) {
+  await page.goto(`${BASE_URL}/fr/regulations/${ACPR_ID}`, {
+    waitUntil: "networkidle",
+  });
+  await page.getByRole("tab", { name: /Analyse d'impact/ }).click();
+  await page.waitForTimeout(SETTLE_MS);
+  await page.getByRole("button", { name: "REQ-003" }).click();
+  await page.waitForTimeout(600);
+  await page.getByRole("button", { name: /Ouvrir la procédure KYC-004/ }).click();
+  await page.waitForTimeout(SETTLE_MS);
+  await page.screenshot({
+    path: path.join(OUTPUT_DIR, "fr-procedure-dialog.png"),
+  });
+  console.log("✓ fr-procedure-dialog — fenêtre procédure, passage cité surligné");
+}
+
 async function main() {
   await mkdir(OUTPUT_DIR, { recursive: true });
 
@@ -93,6 +123,7 @@ async function main() {
     for (const route of routes) {
       await capture(page, route);
     }
+    await captureProcedureDialog(page);
   } finally {
     await browser.close();
   }

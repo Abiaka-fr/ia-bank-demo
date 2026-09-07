@@ -57,7 +57,7 @@ export const assessmentColorVar: Record<Assessment, string> = {
  * Palette catégorielle des graphiques (8 slots, ordre figé).
  * Distincte des couleurs de statut, volontairement.
  */
-export const categoricalColorVars = [
+const categoricalColorVars = [
   "var(--cat-1)",
   "var(--cat-2)",
   "var(--cat-3)",

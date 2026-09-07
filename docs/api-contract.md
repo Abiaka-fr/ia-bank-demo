@@ -19,6 +19,27 @@ section 12) et le "Shared Interface Contract" (section 16.4).
 >    (`assignee_id` sur une régulation et sur un constat escaladé).
 > 4. Ajout de `GET /api/dashboard/overview` : agrégats sur **toutes** les régulations.
 > 5. `POST /api/regulations` prend un `assignee_id` ; ajout de `PATCH /api/regulations/:id`.
+>
+> **v1.2 — proposition du 2026-09-04 (même revue).**
+> 6. `by_human_status` sur `RegulationSummary` et `DashboardSummary` : répartition des constats par
+>    décision humaine (`PENDING` / `ACCEPTED` / `REJECTED` / `ESCALATED`). L'UI affiche une
+>    progression de traitement — `status` ne décrit que l'avancement de l'analyse automatique,
+>    pas celui de la revue humaine, ce qui prêtait à confusion.
+> 7. `GET /api/dashboard/map` : arborescence Régulation → Exigence → Procédure alimentant la carte
+>    mentale du tableau de bord.
+>
+> **v1.3 — proposition du 2026-09-07 (revue Giang, onglet Historique).**
+> 8. `POST /api/findings/:id/validate` gagne un champ `actor_id` **requis** : qui prend la
+>    décision. Nécessaire pour l'historique (point suivant) — jusqu'ici, rien ne permettait de
+>    savoir qui avait validé un constat.
+> 9. Ajout de `GET /api/regulations/:id/history` → `AuditHistoryEntry[]` : une entrée par décision
+>    humaine (Accepter / Rejeter / Escalader) prise sur un constat de la régulation. `PENDING`
+>    n'est jamais journalisé — ce n'est pas une décision, c'est l'absence d'une.
+> 10. Les agrégats de portefeuille (`PortfolioSummary.potential_gaps`, `.expert_reviews_required`,
+>     `.by_domain`, `.by_assessment`, et les mêmes champs par régulation dans `RegulationSummary`)
+>     ne portent plus que sur les constats **encore en attente** — un constat déjà tranché ne doit
+>     plus gonfler "ce qu'il reste à faire". `requirements_identified` et `regulations_total`
+>     restent des compteurs de périmètre, non affectés.
 
 ## Conventions générales
 
@@ -107,6 +128,21 @@ interface Finding {
   updated_at: string;
 }
 
+// v1.3 — une décision humaine journalisée (onglet « Historique »). PENDING n'apparaît
+// jamais ici : ce n'est pas une décision, c'est l'absence d'une.
+interface AuditHistoryEntry {
+  entry_id: string;
+  regulation_id: string;
+  requirement_id: string;
+  finding_id: string;
+  procedure_id: string | null;
+  action: "ACCEPTED" | "REJECTED" | "ESCALATED";
+  actor_id: string;                      // User.user_id — qui a pris la décision
+  custom_action?: string;
+  reviewer_comment?: string;
+  created_at: string;                    // ISO 8601
+}
+
 // Agrégats d'UNE régulation (écran de détail d'une régulation).
 interface DashboardSummary {
   requirements_identified: number;
@@ -115,6 +151,7 @@ interface DashboardSummary {
   expert_reviews_required: number;
   actions_pending: number;
   actions_total: number;                 // v1.1 — pour afficher "3 / 11 traités"
+  by_human_status: { human_status: HumanStatus; count: number }[]; // v1.2
   by_domain: { domain: string; count: number }[];
   by_assessment: { assessment: Assessment; count: number }[];
   top_priority_findings: Finding[];
@@ -133,9 +170,35 @@ interface RegulationSummary {
   expert_reviews_required: number;
   actions_pending: number;
   actions_total: number;
+  // v1.2 — répartition des constats par décision humaine, pour afficher une
+  // progression de traitement plutôt qu'un simple statut d'analyse.
+  by_human_status: { human_status: HumanStatus; count: number }[];
   // Personnes à qui un constat a été confié lors d'une escalade, lorsqu'elles
   // diffèrent de `assignee_id`. Affiché sur la carte de la régulation.
   escalated_assignee_ids: string[];
+}
+
+// v1.2 — arborescence Régulation → Exigence → Procédure, pour la carte mentale
+// du tableau de bord. Chaque nœud porte de quoi construire un lien de navigation.
+interface RegulationMapProcedure {
+  finding_id: string;
+  procedure_id: string | null;
+  assessment: Assessment;
+  human_status: HumanStatus;
+}
+
+interface RegulationMapRequirement {
+  requirement_id: string;
+  source_reference: string;
+  normalized_requirement: string;
+  procedures: RegulationMapProcedure[];
+}
+
+interface RegulationMapNode {
+  regulation_id: string;
+  title: string;
+  status: DocumentMeta["status"];
+  requirements: RegulationMapRequirement[];
 }
 
 interface PortfolioSummary {
@@ -174,13 +237,20 @@ n'est pas toujours conservé dans la partie multipart. Le backend valide l'exten
 |---|---|---|---|
 | GET | `/api/requirements/:id/findings` | Constats pour une exigence donnée | `Finding[]` |
 | GET | `/api/findings?regulation_id=...` | Tous les constats d'une régulation (pour la table Impact Analysis) | `Finding[]` |
-| POST | `/api/findings/:id/validate` | v1.1 — Valider un constat — body `{ human_status, custom_action?, reviewer_comment?, assignee_id? }` | `Finding` (mis à jour) |
+| POST | `/api/findings/:id/validate` | v1.3 — Valider un constat — body `{ human_status, custom_action?, reviewer_comment?, assignee_id?, actor_id }` (`actor_id` requis depuis v1.3) | `Finding` (mis à jour) |
+
+### Historique (v1.3)
+
+| Méthode | Route | Description | Réponse |
+|---|---|---|---|
+| GET | `/api/regulations/:id/history` | v1.3 — Décisions humaines prises sur les constats de la régulation, la plus récente en premier | `AuditHistoryEntry[]` |
 
 ### Dashboard
 
 | Méthode | Route | Description | Réponse |
 |---|---|---|---|
 | GET | `/api/dashboard/overview` | v1.1 — Agrégats sur toutes les régulations (écran d'accueil + cartes) | `PortfolioSummary` |
+| GET | `/api/dashboard/map` | v1.2 — Arborescence Régulation → Exigence → Procédure (carte mentale) | `RegulationMapNode[]` |
 | GET | `/api/dashboard/summary?regulation_id=...` | Agrégats KPI d'une régulation (écran de détail) | `DashboardSummary` |
 
 ### Procédures internes (lecture seule côté frontend)

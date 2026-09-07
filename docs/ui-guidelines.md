@@ -73,6 +73,36 @@ Note : le slot 7 (violet) est intentionnellement la même teinte que `EXPERT_REV
 graphique catégoriel affiche aussi une répartition par assessment, réutiliser directement les
 couleurs de statut ci-dessus plutôt que la palette catégorielle générique, pour rester cohérent.
 
+### Où la couleur a le droit d'apparaître (précisé en Phase 1)
+
+Trois familles, sans recouvrement :
+
+| Famille | Palette | Où |
+|---|---|---|
+| Statut d'évaluation (`assessment`) | les 5 teintes ci-dessus | badges de statut, barres du graphique « par statut », pastille des nœuds de la carte des impacts |
+| Séries de graphique / branches | palette catégorielle (8 slots) | « Exigences par domaine », liaisons de la carte des impacts |
+| Tout le reste | **niveaux de gris uniquement** (`foreground` avec opacité) | priorité, décision humaine (`human_status`), barre de progression de revue, statut d'analyse d'un document, ligne mise en avant après navigation |
+| Exception : force de la preuve (`confidence_or_evidence_strength`) | rouge/jaune/vert — mêmes variables que `assessment` (`--gap`/`--partial`/`--covered`), seuils à 40 % et 75 % | barre « Force de la preuve » (`evidence-strength.tsx`) |
+
+La troisième ligne est la plus facile à enfreindre : il est tentant de colorer une décision
+« Accepté » en vert. C'est interdit — le vert appartient à `COVERED`, et un même vert signifiant
+deux choses différentes rend l'écran illisible d'un coup d'œil. La progression de revue se
+distingue par des **niveaux de gris décroissants**, pas par des teintes.
+
+**Exception ajoutée le 2026-09-07** (demande explicite) : la force de la preuve est un second
+signal de *magnitude* (comme `assessment`, pas une catégorie comme la priorité ou la décision
+humaine) — un rouge/jaune/vert y a un sens équivalent (mauvais/moyen/bon), sans se confondre avec
+le vert de `COVERED` puisqu'il n'apparaît jamais au même endroit qu'un badge d'`assessment`.
+Réutilise les mêmes variables CSS plutôt que d'introduire une quatrième palette.
+
+### Progression de revue vs statut d'analyse
+
+`DocumentMeta.status` (`NOT_ANALYZED` / `ANALYZING` / `ANALYZED`) décrit l'avancement de l'analyse
+**automatique**. Il ne dit rien de l'avancement de la revue **humaine**. Les deux au même endroit
+prêtaient à confusion : dès qu'une régulation a des constats, la barre de progression de revue
+remplace le badge de statut d'analyse ; celui-ci ne subsiste que là où il n'y a encore rien à
+traiter.
+
 ### Règles de graphique (rappel court)
 
 - Un seul axe Y — jamais de double axe.
