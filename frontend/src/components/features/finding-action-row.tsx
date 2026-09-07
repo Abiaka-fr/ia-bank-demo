@@ -1,16 +1,19 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { cn } from "cn";
 import { ArrowUpCircle, Check, ChevronDown, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AssessmentBadge } from "@/components/features/assessment-badge";
 import { AssigneeSelect } from "@/components/features/assignee-select";
 import { EvidenceCard } from "@/components/features/evidence-card";
+import { EvidenceStrength } from "@/components/features/evidence-strength";
 import { HumanStatusBadge } from "@/components/features/human-status-badge";
 import { PriorityBadge } from "@/components/features/priority-badge";
+import { useSession } from "@/components/providers/session-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -31,17 +34,30 @@ export function FindingActionRow({
   finding,
   requirement,
   regulationId,
+  isFocused = false,
+  isFirstFocused = false,
 }: {
   finding: Finding;
   requirement: Requirement | undefined;
   regulationId: string;
+  /** Mise en avant après navigation depuis la carte mentale ou les exigences. */
+  isFocused?: boolean;
+  isFirstFocused?: boolean;
 }) {
   const t = useTranslations("actions");
   const statusLabels = useTranslations("humanStatus");
   const evidenceT = useTranslations("evidence");
   const queryClient = useQueryClient();
+  const { user } = useSession();
 
   const [isExpanded, setIsExpanded] = useState(false);
+  const rowRef = useRef<HTMLTableRowElement | null>(null);
+
+  useEffect(() => {
+    if (isFirstFocused) {
+      rowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, [isFirstFocused]);
   const [customAction, setCustomAction] = useState(finding.custom_action ?? "");
   const [assigneeId, setAssigneeId] = useState(finding.assignee_id);
 
@@ -51,6 +67,9 @@ export function FindingActionRow({
         human_status: humanStatus,
         custom_action: customAction.trim() || undefined,
         assignee_id: humanStatus === "ESCALATED" ? assigneeId : undefined,
+        // Toujours renseigné : la garde de session interdit d'atteindre cet écran
+        // sans utilisateur connecté.
+        actor_id: user?.user_id ?? "",
       }),
     onSuccess: async (updated) => {
       toast.success(t("saved"), {
@@ -64,6 +83,9 @@ export function FindingActionRow({
       });
       await queryClient.invalidateQueries({
         queryKey: queryKeys.portfolioSummary(),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.regulationHistory(regulationId),
       });
     },
     onError: () => toast.error(t("saveFailed")),
@@ -81,12 +103,28 @@ export function FindingActionRow({
 
   return (
     <>
-      <TableRow className="align-top">
-        <TableCell className="whitespace-normal py-3">
+      <TableRow
+        ref={rowRef}
+        className={cn(
+          "align-top scroll-mt-24",
+          // Teinte neutre : les couleurs de statut restent réservées à `assessment`.
+          isFocused && "bg-foreground/8 ring-1 ring-inset ring-foreground/25",
+        )}
+      >
+        <TableCell
+          className="cursor-pointer whitespace-normal py-3"
+          onClick={() => setIsExpanded((current) => !current)}
+        >
           <div className="flex flex-wrap items-center gap-1.5">
             <button
               type="button"
-              onClick={() => setIsExpanded((current) => !current)}
+              // Empêche le second déclenchement par le `onClick` de la cellule :
+              // sans lui, cliquer précisément sur le bouton basculerait deux fois
+              // (bouton, puis bulle jusqu'à la cellule) et annulerait l'action.
+              onClick={(event) => {
+                event.stopPropagation();
+                setIsExpanded((current) => !current);
+              }}
               aria-expanded={isExpanded}
               className="inline-flex items-center gap-1 rounded font-mono text-xs font-medium hover:underline"
             >
@@ -108,7 +146,10 @@ export function FindingActionRow({
           </p>
         </TableCell>
 
-        <TableCell className="whitespace-normal">
+        <TableCell
+          className="cursor-pointer whitespace-normal"
+          onClick={() => setIsExpanded((current) => !current)}
+        >
           {finding.procedure_id ? (
             <Badge variant="outline" className="font-mono text-[11px]">
               {finding.procedure_id}
@@ -121,7 +162,10 @@ export function FindingActionRow({
           </div>
         </TableCell>
 
-        <TableCell className="whitespace-normal">
+        <TableCell
+          className="cursor-pointer whitespace-normal"
+          onClick={() => setIsExpanded((current) => !current)}
+        >
           <p className="max-w-xs text-sm">{finding.recommended_action}</p>
         </TableCell>
 
@@ -203,6 +247,7 @@ export function FindingActionRow({
                     <EvidenceCard
                       key={`${evidence.document_id}-${evidence.section_reference}`}
                       evidence={evidence}
+                      openable
                     />
                   ))
                 ) : (
@@ -219,6 +264,12 @@ export function FindingActionRow({
                   {evidenceT("explanation")}
                 </h3>
                 <p className="text-sm leading-relaxed">{finding.explanation}</p>
+                <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                  {evidenceT("evidenceStrength")}
+                  <EvidenceStrength
+                    value={finding.confidence_or_evidence_strength}
+                  />
+                </p>
               </div>
               <div>
                 <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">

@@ -51,6 +51,7 @@ describe("validation d'un constat", () => {
     const updated = await validateFinding(target.finding_id, {
       human_status: "ESCALATED",
       reviewer_comment: "À arbitrer avec la Direction Conformité",
+      actor_id: "USR-001",
     });
 
     // Assert
@@ -68,7 +69,7 @@ describe("validation d'un constat", () => {
 
   it("renvoie une ApiError pour un constat inconnu", async () => {
     await expect(
-      validateFinding("FND-INCONNU", { human_status: "ACCEPTED" }),
+      validateFinding("FND-INCONNU", { human_status: "ACCEPTED", actor_id: "USR-001" }),
     ).rejects.toBeInstanceOf(ApiError);
   });
 });

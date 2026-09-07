@@ -1,32 +1,149 @@
 "use client";
 
+import { cn } from "cn";
+import { ChevronRight, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useMemo, useState } from "react";
 
 import { AssessmentBadge } from "@/components/features/assessment-badge";
+import { EmptyState } from "@/components/features/query-state";
+import { HumanStatusBadge } from "@/components/features/human-status-badge";
+import { ReviewProgressBar } from "@/components/features/review-progress";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Link } from "@/i18n/navigation";
+import { humanStatusValues } from "@/lib/assessment";
 import type { Finding, Requirement } from "@/types/api";
 
-/** Onglet « Exigences » : le texte source extrait, exigence par exigence. */
+const ALL_DOMAINS = "ALL";
+
+/**
+ * Onglet « Exigences » : le texte source extrait, exigence par exigence, avec l'état
+ * de traitement de ses constats. Recherche plein texte (identifiant, référence, texte
+ * normalisé et source) et filtre par domaine, en local sur les exigences déjà chargées.
+ * Cliquer sur une exigence ouvre l'onglet « Analyse d'impact » positionné sur ses lignes.
+ */
 export function RequirementsTab({
   requirements,
   findings,
+  regulationId,
 }: {
   requirements: readonly Requirement[];
   findings: readonly Finding[];
+  regulationId: string;
 }) {
   const t = useTranslations("regulations");
+  const actionsT = useTranslations("actions");
+
+  const [search, setSearch] = useState("");
+  const [domain, setDomain] = useState<string>(ALL_DOMAINS);
+
+  const domains = useMemo(
+    () =>
+      Array.from(
+        new Set(requirements.flatMap((requirement) => requirement.domain)),
+      ).sort((a, b) => a.localeCompare(b)),
+    [requirements],
+  );
+
+  const visibleRequirements = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return requirements.filter((requirement) => {
+      const matchesDomain =
+        domain === ALL_DOMAINS || requirement.domain.includes(domain);
+      const matchesQuery =
+        query === "" ||
+        [
+          requirement.requirement_id,
+          requirement.source_reference,
+          requirement.normalized_requirement,
+          requirement.source_text,
+        ].some((field) => field.toLowerCase().includes(query));
+      return matchesDomain && matchesQuery;
+    });
+  }, [requirements, search, domain]);
+
+  const hasActiveFilter = search.trim() !== "" || domain !== ALL_DOMAINS;
 
   return (
     <div className="space-y-3">
-      {requirements.map((requirement) => {
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full max-w-xs">
+          <Search
+            className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={t("searchPlaceholder")}
+            aria-label={t("searchPlaceholder")}
+            className="pl-8"
+          />
+        </div>
+
+        <Select value={domain} onValueChange={setDomain}>
+          <SelectTrigger size="sm" aria-label={t("filterDomain")} className="w-56">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_DOMAINS}>
+              {t("filterDomain")}: {t("filterAllDomains")}
+            </SelectItem>
+            {domains.map((value) => (
+              <SelectItem key={value} value={value}>
+                {value}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {hasActiveFilter ? (
+          <span className="text-xs text-muted-foreground">
+            {t("searchResultsCount", { count: visibleRequirements.length })}
+          </span>
+        ) : null}
+      </div>
+
+      {visibleRequirements.length === 0 ? (
+        <EmptyState message={t("searchNoResults")} />
+      ) : null}
+
+      {visibleRequirements.map((requirement) => {
         // Une exigence peut porter plusieurs constats (un par procédure touchée).
         const related = findings.filter(
           (finding) => finding.requirement_id === requirement.requirement_id,
         );
 
+        const counts = humanStatusValues.map((human_status) => ({
+          human_status,
+          count: related.filter((finding) => finding.human_status === human_status)
+            .length,
+        }));
+
+        // Une exigence sans constat n'a nulle part où naviguer : la carte reste
+        // alors statique plutôt que d'offrir un lien qui ne mène à rien.
+        const focusHref = related.length
+          ? `/regulations/${regulationId}?tab=actions&focus=${requirement.requirement_id}`
+          : undefined;
+
         return (
-          <Card key={requirement.requirement_id}>
+          <Card
+            key={requirement.requirement_id}
+            className={cn(
+              focusHref &&
+                "relative transition-colors focus-within:ring-2 focus-within:ring-ring hover:border-foreground/30",
+            )}
+          >
             <CardHeader>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-xs font-medium">
@@ -43,14 +160,37 @@ export function RequirementsTab({
                         {finding.procedure_id}
                       </Badge>
                     ) : null}
+                    <HumanStatusBadge status={finding.human_status} />
                   </span>
                 ))}
+                {focusHref ? (
+                  <Button asChild size="sm" variant="ghost" className="relative z-10 ml-auto">
+                    <Link href={focusHref}>
+                      {actionsT("goToRequirement")}
+                      <ChevronRight aria-hidden />
+                    </Link>
+                  </Button>
+                ) : null}
               </div>
               <CardTitle className="text-sm font-medium leading-snug">
-                {requirement.normalized_requirement}
+                {focusHref ? (
+                  // `::after` couvre toute la carte : cliquer n'importe où dessus
+                  // navigue, comme les cartes de régulation (regulations-view.tsx).
+                  <Link
+                    href={focusHref}
+                    className="after:absolute after:inset-0 hover:underline focus:outline-none"
+                  >
+                    {requirement.normalized_requirement}
+                  </Link>
+                ) : (
+                  requirement.normalized_requirement
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              {related.length ? (
+                <ReviewProgressBar counts={counts} showBreakdown={false} />
+              ) : null}
               <blockquote
                 lang={requirement.language.toLowerCase()}
                 className="border-l-2 pl-3 text-sm leading-relaxed text-muted-foreground"

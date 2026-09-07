@@ -5,7 +5,9 @@ session). Ce fichier ne contient QUE les règles spécifiques au frontend.
 
 ## Stack (figée — ne pas changer sans mise à jour de ce fichier)
 
-- **Next.js 15+ (App Router)** + TypeScript strict
+- **Next.js 16 (App Router)** + TypeScript strict — attention : Next 16 a renommé la convention
+  `middleware.ts` en **`proxy.ts`** (voir `src/proxy.ts`), et les docs de la version installée sont
+  dans `node_modules/next/dist/docs/`
 - **Tailwind CSS** + **shadcn/ui** (Radix) pour tous les composants
 - **TanStack Query** pour le data fetching / cache
 - **Zod** pour valider les réponses API à l'exécution (les types de `docs/api-contract.md` sont la
@@ -14,7 +16,8 @@ session). Ce fichier ne contient QUE les règles spécifiques au frontend.
 - **next-intl** pour l'i18n — **bilingue FR/EN dès le départ, ce n'est PAS optionnel** (voir section
   "Bilingue" ci-dessous)
 - **Recharts** (via composants `chart` de shadcn/ui) pour le Dashboard
-- **Vitest + React Testing Library** pour les tests unitaires/composants
+- **Vitest + React Testing Library** pour les tests unitaires/composants — `jsdom` est épinglé en
+  v26 tant que la machine tourne sur Node 20 (jsdom 30 et Vitest 5 exigent Node 22, voir `.nvmrc`)
 - **pnpm** comme gestionnaire de paquets
 - Déploiement : **Vercel**
 
@@ -83,23 +86,40 @@ Cette boucle "coder → capturer → comparer → corriger" est ce qui évite le
 
 ```
 frontend/src/
-├── app/                    # routes Next.js (App Router), routing i18n [locale]/...
-│   ├── dashboard/
-│   ├── regulations/[id]/
-│   ├── impact-analysis/
-│   ├── evidence/[findingId]/
-│   └── copilot/            # P2, ne pas prioriser
+├── app/
+│   ├── layout.tsx              # racine minimale (le <html> est rendu par [locale])
+│   └── [locale]/               # routing i18n next-intl
+│       ├── layout.tsx          # <html>, providers, polices
+│       ├── login/              # écran de connexion, HORS coquille applicative
+│       └── (app)/              # coquille : garde de session + sidebar + top bar
+│           ├── dashboard/      # tableau de bord consolidé (toutes régulations)
+│           ├── regulations/    # liste + upload
+│           │   └── [id]/       # détail : onglets Vue d'ensemble / Exigences /
+│           │                   #   Analyse d'impact / Texte source (?tab=…&focus=…)
+│           └── copilot/        # P2, ne pas prioriser
 ├── components/
-│   ├── ui/                 # primitives shadcn/ui générées — ne pas éditer à la main sauf besoin réel
-│   └── features/           # composants métier (KpiCard, FindingBadge, EvidencePanel, ...)
+│   ├── ui/                     # primitives shadcn/ui générées — ne pas éditer sauf besoin réel
+│   ├── layout/                 # sidebar, top bar, toggle FR/EN, menu utilisateur, garde
+│   ├── providers/              # MSW, TanStack Query, session
+│   └── features/               # composants métier
+├── i18n/                       # routing next-intl (+ src/proxy.ts pour le middleware Next 16)
 ├── lib/
-│   ├── api/                 # client API typé, un fichier par ressource (regulations.ts, findings.ts...)
-│   └── mocks/                # handlers MSW, données de démo
-├── types/                    # types TS reflétant EXACTEMENT docs/api-contract.md
-├── messages/                  # dictionnaires next-intl — fr.json et en.json, TOUJOURS synchronisés
-└── scripts/
-    └── screenshot.ts           # script Playwright pour la vérification visuelle
+│   ├── api/                    # client API typé, un fichier par ressource
+│   ├── mocks/                  # handlers MSW + corpus de démo
+│   ├── assessment.ts           # source unique du mapping statut → couleur
+│   ├── evidence-match.ts       # localisation d'un extrait dans un document (fonction pure)
+│   └── mindmap-layout.ts       # disposition de la carte des impacts (fonction pure)
+├── types/api.ts                # miroir de docs/api-contract.md (schémas Zod + types inférés)
+├── messages/                   # dictionnaires next-intl — fr.json et en.json, TOUJOURS synchronisés
+├── test/render.tsx             # rendu de test avec les providers réels
+└── scripts/screenshot.ts       # script Playwright pour la vérification visuelle
 ```
+
+**Écrans (depuis la revue v1.1) :** la sidebar ne compte que 3 entrées — Tableau de bord, Analyse
+réglementaire, Copilot. « Analyse d'impact » et « Preuves » ne sont plus des écrans globaux : ce
+sont des onglets du détail d'une régulation, car on ne consulte des constats qu'après avoir choisi
+la régulation concernée. L'onglet actif et l'élément mis en avant vivent dans l'URL
+(`?tab=…&focus=…`), ce qui rend chaque vue partageable.
 
 ## Règle anti-duplication (rappel du CLAUDE.md racine, spécifique frontend)
 
@@ -108,9 +128,15 @@ Avant de créer un composant :
    src/components/ui/`).
 2. Chercher dans `components/features/` s'il existe déjà un composant métier similaire
    (`grep -ri` sur le nom probable).
-3. Avant de créer un nouveau type, vérifier `src/types/` et `docs/api-contract.md` — ne jamais
+3. **Un même composant métier utilisé sur plusieurs écrans reste un seul composant** — jamais une
+   copie par écran. Exemple : `RegulationMindmap` sert à la fois le tableau de bord d'accueil
+   (toutes les régulations, paginé) et l'onglet « Vue d'ensemble » d'une régulation (une seule,
+   non paginée) via une prop optionnelle (`regulationId`) — pas un second composant
+   `RegulationOwnMindmap`. Si un écran a besoin d'un comportement légèrement différent, ajouter un
+   paramètre au composant existant plutôt que le dupliquer.
+4. Avant de créer un nouveau type, vérifier `src/types/` et `docs/api-contract.md` — ne jamais
    dupliquer une interface déjà définie ailleurs.
-4. Avant d'ajouter une nouvelle route API mock dans `lib/mocks/`, vérifier qu'elle n'existe pas déjà
+5. Avant d'ajouter une nouvelle route API mock dans `lib/mocks/`, vérifier qu'elle n'existe pas déjà
    dans les handlers MSW existants.
 
 ## Checklist avant de terminer une tâche non triviale
@@ -121,7 +147,8 @@ Avant de créer un composant :
 - [ ] Aucun composant/fichier dupliqué laissé derrière (voir règle anti-duplication ci-dessus)
 - [ ] Tout texte utilisateur ajouté respecte `../docs/ui-guardrails.md`
 - [ ] Toute nouvelle chaîne existe dans `messages/fr.json` ET `messages/en.json` (voir section
-      Bilingue ci-dessus)
+      Bilingue ci-dessus) — `pnpm test` échoue automatiquement si une clé n'existe que d'un côté
+      (`src/messages/messages.test.ts`)
 - [ ] Capture d'écran prise et comparée à `../docs/ui-guidelines.md` pour toute modification visible
 - [ ] `../PROGRESS.md` mis à jour si la tâche correspond à un point de la phase en cours
 
@@ -129,4 +156,8 @@ Avant de créer un composant :
 
 - N'implémente aucune logique d'extraction/retrieval/comparaison IA — c'est le backend (Thư).
 - Ne suppose jamais un comportement backend non documenté dans `../docs/api-contract.md`.
-- Ne modifie jamais de fichier sous `../backend/`.
+- **Ne modifie JAMAIS quoi que ce soit sous `../backend/`** — lecture seule, sans exception. Voir la
+  règle complète dans `../CLAUDE.md` § 2. On peut et on doit lire `../backend/API.md` avant de
+  parler d'intégration ; on n'y touche pas. Un problème constaté côté backend se note dans
+  `../PROGRESS.md`, il ne se corrige pas depuis une session frontend.
+- Ne committe jamais `../backend/env` (identifiants ; ignoré par le `.gitignore` racine).

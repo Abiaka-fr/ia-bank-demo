@@ -7,13 +7,13 @@ import { toast } from "sonner";
 
 import { AssigneeName, AssigneeSelect } from "@/components/features/assignee-select";
 import { DocumentStatusBadge } from "@/components/features/document-status-badge";
+import { ReviewProgressBar } from "@/components/features/review-progress";
 import {
   EmptyState,
   ErrorState,
   LoadingState,
 } from "@/components/features/query-state";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
 import { fetchPortfolioSummary } from "@/lib/api/dashboard";
@@ -73,18 +73,33 @@ export function RegulationsView() {
       {regulationsQuery.data.map((regulation) => {
         const summary = summaryByRegulation.get(regulation.document_id);
         const escalatedAssigneeIds = summary?.escalated_assignee_ids ?? [];
+        const hasReview = (summary?.actions_total ?? 0) > 0;
 
         return (
-          <Card key={regulation.document_id} className="flex flex-col">
+          <Card
+            key={regulation.document_id}
+            className="relative flex flex-col transition-colors focus-within:ring-2 focus-within:ring-ring hover:border-foreground/30"
+          >
             <CardHeader>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="secondary" className="font-mono text-[11px]">
                   {regulation.document_id}
                 </Badge>
-                <DocumentStatusBadge status={regulation.status} />
+                {!hasReview ? (
+                  <DocumentStatusBadge status={regulation.status} />
+                ) : null}
+                <ChevronRight
+                  className="ml-auto size-4 text-muted-foreground"
+                  aria-hidden
+                />
               </div>
               <CardTitle className="text-base leading-snug">
-                {regulation.title}
+                <Link
+                  href={`/regulations/${regulation.document_id}`}
+                  className="after:absolute after:inset-0 after:rounded-xl hover:underline focus:outline-none"
+                >
+                  {regulation.title}
+                </Link>
               </CardTitle>
             </CardHeader>
 
@@ -110,15 +125,15 @@ export function RegulationsView() {
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">
-                    {t("progressLabel")}
+                    {t("uploadedAtLabel")}
                   </dt>
-                  <dd className="tabular-nums">
-                    {summary
-                      ? `${summary.actions_total - summary.actions_pending} / ${summary.actions_total}`
-                      : common("notAvailable")}
-                  </dd>
+                  <dd>{regulation.uploaded_at?.slice(0, 10) ?? common("notAvailable")}</dd>
                 </div>
               </dl>
+
+              {hasReview && summary ? (
+                <ReviewProgressBar counts={summary.by_human_status} />
+              ) : null}
 
               {regulation.domain.length ? (
                 <div className="flex flex-wrap gap-1">
@@ -130,7 +145,7 @@ export function RegulationsView() {
                 </div>
               ) : null}
 
-              <div className="space-y-1.5">
+              <div className="relative z-10 space-y-1.5">
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <UserRoundCheck className="size-3.5" aria-hidden />
                   {assigneeT("label")}
@@ -167,12 +182,9 @@ export function RegulationsView() {
                 </div>
               ) : null}
 
-              <Button asChild size="sm" variant="outline" className="mt-auto w-full">
-                <Link href={`/regulations/${regulation.document_id}`}>
-                  {t("detailHeading")}
-                  <ChevronRight aria-hidden />
-                </Link>
-              </Button>
+              <p className="mt-auto pt-1 text-xs text-muted-foreground">
+                {t("openCardHint")}
+              </p>
             </CardContent>
           </Card>
         );

@@ -10,18 +10,24 @@ import {
   UserSearch,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 
 import { AssessmentChart } from "@/components/features/assessment-chart";
 import { AssigneeName } from "@/components/features/assignee-select";
 import { DocumentStatusBadge } from "@/components/features/document-status-badge";
 import { DomainChart } from "@/components/features/domain-chart";
 import { KpiCard } from "@/components/features/kpi-card";
+import { PaginationControls } from "@/components/features/pagination-controls";
+import {
+  MindmapLegend,
+  RegulationMindmap,
+} from "@/components/features/regulation-mindmap";
+import { ReviewProgressBar } from "@/components/features/review-progress";
 import {
   EmptyState,
   ErrorState,
   LoadingState,
 } from "@/components/features/query-state";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -31,14 +37,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Link } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { fetchPortfolioSummary } from "@/lib/api/dashboard";
 import { queryKeys } from "@/lib/api/query-keys";
+import { isRegulationFullyHandled } from "@/lib/mocks/summary";
+
+/** Régulations par page dans « Détail par régulation » (demande explicite). */
+const REGULATIONS_PER_PAGE = 5;
 
 /** Écran d'accueil (v1.1) : agrégats sur toutes les régulations, pas une seule. */
 export function PortfolioDashboardView() {
   const t = useTranslations("dashboard");
-  const regulationsT = useTranslations("regulations");
+  const mindmapT = useTranslations("mindmap");
+  const router = useRouter();
+  const [page, setPage] = useState(1);
 
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.portfolioSummary(),
@@ -68,6 +80,19 @@ export function PortfolioDashboardView() {
     },
   ];
 
+  // Une régulation entièrement traitée n'a plus rien à réclamer l'attention du
+  // Responsable Conformité sur cet écran — elle reste consultable depuis « Analyse
+  // réglementaire », juste plus listée ici (demande explicite).
+  const outstanding = data.by_regulation.filter(
+    (row) => !isRegulationFullyHandled(row),
+  );
+  const pageCount = Math.max(1, Math.ceil(outstanding.length / REGULATIONS_PER_PAGE));
+  const currentPage = Math.min(page, pageCount);
+  const visibleRows = outstanding.slice(
+    (currentPage - 1) * REGULATIONS_PER_PAGE,
+    currentPage * REGULATIONS_PER_PAGE,
+  );
+
   return (
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -75,74 +100,6 @@ export function PortfolioDashboardView() {
           <KpiCard key={kpi.label} {...kpi} />
         ))}
       </div>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold">{t("byRegulation")}</h2>
-        {data.by_regulation.length === 0 ? (
-          <EmptyState message={regulationsT("empty")} />
-        ) : (
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[34%] min-w-[16rem]">
-                    {t("columnRegulation")}
-                  </TableHead>
-                  <TableHead>{t("columnStatus")}</TableHead>
-                  <TableHead>{t("columnAssignee")}</TableHead>
-                  <TableHead className="text-right">
-                    {t("kpi.requirementsIdentified")}
-                  </TableHead>
-                  <TableHead className="text-right">{t("kpi.potentialGaps")}</TableHead>
-                  <TableHead className="text-right">
-                    {t("kpi.expertReviewsRequired")}
-                  </TableHead>
-                  <TableHead className="text-right">{t("columnProgress")}</TableHead>
-                  <TableHead className="w-16" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.by_regulation.map((row) => (
-                  <TableRow key={row.regulation_id}>
-                    <TableCell className="whitespace-normal py-3">
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {row.regulation_id}
-                      </span>
-                      <p className="text-sm font-medium">{row.title}</p>
-                    </TableCell>
-                    <TableCell>
-                      <DocumentStatusBadge status={row.status} />
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      <AssigneeName userId={row.assignee_id} />
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {row.requirements_identified}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {row.potential_gaps}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {row.expert_reviews_required}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {row.actions_total - row.actions_pending} / {row.actions_total}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button asChild size="sm" variant="ghost">
-                        <Link href={`/regulations/${row.regulation_id}`}>
-                          <ChevronRight aria-hidden />
-                          <span className="sr-only">{regulationsT("detailHeading")}</span>
-                        </Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
@@ -163,6 +120,107 @@ export function PortfolioDashboardView() {
           </CardContent>
         </Card>
       </div>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold">{t("byRegulation")}</h2>
+        {outstanding.length === 0 ? (
+          <EmptyState message={t("byRegulationAllHandled")} />
+        ) : (
+          <>
+            <div className="rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[34%] min-w-[16rem]">
+                      {t("columnRegulation")}
+                    </TableHead>
+                    <TableHead className="min-w-[12rem]">
+                      {t("columnProgress")}
+                    </TableHead>
+                    <TableHead>{t("columnAssignee")}</TableHead>
+                    <TableHead className="text-right">
+                      {t("kpi.requirementsIdentified")}
+                    </TableHead>
+                    <TableHead className="text-right">{t("kpi.potentialGaps")}</TableHead>
+                    <TableHead className="text-right">
+                      {t("kpi.expertReviewsRequired")}
+                    </TableHead>
+                    <TableHead className="w-10" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visibleRows.map((row) => (
+                    <TableRow
+                      key={row.regulation_id}
+                      tabIndex={0}
+                      role="link"
+                      aria-label={row.title}
+                      onClick={() => router.push(`/regulations/${row.regulation_id}`)}
+                      onKeyDown={(event) => {
+                        if (event.key !== "Enter" && event.key !== " ") return;
+                        event.preventDefault();
+                        router.push(`/regulations/${row.regulation_id}`);
+                      }}
+                      className="cursor-pointer focus-visible:bg-accent/40 focus-visible:outline-none"
+                    >
+                      <TableCell className="whitespace-normal py-3">
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {row.regulation_id}
+                        </span>
+                        <p className="text-sm font-medium">{row.title}</p>
+                      </TableCell>
+                      <TableCell className="whitespace-normal">
+                        {row.actions_total === 0 ? (
+                          <DocumentStatusBadge status={row.status} />
+                        ) : (
+                          <ReviewProgressBar
+                            counts={row.by_human_status}
+                            showBreakdown={false}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        <AssigneeName userId={row.assignee_id} />
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {row.requirements_identified}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {row.potential_gaps}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {row.expert_reviews_required}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <ChevronRight
+                          className="ml-auto size-4 text-muted-foreground"
+                          aria-hidden
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <PaginationControls
+              page={currentPage}
+              pageCount={pageCount}
+              onPageChange={setPage}
+            />
+          </>
+        )}
+      </section>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{mindmapT("title")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{mindmapT("subtitle")}</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <RegulationMindmap />
+          <MindmapLegend />
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -51,10 +51,13 @@ export function FindingsActionsTable({
   findings,
   requirements,
   regulationId,
+  focus,
 }: {
   findings: readonly Finding[];
   requirements: readonly Requirement[];
   regulationId: string;
+  /** Identifiant d'exigence ou de constat à mettre en avant (venu d'un lien). */
+  focus?: string | null;
 }) {
   const t = useTranslations("actions");
   const impact = useTranslations("impact");
@@ -84,6 +87,14 @@ export function FindingsActionsTable({
       ),
     [findings, filters],
   );
+
+  // La ligne vers laquelle faire défiler : la première correspondant au lien.
+  const firstFocused = focus
+    ? visibleFindings.find(
+        (finding) =>
+          finding.finding_id === focus || finding.requirement_id === focus,
+      )
+    : undefined;
 
   const hasActiveFilter =
     filters.assessment !== ALL ||
@@ -200,14 +211,26 @@ export function FindingsActionsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visibleFindings.map((finding) => (
-                <FindingActionRow
-                  key={finding.finding_id}
-                  finding={finding}
-                  requirement={requirementsById.get(finding.requirement_id)}
-                  regulationId={regulationId}
-                />
-              ))}
+              {visibleFindings.map((finding) => {
+                // Un lien peut viser une exigence entière (toutes ses lignes) ou
+                // un constat précis.
+                const isFocused =
+                  focus !== null &&
+                  focus !== undefined &&
+                  (finding.finding_id === focus ||
+                    finding.requirement_id === focus);
+
+                return (
+                  <FindingActionRow
+                    key={finding.finding_id}
+                    finding={finding}
+                    requirement={requirementsById.get(finding.requirement_id)}
+                    regulationId={regulationId}
+                    isFocused={isFocused}
+                    isFirstFocused={isFocused && finding === firstFocused}
+                  />
+                );
+              })}
             </TableBody>
           </Table>
         </div>

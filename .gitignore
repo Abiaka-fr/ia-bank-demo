@@ -15,8 +15,18 @@ venv/
 .env.local
 .env*.local
 
+# Fichier d'environnement du backend (zone de Thư).
+# Il s'appelle `env` sans point : ni `.env` ni `env/` du .gitignore de backend/
+# ne l'attrapent. Il contient des identifiants — ne jamais le committer.
+backend/env
+
 # OS
 .DS_Store
 
 # Logs
 *.log
+
+# Environnement de développement local (scripts/local-dev/) — voir scripts/local-dev/README.md.
+# Copie de travail de la base de référence + venv du backend en mode SQLite local.
+.venv-backend/
+.local/

@@ -6,24 +6,47 @@ import {
   requirementSchema,
 } from "@/types/api";
 
+import { isBackendLive } from "./backend/config";
+import * as backend from "./backend/resources";
 import { apiFetch } from "./client";
 
+/**
+ * Chaque fonction choisit sa source : backend réel quand il couvre l'endpoint et que
+ * `NEXT_PUBLIC_BACKEND_URL` est renseigné, MSW sinon. Voir `./backend/config.ts`.
+ */
 export function fetchRegulations() {
+  if (isBackendLive) return backend.fetchRegulations();
   return apiFetch("/api/regulations", z.array(documentMetaSchema));
 }
 
 export function fetchRegulation(id: string) {
+  if (isBackendLive) return backend.fetchDocumentDetail(id);
   return apiFetch(`/api/regulations/${id}`, documentDetailSchema);
 }
 
-export function fetchRegulationRequirements(id: string) {
+/** `domain` est appliqué côté serveur en mode réel, côté client en mode mock. */
+export function fetchRegulationRequirements(
+  id: string,
+  filters: { domain?: string } = {},
+) {
+  if (isBackendLive) return backend.fetchRequirements(id, filters);
+
   return apiFetch(
     `/api/regulations/${id}/requirements`,
     z.array(requirementSchema),
+  ).then((requirements) =>
+    filters.domain
+      ? requirements.filter((requirement) =>
+          requirement.domain.includes(filters.domain as string),
+        )
+      : requirements,
   );
 }
 
-/** Upload d'une régulation — `.docx` uniquement (validé aussi côté serveur). */
+/**
+ * Upload — non couvert par le backend (aucune route `POST /api/regulations`), donc
+ * toujours servi par MSW. `.docx` uniquement, validé aussi côté serveur.
+ */
 export function uploadRegulation(input: {
   file: File;
   assigneeId?: string;
@@ -44,6 +67,7 @@ export function uploadRegulation(input: {
   });
 }
 
+/** Assignation — non couverte par le backend, reste sur MSW. */
 export function updateRegulationAssignee(id: string, assigneeId: string) {
   return apiFetch(`/api/regulations/${id}`, documentMetaSchema, {
     method: "PATCH",

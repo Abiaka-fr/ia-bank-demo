@@ -45,10 +45,28 @@ RÉGLEMENTATION → EXIGENCES → PROCÉDURES INTERNES → IMPACT → ÉCARTS PO
 | `backend/` (API + pipeline IA) | **Thư (Dev B, temps partiel)** | Choix libre de Thư |
 | `docs/api-contract.md` | **Partagé** | Contrat figé d'un commun accord avant modification |
 
-Une session Claude Code ouverte dans `frontend/` ne doit modifier que `frontend/` (+ éventuellement
-proposer une modification à `docs/api-contract.md`, mais jamais toucher au code sous `backend/`).
-Symétriquement pour une session backend. Toute évolution du contrat d'API doit être répercutée dans
-`docs/api-contract.md` ET signalée dans `PROGRESS.md`.
+### 🚫 `backend/` est en lecture seule pour toute session frontend — règle absolue
+
+`backend/` est la zone de Thư. Une session ouverte côté frontend :
+
+- **peut lire** tout ce qui s'y trouve (`backend/API.md`, `backend/README.md`, `backend/CLAUDE.md`,
+  `backend/app/**`) — et **doit** le faire avant de parler d'intégration ;
+- **ne doit modifier, créer, renommer, déplacer ni supprimer AUCUN fichier sous `backend/`**, y
+  compris `backend/.gitignore`, les migrations, les modèles et la base SQLite de référence. Aucune
+  exception, même « juste une petite correction évidente » : Thư travaille dessus en parallèle et
+  une modification silencieuse casserait son environnement.
+- Si quelque chose semble faux côté backend, on l'**écrit** dans `PROGRESS.md` (section Blocages)
+  pour la prochaine revue commune — on ne le corrige pas soi-même.
+
+Le seul point de contact autorisé est `docs/api-contract.md`, partagé, et modifiable uniquement
+d'un commun accord. Symétriquement pour une session backend vis-à-vis de `frontend/`.
+
+Toute évolution du contrat d'API doit être répercutée dans `docs/api-contract.md` ET signalée dans
+`PROGRESS.md`.
+
+**Fichiers d'environnement** : `backend/env` contient des identifiants. Il est ignoré par le
+`.gitignore` racine (le `.gitignore` de `backend/` ne l'attrape pas : il vise `.env` et `env/`,
+pas un fichier nommé `env`). Ne jamais le committer, ne jamais en recopier le contenu ailleurs.
 
 ## 3. Règles de travail obligatoires (toutes sessions, tout le temps)
 
@@ -87,6 +105,7 @@ ia-bank-demo/
 ├── PROGRESS.md                # état du projet, à lire/mettre à jour à chaque session
 ├── docs/
 │   ├── api-contract.md        # contrat FE <-> BE (source de vérité)
+│   ├── backend-integration.md # écart entre le contrat et le backend réel de Thư
 │   ├── glossary.md            # vocabulaire métier KYC/AML condensé
 │   ├── ui-guardrails.md       # formulations autorisées/interdites + code couleur des statuts
 │   ├── ui-guidelines.md       # design system frontend

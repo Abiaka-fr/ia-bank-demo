@@ -22,7 +22,10 @@
     "language": "Language",
     "updatedAt": "Updated on",
     "notAvailable": "Not provided",
-    "resultCount": "{count, plural, =0 {No results} one {# result} other {# results}}"
+    "resultCount": "{count, plural, =0 {No results} one {# result} other {# results}}",
+    "pageOf": "Page {page} of {pageCount}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page"
   },
   "nav": {
     "sectionAnalysis": "Analysis",
@@ -86,9 +89,9 @@
     "portfolioSubtitle": "Consolidated view of all tracked regulations",
     "byRegulation": "Breakdown by regulation",
     "columnRegulation": "Regulation",
-    "columnStatus": "Analysis",
     "columnAssignee": "Assigned to",
-    "columnProgress": "Findings handled"
+    "columnProgress": "Findings handled",
+    "byRegulationAllHandled": "All tracked regulations have been fully handled."
   },
   "regulations": {
     "title": "Regulatory analysis",
@@ -102,8 +105,14 @@
     "impactedActivity": "Impacted activities",
     "tabOverview": "Overview",
     "uploadedBy": "Uploaded by",
-    "progressLabel": "Findings handled",
-    "noExtractedText": "No text extracted for this document — the analysis has not run yet."
+    "noExtractedText": "No text extracted for this document — the analysis has not run yet.",
+    "uploadedAtLabel": "Uploaded on",
+    "openCardHint": "Click the card to open the detail",
+    "searchPlaceholder": "Search a requirement (ID, reference, text)…",
+    "filterDomain": "Domain",
+    "filterAllDomains": "All",
+    "searchResultsCount": "{count, plural, =0 {No results} one {# result} other {# results}}",
+    "searchNoResults": "No requirement matches this search."
   },
   "impact": {
     "filterAssessment": "Assessment status",
@@ -186,6 +195,40 @@
     "escalateNeedsAssignee": "Choose who the finding is escalated to before escalating.",
     "saved": "Decision saved",
     "saveFailed": "The decision could not be saved.",
-    "expandHint": "Click a requirement id to show its evidence"
+    "expandHint": "Click a requirement id to show its evidence",
+    "goToRequirement": "Handle"
+  },
+  "procedureDialog": {
+    "openHint": "click to read the full procedure",
+    "openLabel": "Open procedure {document}, section {section}",
+    "citedSection": "Cited passage: {section} — highlighted below.",
+    "citedBadge": "Cited",
+    "noHighlight": "The cited passage could not be located automatically in the document; the full text is shown below.",
+    "sourceNote": "Internal text shown in its original language, untranslated."
+  },
+  "progress": {
+    "label": "Review progress",
+    "handledOf": "{handled} of {total} findings handled",
+    "complete": "Review complete",
+    "nothingToReview": "No finding to handle"
+  },
+  "mindmap": {
+    "title": "Impact map",
+    "subtitle": "Regulation → requirement → internal procedure. Click an item to open it.",
+    "empty": "No regulation in the indexed corpus.",
+    "legendStatuses": "Dot = assessment status:",
+    "legendReview": "under each procedure: human decision ({statuses})"
+  },
+  "history": {
+    "tabLabel": "History",
+    "title": "Decision history",
+    "empty": "No decision recorded for this regulation yet.",
+    "columnDate": "Date",
+    "columnActor": "Actor",
+    "columnAction": "Decision",
+    "columnRequirement": "Requirement",
+    "columnProcedure": "Procedure",
+    "columnComment": "Comment",
+    "noComment": "—"
   }
 }

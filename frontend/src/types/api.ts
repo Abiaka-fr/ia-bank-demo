@@ -115,6 +115,9 @@ export const dashboardSummarySchema = z.object({
   expert_reviews_required: z.number(),
   actions_pending: z.number(),
   actions_total: z.number(),
+  by_human_status: z.array(
+    z.object({ human_status: humanStatusSchema, count: z.number() }),
+  ),
   by_domain: z.array(z.object({ domain: z.string(), count: z.number() })),
   by_assessment: z.array(
     z.object({ assessment: assessmentSchema, count: z.number() }),
@@ -133,8 +136,34 @@ export const regulationSummarySchema = z.object({
   expert_reviews_required: z.number(),
   actions_pending: z.number(),
   actions_total: z.number(),
+  /** Répartition des constats par décision humaine (progression du traitement). */
+  by_human_status: z.array(
+    z.object({ human_status: humanStatusSchema, count: z.number() }),
+  ),
   /** Assignés par escalade, quand ils diffèrent de `assignee_id`. */
   escalated_assignee_ids: z.array(z.string()),
+});
+
+/** v1.2 — arborescence Régulation → Exigence → Procédure (carte mentale). */
+export const regulationMapProcedureSchema = z.object({
+  finding_id: z.string(),
+  procedure_id: z.string().nullable(),
+  assessment: assessmentSchema,
+  human_status: humanStatusSchema,
+});
+
+export const regulationMapRequirementSchema = z.object({
+  requirement_id: z.string(),
+  source_reference: z.string(),
+  normalized_requirement: z.string(),
+  procedures: z.array(regulationMapProcedureSchema),
+});
+
+export const regulationMapNodeSchema = z.object({
+  regulation_id: z.string(),
+  title: z.string(),
+  status: documentStatusSchema,
+  requirements: z.array(regulationMapRequirementSchema),
 });
 
 /** v1.1 — agrégats sur toutes les régulations (écran Dashboard d'accueil). */
@@ -181,6 +210,10 @@ export type DashboardSummary = z.infer<typeof dashboardSummarySchema>;
 export type User = z.infer<typeof userSchema>;
 export type RegulationSummary = z.infer<typeof regulationSummarySchema>;
 export type PortfolioSummary = z.infer<typeof portfolioSummarySchema>;
+export type RegulationMapNode = z.infer<typeof regulationMapNodeSchema>;
+export type RegulationMapRequirement = z.infer<
+  typeof regulationMapRequirementSchema
+>;
 export type LoginResponse = z.infer<typeof loginResponseSchema>;
 export type CopilotAnswer = z.infer<typeof copilotAnswerSchema>;
 
@@ -191,9 +224,31 @@ export const validateFindingBodySchema = z.object({
   reviewer_comment: z.string().optional(),
   /** Renseigné à l'escalade : à qui le constat est confié. */
   assignee_id: z.string().optional(),
+  /** v1.3 — qui prend la décision, pour l'historique (`GET /api/regulations/:id/history`). */
+  actor_id: z.string(),
 });
 
 export type ValidateFindingBody = z.infer<typeof validateFindingBodySchema>;
+
+/**
+ * v1.3 — une entrée d'historique : une décision humaine prise sur un constat, à un
+ * instant donné, par quelqu'un. Alimente l'onglet « Historique » d'une régulation.
+ */
+export const auditHistoryEntrySchema = z.object({
+  entry_id: z.string(),
+  regulation_id: z.string(),
+  requirement_id: z.string(),
+  finding_id: z.string(),
+  procedure_id: z.string().nullable(),
+  /** PENDING n'est jamais journalisé : ce n'est pas une décision, c'est l'absence d'une. */
+  action: z.enum(["ACCEPTED", "REJECTED", "ESCALATED"]),
+  actor_id: z.string(),
+  custom_action: z.string().optional(),
+  reviewer_comment: z.string().optional(),
+  created_at: z.string(),
+});
+
+export type AuditHistoryEntry = z.infer<typeof auditHistoryEntrySchema>;
 
 export const loginBodySchema = z.object({
   email: z.string(),

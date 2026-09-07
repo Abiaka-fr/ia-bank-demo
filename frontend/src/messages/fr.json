@@ -22,7 +22,10 @@
     "language": "Langue",
     "updatedAt": "Mis à jour le",
     "notAvailable": "Non renseigné",
-    "resultCount": "{count, plural, =0 {Aucun résultat} one {# résultat} other {# résultats}}"
+    "resultCount": "{count, plural, =0 {Aucun résultat} one {# résultat} other {# résultats}}",
+    "pageOf": "Page {page} sur {pageCount}",
+    "previousPage": "Page précédente",
+    "nextPage": "Page suivante"
   },
   "nav": {
     "sectionAnalysis": "Analyse",
@@ -86,9 +89,9 @@
     "portfolioSubtitle": "Vue consolidée de toutes les régulations suivies",
     "byRegulation": "Détail par régulation",
     "columnRegulation": "Régulation",
-    "columnStatus": "Analyse",
     "columnAssignee": "Personne en charge",
-    "columnProgress": "Constats traités"
+    "columnProgress": "Constats traités",
+    "byRegulationAllHandled": "Toutes les régulations suivies ont été entièrement traitées."
   },
   "regulations": {
     "title": "Analyse réglementaire",
@@ -102,8 +105,14 @@
     "impactedActivity": "Activités impactées",
     "tabOverview": "Vue d'ensemble",
     "uploadedBy": "Importé par",
-    "progressLabel": "Constats traités",
-    "noExtractedText": "Aucun texte extrait pour ce document — l'analyse n'a pas encore été réalisée."
+    "noExtractedText": "Aucun texte extrait pour ce document — l'analyse n'a pas encore été réalisée.",
+    "uploadedAtLabel": "Importé le",
+    "openCardHint": "Cliquer sur la carte pour ouvrir le détail",
+    "searchPlaceholder": "Rechercher une exigence (identifiant, référence, texte)…",
+    "filterDomain": "Domaine",
+    "filterAllDomains": "Tous",
+    "searchResultsCount": "{count, plural, =0 {Aucun résultat} one {# résultat} other {# résultats}}",
+    "searchNoResults": "Aucune exigence ne correspond à cette recherche."
   },
   "impact": {
     "filterAssessment": "Statut d'évaluation",
@@ -186,6 +195,40 @@
     "escalateNeedsAssignee": "Choisissez la personne à qui confier le constat avant d'escalader.",
     "saved": "Décision enregistrée",
     "saveFailed": "La décision n'a pas pu être enregistrée.",
-    "expandHint": "Cliquer sur l'identifiant d'une exigence pour afficher ses preuves"
+    "expandHint": "Cliquer sur l'identifiant d'une exigence pour afficher ses preuves",
+    "goToRequirement": "Traiter"
+  },
+  "procedureDialog": {
+    "openHint": "cliquer pour lire la procédure complète",
+    "openLabel": "Ouvrir la procédure {document}, section {section}",
+    "citedSection": "Passage cité : {section} — surligné ci-dessous.",
+    "citedBadge": "Cité",
+    "noHighlight": "Le passage cité n'a pas pu être localisé automatiquement dans le document ; le texte intégral est affiché ci-dessous.",
+    "sourceNote": "Texte interne affiché dans sa langue d'origine, sans traduction."
+  },
+  "progress": {
+    "label": "Progression de la revue",
+    "handledOf": "{handled} constat(s) traité(s) sur {total}",
+    "complete": "Revue terminée",
+    "nothingToReview": "Aucun constat à traiter"
+  },
+  "mindmap": {
+    "title": "Carte des impacts",
+    "subtitle": "Régulation → exigence → procédure interne. Cliquer sur un élément pour l'ouvrir.",
+    "empty": "Aucune régulation dans le corpus indexé.",
+    "legendStatuses": "Pastille = statut d'évaluation :",
+    "legendReview": "sous chaque procédure : décision humaine ({statuses})"
+  },
+  "history": {
+    "tabLabel": "Historique",
+    "title": "Historique des décisions",
+    "empty": "Aucune décision enregistrée pour cette régulation.",
+    "columnDate": "Date",
+    "columnActor": "Auteur",
+    "columnAction": "Décision",
+    "columnRequirement": "Exigence",
+    "columnProcedure": "Procédure",
+    "columnComment": "Commentaire",
+    "noComment": "—"
   }
 }

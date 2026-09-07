@@ -6,7 +6,7 @@ import { apiErrorSchema } from "@/types/api";
  * Base URL de l'API. Vide par défaut : les requêtes partent en relatif et sont
  * interceptées par MSW tant que le backend de Thư n'est pas disponible.
  */
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 export class ApiError extends Error {
   constructor(
