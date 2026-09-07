@@ -320,7 +320,171 @@ GET /api/requirements/REQ-0001
 
 ---
 
-## 4. Authentication
+## 4. Requirement-Procedure Mappings
+
+### List All Mappings (Flat)
+
+#### `GET /api/mappings/all`
+Get a flat list of all requirement-procedure mappings with optional filters.
+
+**Query Parameters**
+- `requirement_id` (optional): Filter by specific requirement ID
+- `procedure_id` (optional): Filter by specific procedure ID
+- `assessment` (optional): Filter by assessment status (COVERED, PARTIALLY_COVERED, POTENTIAL_GAP, HUMAN_REVIEW)
+- `human_status` (optional): Filter by human review status (PENDING_REVIEW, ACCEPTED, REJECTED, ESCALATED)
+- `limit` (integer): Max results per page (default: 50, max: 200)
+- `offset` (integer): Number of results to skip for pagination (default: 0)
+
+**Authentication** Required (Bearer token)
+
+**Request Examples**
+```
+GET /api/mappings/all
+GET /api/mappings/all?requirement_id=REQ-0001
+GET /api/mappings/all?assessment=COVERED&limit=100
+GET /api/mappings/all?human_status=PENDING_REVIEW
+```
+
+**Response (200 OK)**
+```json
+{
+  "total": 12,
+  "items": [
+    {
+      "mapping_id": "MAP-0001",
+      "requirement_id": "REQ-0001",
+      "procedure_id": "PRC-AML-007",
+      "assessment": "COVERED",
+      "confidence": 0.93,
+      "explanation": "The internal procedure contains explicit controls...",
+      "recommended_action": "No immediate update proposed...",
+      "human_status": "PENDING_REVIEW"
+    }
+  ],
+  "limit": 50,
+  "offset": 0
+}
+```
+
+---
+
+### Requirements with Their Procedures (Nested)
+
+#### `GET /api/mappings/requirements-to-procedures`
+Get nested structure: list of requirements with all procedures they map to.
+
+**Query Parameters**
+- `requirement_ids` (required, list): List of requirement IDs to expand
+- `assessment` (optional): Filter mappings by assessment status
+- `risk_level` (optional): Filter requirements by risk level (LOW, MEDIUM, HIGH)
+
+**Authentication** Required (Bearer token)
+
+**Request Examples**
+```
+GET /api/mappings/requirements-to-procedures?requirement_ids=REQ-0001
+GET /api/mappings/requirements-to-procedures?requirement_ids=REQ-0001&requirement_ids=REQ-0002
+GET /api/mappings/requirements-to-procedures?requirement_ids=REQ-0001&assessment=COVERED
+```
+
+**Response (200 OK)**
+```json
+{
+  "total_requirements": 2,
+  "total_mappings": 5,
+  "data": [
+    {
+      "requirement": {
+        "requirement_id": "REQ-0001",
+        "source_document_id": "EXT-EU-AML-001",
+        "title": "Risk classification",
+        "domain": "AML/CFT",
+        "risk_level": "MEDIUM",
+        "status": "ACTIVE"
+      },
+      "procedures": [
+        {
+          "procedure": {
+            "procedure_id": "PRC-AML-007",
+            "document_id": "INT-PROC-AML",
+            "name": "Risk Classification Process",
+            "domain": "AML/CFT",
+            "status": "ACTIVE"
+          },
+          "mapping": {
+            "mapping_id": "MAP-0001",
+            "assessment": "COVERED",
+            "confidence": 0.93,
+            "explanation": "..."
+          }
+        }
+      ],
+      "total_procedures": 2
+    }
+  ]
+}
+```
+
+---
+
+### Procedures with Their Requirements (Nested)
+
+#### `GET /api/mappings/procedures-to-requirements`
+Get nested structure: list of procedures with all requirements they address.
+
+**Query Parameters**
+- `procedure_ids` (required, list): List of procedure IDs to expand
+- `assessment` (optional): Filter mappings by assessment status
+- `domain` (optional): Filter requirements by domain (AML/CFT, KYC, etc.)
+
+**Authentication** Required (Bearer token)
+
+**Request Examples**
+```
+GET /api/mappings/procedures-to-requirements?procedure_ids=PRC-AML-007
+GET /api/mappings/procedures-to-requirements?procedure_ids=PRC-AML-007&assessment=COVERED
+GET /api/mappings/procedures-to-requirements?procedure_ids=PRC-KYC-002&domain=KYC
+```
+
+**Response (200 OK)**
+```json
+{
+  "total_procedures": 1,
+  "total_mappings": 3,
+  "data": [
+    {
+      "procedure": {
+        "procedure_id": "PRC-AML-007",
+        "document_id": "INT-PROC-AML",
+        "name": "AML Transaction Monitoring",
+        "domain": "AML/CFT",
+        "status": "ACTIVE"
+      },
+      "requirements": [
+        {
+          "requirement": {
+            "requirement_id": "REQ-0001",
+            "source_document_id": "EXT-EU-AML-001",
+            "title": "Risk classification",
+            "domain": "AML/CFT",
+            "risk_level": "MEDIUM"
+          },
+          "mapping": {
+            "mapping_id": "MAP-0001",
+            "assessment": "COVERED",
+            "confidence": 0.93
+          }
+        }
+      ],
+      "total_requirements": 3
+    }
+  ]
+}
+```
+
+---
+
+## 5. Authentication
 
 ### Signup
 
@@ -613,6 +777,28 @@ curl -H "Authorization: Bearer $TOKEN" \
 # Get single requirement
 curl -H "Authorization: Bearer $TOKEN" \
   "http://localhost:8000/api/requirements/REQ-0001"
+
+### Get Requirement-Procedure Mappings
+```bash
+# Get all mappings (flat list)
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/mappings/all?limit=10"
+
+# Filter by assessment status
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/mappings/all?assessment=COVERED&limit=50"
+
+# Filter by human review status
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/mappings/all?human_status=PENDING_REVIEW"
+
+# Get requirements with their procedures (nested)
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/mappings/requirements-to-procedures?requirement_ids=REQ-0001"
+
+# Get procedures with their requirements (nested)
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/mappings/procedures-to-requirements?procedure_ids=PRC-AML-007"
 ```
 
 ### Signup
