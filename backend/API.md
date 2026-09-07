@@ -484,7 +484,94 @@ GET /api/mappings/procedures-to-requirements?procedure_ids=PRC-KYC-002&domain=KY
 
 ---
 
-## 5. Authentication
+## 5. User Management
+
+### List Users
+
+#### `GET /api/users`
+Get a paginated list of users with optional filtering.
+
+**Query Parameters**
+- `role` (optional): Filter by role (e.g., COMPLIANCE_OFFICER)
+- `is_active` (optional): Filter by active status (true/false)
+- `limit` (integer): Max results per page (default: 50, max: 200)
+- `offset` (integer): Number of results to skip for pagination (default: 0)
+
+**Authentication** Required (Bearer token)
+
+**Request Examples**
+```
+GET /api/users
+GET /api/users?role=COMPLIANCE_OFFICER
+GET /api/users?is_active=true&limit=100
+GET /api/users?role=COMPLIANCE_OFFICER&is_active=true&limit=50
+```
+
+**Response (200 OK)**
+```json
+{
+  "total": 4,
+  "items": [
+    {
+      "user_id": "USR-a1b2c3d4e5f6g7h8i9j0",
+      "email": "user@example.com",
+      "full_name": "John Doe",
+      "role": "COMPLIANCE_OFFICER",
+      "is_active": true,
+      "created_at": "2026-09-05T12:16:17.670429"
+    }
+  ],
+  "limit": 50,
+  "offset": 0
+}
+```
+
+**Response (401 Unauthorized)**
+```json
+{
+  "detail": "Not authenticated"
+}
+```
+
+---
+
+### Get User by ID
+
+#### `GET /api/users/{user_id}`
+Retrieve a single user by their ID.
+
+**Path Parameters**
+- `user_id` (required): The ID of the user (e.g., USR-a1b2c3d4e5f6g7h8i9j0)
+
+**Authentication** Required (Bearer token)
+
+**Request Example**
+```
+GET /api/users/USR-a1b2c3d4e5f6g7h8i9j0
+```
+
+**Response (200 OK)**
+```json
+{
+  "user_id": "USR-a1b2c3d4e5f6g7h8i9j0",
+  "email": "user@example.com",
+  "full_name": "John Doe",
+  "role": "COMPLIANCE_OFFICER",
+  "is_active": true,
+  "created_at": "2026-09-05T12:16:17.670429"
+}
+```
+
+**Response (404 Not Found)**
+```json
+{
+  "detail": "User not found"
+}
+```
+
+---
+
+## 6. Authentication
 
 ### Signup
 
@@ -799,6 +886,28 @@ curl -H "Authorization: Bearer $TOKEN" \
 # Get procedures with their requirements (nested)
 curl -H "Authorization: Bearer $TOKEN" \
   "http://localhost:8000/api/mappings/procedures-to-requirements?procedure_ids=PRC-AML-007"
+
+### Get Users
+```bash
+# List all users
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/users"
+
+# Filter by role
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/users?role=COMPLIANCE_OFFICER"
+
+# Filter by active status
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/users?is_active=true&limit=50"
+
+# Pagination
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/users?limit=100&offset=50"
+
+# Get single user
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/users/USR-a1b2c3d4e5f6g7h8i9j0"
 ```
 
 ### Signup

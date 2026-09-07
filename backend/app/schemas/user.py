@@ -40,3 +40,12 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserRead
+
+
+class UserListResponse(BaseModel):
+    """Paginated list of users."""
+
+    total: int
+    items: list[UserRead]
+    limit: int
+    offset: int
