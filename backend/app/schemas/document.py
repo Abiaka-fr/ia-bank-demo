@@ -57,7 +57,7 @@ class DocumentRead(BaseModel):
     origin_name: str | None = None
     domain: str | None = None
     language: str | None = None
-    current_version: str | None = None
+    current_version: str | float | None = None
     current_file_path: str | None = None
     data_classification: str | None = None
     created_at: datetime
