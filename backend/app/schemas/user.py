@@ -49,3 +49,14 @@ class UserListResponse(BaseModel):
     items: list[UserRead]
     limit: int
     offset: int
+
+
+class RoleUpdate(BaseModel):
+    """Update user role."""
+
+    role: str
+
+    class Config:
+        json_schema_extra = {
+            "example": {"role": "COMPLIANCE_OFFICER"}
+        }

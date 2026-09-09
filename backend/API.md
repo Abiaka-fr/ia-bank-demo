@@ -800,6 +800,46 @@ GET /api/users/USR-a1b2c3d4e5f6g7h8i9j0
 
 ---
 
+### Update User Role
+
+#### `PUT /api/users/{user_id}/role`
+Update the role of a user.
+
+**Path Parameters**
+- `user_id` (required): The ID of the user (e.g., USR-a1b2c3d4e5f6g7h8i9j0)
+
+**Request Body**
+- `role` (required): The new role for the user (e.g., COMPLIANCE_OFFICER, ANALYST, ADMIN)
+
+**Authentication** Required (Bearer token)
+
+**Request Example**
+```json
+PUT /api/users/USR-a1b2c3d4e5f6g7h8i9j0/role
+{"role": "ANALYST"}
+```
+
+**Response (200 OK)**
+```json
+{
+  "user_id": "USR-a1b2c3d4e5f6g7h8i9j0",
+  "email": "user@example.com",
+  "full_name": "John Doe",
+  "role": "ANALYST",
+  "is_active": true,
+  "created_at": "2026-09-05T12:16:17.670429"
+}
+```
+
+**Response (404 Not Found)**
+```json
+{
+  "detail": "User not found"
+}
+```
+
+---
+
 ## 6. Authentication
 
 ### Signup
