@@ -474,6 +474,8 @@ PUT /api/mappings/MAP-0001/human-status
   "confidence": 0.93,
   "explanation": "The internal procedure contains explicit controls...",
   "recommended_action": "No immediate update proposed...",
+  "explanation_lang_fr": "La procédure interne contient des contrôles explicites...",
+  "recommended_action_lang_fr": "Aucune mise à jour immédiate proposée...",
   "human_status": "ACCEPT",
   "assignee": null
 }
@@ -530,6 +532,8 @@ PUT /api/mappings/MAP-0001/assignee
   "confidence": 0.93,
   "explanation": "The internal procedure contains explicit controls...",
   "recommended_action": "No immediate update proposed...",
+  "explanation_lang_fr": "La procédure interne contient des contrôles explicites...",
+  "recommended_action_lang_fr": "Aucune mise à jour immédiate proposée...",
   "human_status": "ACCEPT",
   "assignee": "compliance.officer@bank.com"
 }
@@ -582,6 +586,8 @@ GET /api/mappings/all?human_status=PENDING_REVIEW
       "confidence": 0.93,
       "explanation": "The internal procedure contains explicit controls...",
       "recommended_action": "No immediate update proposed...",
+      "explanation_lang_fr": "La procédure interne contient des contrôles explicites...",
+      "recommended_action_lang_fr": "Aucune mise à jour immédiate proposée...",
       "human_status": "PENDING_REVIEW",
       "assignee": null
     }
@@ -641,6 +647,9 @@ GET /api/mappings/requirements-to-procedures?requirement_ids=REQ-0001&assessment
             "assessment": "COVERED",
             "confidence": 0.93,
             "explanation": "...",
+            "recommended_action": "...",
+            "explanation_lang_fr": "...",
+            "recommended_action_lang_fr": "...",
             "human_status": "PENDING_REVIEW",
             "assignee": null
           }
@@ -700,6 +709,10 @@ GET /api/mappings/procedures-to-requirements?procedure_ids=PRC-KYC-002&domain=KY
             "mapping_id": "MAP-0001",
             "assessment": "COVERED",
             "confidence": 0.93,
+            "explanation": "...",
+            "recommended_action": "...",
+            "explanation_lang_fr": "...",
+            "recommended_action_lang_fr": "...",
             "human_status": "PENDING_REVIEW",
             "assignee": "compliance.officer@bank.com"
           }

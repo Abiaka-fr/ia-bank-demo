@@ -13,6 +13,8 @@ class MappingRead(BaseModel):
     confidence: float | None = None
     explanation: str | None = None
     recommended_action: str | None = None
+    explanation_lang_fr: str | None = None
+    recommended_action_lang_fr: str | None = None
     human_status: str | None = None
     assignee: str | None = None
 

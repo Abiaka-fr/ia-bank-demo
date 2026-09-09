@@ -16,8 +16,10 @@ class RequirementProcedureMap(Base):
     procedure_id = Column(String, ForeignKey("procedures.procedure_id", ondelete="CASCADE"), nullable=False)
     assessment = Column(String)  # COVERED, PARTIALLY_COVERED, POTENTIAL_GAP, HUMAN_REVIEW
     confidence = Column(Float)  # 0.0 - 1.0
-    explanation = Column(Text)
-    recommended_action = Column(Text)
+    explanation = Column(Text)  # English explanation
+    recommended_action = Column(Text)  # English recommended action
+    explanation_lang_fr = Column(Text, nullable=True)  # French explanation
+    recommended_action_lang_fr = Column(Text, nullable=True)  # French recommended action
     human_status = Column(String)  # PENDING_REVIEW, ACCEPTED, REJECTED, ESCALATED
     assignee = Column(String, nullable=True)  # User ID or email, optional
 
