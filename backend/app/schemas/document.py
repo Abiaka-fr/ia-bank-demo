@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class DocumentChunkRead(BaseModel):
@@ -57,10 +57,18 @@ class DocumentRead(BaseModel):
     origin_name: str | None = None
     domain: str | None = None
     language: str | None = None
-    current_version: str | float | None = None
+    current_version: str | None = None
     current_file_path: str | None = None
     data_classification: str | None = None
     created_at: datetime
+
+    @field_validator("current_version", mode="before")
+    @classmethod
+    def convert_version_to_string(cls, v):
+        """Convert current_version to string (database may return float)."""
+        if v is None:
+            return None
+        return str(v)
 
     class Config:
         from_attributes = True
