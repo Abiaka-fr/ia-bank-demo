@@ -26,6 +26,7 @@ def signup(payload: UserCreate, db: Session = Depends(get_db)) -> Token:
         email=payload.email,
         hashed_password=hash_password(payload.password),
         full_name=payload.full_name,
+        role=payload.role or "COMPLIANCE_OFFICER",
     )
     db.add(user)
     db.commit()

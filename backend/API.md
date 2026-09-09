@@ -852,7 +852,8 @@ Create a new user account and receive a JWT access token.
 {
   "email": "user@example.com",
   "password": "SecurePassword123",
-  "full_name": "John Doe"
+  "full_name": "John Doe",
+  "role": "ANALYST"
 }
 ```
 
@@ -860,6 +861,7 @@ Create a new user account and receive a JWT access token.
 - `email` (required): Valid email address
 - `password` (required): Minimum 8 characters
 - `full_name` (optional): User's full name
+- `role` (optional): User role (defaults to COMPLIANCE_OFFICER if not provided)
 
 **Response (201 Created)**
 ```json

@@ -11,6 +11,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
     full_name: str | None = None
+    role: str | None = None  # Defaults to COMPLIANCE_OFFICER if not provided
 
 
 class UserLogin(BaseModel):
