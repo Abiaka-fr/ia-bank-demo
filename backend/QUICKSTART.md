@@ -17,7 +17,8 @@
 cd backend
 .\.venv\Scripts\Activate.ps1   # Windows PowerShell
 # or
-source .venv/bin/activate      # Unix/macOS
+source .venv/bin/activate      # Unix/macOS or
+.venv\Scripts\activate         # Windows Command Line
 ```
 
 ### 2. Start the FastAPI Server
