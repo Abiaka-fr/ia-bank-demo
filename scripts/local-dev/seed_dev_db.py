@@ -4,16 +4,25 @@ Ce script vit **hors** de `backend/` (zone en lecture seule, voir `CLAUDE.md` §
 importe les modèles de Thư sans en modifier une ligne, et n'écrit que dans la copie de
 travail située dans `.local/` (gitignorée).
 
-Deux choses manquent pour que le backend démarre sur la base de référence :
+Trois choses peuvent manquer pour que le backend démarre sur la base de référence :
 
 1. la table `users` — absente de `abiaka_regulatory_demo.sqlite`, alors que toutes les
    routes `/api/**` exigent un JWT ; sans utilisateur, impossible de se connecter ;
 2. des comptes de démonstration — alignés sur ceux du corpus MSW du frontend
    (`frontend/src/lib/mocks/data/users.ts`) pour que le même identifiant fonctionne en
-   mode mock et en mode backend réel.
+   mode mock et en mode backend réel ;
+3. **une colonne ajoutée à un modèle existant, sans migration.** `alembic/versions/` est
+   gitignoré côté backend (voir `docs/backend-integration.md`), donc Thư ne committe
+   aucune migration : un modèle qui évolue (ex. `RequirementProcedureMap.assignee`,
+   ajouté le 2026-09-07) casse silencieusement toute requête sur cette table pour
+   quiconque a une copie de la base plus ancienne que le changement — SQLAlchemy
+   sélectionne la colonne parce qu'elle est dans le modèle Python, et SQLite répond
+   `no such column`. `sync_missing_columns()` compare chaque table déclarée à la base
+   réelle et ajoute les colonnes manquantes (`ALTER TABLE ... ADD COLUMN`, toujours
+   nullable — la seule forme qu'accepte SQLite après coup).
 
 `Base.metadata.create_all()` est appelé avec `checkfirst=True` (défaut) : les 10 tables
-déjà présentes dans la base de référence ne sont pas touchées, seule `users` est créée.
+déjà présentes dans la base de référence ne sont pas recréées, seule `users` l'est.
 """
 
 from __future__ import annotations
@@ -43,6 +52,40 @@ DEMO_USERS = [
 ]
 
 
+def sync_missing_columns(engine, base) -> list[str]:
+    """Ajoute les colonnes présentes dans les modèles mais absentes de la base.
+
+    Ne touche que des colonnes nullable (seule forme qu'accepte `ALTER TABLE ... ADD
+    COLUMN` sur une table existante en SQLite) et ne supprime ni ne renomme jamais rien
+    — un modèle qui a *retiré* une colonne laisse simplement une colonne inutilisée en
+    base, ce qui est sans risque, plutôt qu'une perte de données.
+    """
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    added: list[str] = []
+
+    with engine.begin() as connection:
+        for table in base.metadata.sorted_tables:
+            if table.name not in existing_tables:
+                continue  # Table entièrement absente : `create_all()` s'en charge.
+
+            existing_columns = {
+                column["name"] for column in inspector.get_columns(table.name)
+            }
+            for column in table.columns:
+                if column.name in existing_columns:
+                    continue
+                column_type = column.type.compile(dialect=engine.dialect)
+                connection.execute(
+                    text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {column_type}')
+                )
+                added.append(f"{table.name}.{column.name}")
+
+    return added
+
+
 def main() -> int:
     if not os.environ.get("DATABASE_URL"):
         print("DATABASE_URL n'est pas défini — lancer ce script via setup-backend.sh.")
@@ -58,6 +101,10 @@ def main() -> int:
 
     # checkfirst=True (défaut) : ne crée que les tables absentes, donc uniquement `users`.
     Base.metadata.create_all(bind=engine)
+
+    added_columns = sync_missing_columns(engine, Base)
+    if added_columns:
+        print(f"Colonnes ajoutées (modèle en avance sur la base) : {', '.join(added_columns)}")
 
     session = SessionLocal()
     try:

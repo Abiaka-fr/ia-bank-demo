@@ -4,23 +4,41 @@ import {
   documentDetailSchema,
   documentMetaSchema,
   requirementSchema,
+  type DocumentMeta,
 } from "@/types/api";
 
 import { isBackendLive } from "./backend/config";
 import * as backend from "./backend/resources";
 import { apiFetch } from "./client";
+import {
+  getRegulationAssigneeOverride,
+  setRegulationAssigneeOverride,
+} from "./regulation-assignee-overrides";
+
+/**
+ * Le backend réel n'a pas de champ `assignee_id` sur un document : voir
+ * `regulation-assignee-overrides.ts` pour le pourquoi de ce correctif purement local.
+ */
+function withAssigneeOverride<T extends DocumentMeta>(document: T): T {
+  const override = getRegulationAssigneeOverride(document.document_id);
+  return override ? { ...document, assignee_id: override } : document;
+}
 
 /**
  * Chaque fonction choisit sa source : backend réel quand il couvre l'endpoint et que
  * `NEXT_PUBLIC_BACKEND_URL` est renseigné, MSW sinon. Voir `./backend/config.ts`.
  */
 export function fetchRegulations() {
-  if (isBackendLive) return backend.fetchRegulations();
+  if (isBackendLive) {
+    return backend.fetchRegulations().then((docs) => docs.map(withAssigneeOverride));
+  }
   return apiFetch("/api/regulations", z.array(documentMetaSchema));
 }
 
 export function fetchRegulation(id: string) {
-  if (isBackendLive) return backend.fetchDocumentDetail(id);
+  if (isBackendLive) {
+    return backend.fetchDocumentDetail(id).then(withAssigneeOverride);
+  }
   return apiFetch(`/api/regulations/${id}`, documentDetailSchema);
 }
 
@@ -67,8 +85,20 @@ export function uploadRegulation(input: {
   });
 }
 
-/** Assignation — non couverte par le backend, reste sur MSW. */
+/**
+ * Assignation — non couverte par le backend. En mode mock, `PATCH /api/regulations/:id`
+ * fonctionne tel quel (le corpus MSW connaît déjà la régulation). En mode backend réel,
+ * ce même chemin 404ait systématiquement : la régulation affichée (un vrai document du
+ * backend, ex. `EXT-EU-AML-001`) n'existe jamais dans le corpus MSW, qui ne connaît que
+ * les 2 régulations mockées d'origine. Voir `regulation-assignee-overrides.ts`.
+ */
 export function updateRegulationAssignee(id: string, assigneeId: string) {
+  if (isBackendLive) {
+    setRegulationAssigneeOverride(id, assigneeId);
+    // Le retour ne sert qu'à satisfaire le type : l'appelant invalide la requête et
+    // relit la liste juste après, qui appliquera l'override au prochain chargement.
+    return backend.fetchDocumentDetail(id).then((doc) => ({ ...doc, assignee_id: assigneeId }));
+  }
   return apiFetch(`/api/regulations/${id}`, documentMetaSchema, {
     method: "PATCH",
     body: { assignee_id: assigneeId },

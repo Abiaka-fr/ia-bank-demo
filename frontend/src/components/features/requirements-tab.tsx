@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 import { AssessmentBadge } from "@/components/features/assessment-badge";
+import { FindingDetailDialog } from "@/components/features/finding-detail-dialog";
 import { EmptyState } from "@/components/features/query-state";
 import { HumanStatusBadge } from "@/components/features/human-status-badge";
 import { ReviewProgressBar } from "@/components/features/review-progress";
@@ -30,7 +31,12 @@ const ALL_DOMAINS = "ALL";
  * Onglet « Exigences » : le texte source extrait, exigence par exigence, avec l'état
  * de traitement de ses constats. Recherche plein texte (identifiant, référence, texte
  * normalisé et source) et filtre par domaine, en local sur les exigences déjà chargées.
- * Cliquer sur une exigence ouvre l'onglet « Analyse d'impact » positionné sur ses lignes.
+ *
+ * Cliquer sur une exigence à **un seul** constat (une seule procédure touchée) ouvre
+ * directement son détail (`FindingDetailDialog`) — pas la peine de changer d'onglet
+ * pour une seule ligne. Une exigence à **plusieurs** constats (plusieurs procédures)
+ * bascule vers l'onglet « Analyse d'impact » positionné sur ses lignes : un seul
+ * dialogue ne peut pas représenter plusieurs couples exigence × procédure à la fois.
  */
 export function RequirementsTab({
   requirements,
@@ -43,6 +49,10 @@ export function RequirementsTab({
 }) {
   const t = useTranslations("regulations");
   const actionsT = useTranslations("actions");
+  const [openDetail, setOpenDetail] = useState<{
+    finding: Finding;
+    requirement: Requirement;
+  } | null>(null);
 
   const [search, setSearch] = useState("");
   const [domain, setDomain] = useState<string>(ALL_DOMAINS);
@@ -132,15 +142,22 @@ export function RequirementsTab({
 
         // Une exigence sans constat n'a nulle part où naviguer : la carte reste
         // alors statique plutôt que d'offrir un lien qui ne mène à rien.
-        const focusHref = related.length
-          ? `/regulations/${regulationId}?tab=actions&focus=${requirement.requirement_id}`
-          : undefined;
+        const singleFinding = related.length === 1 ? related[0] : undefined;
+        const focusHref =
+          related.length > 1
+            ? `/regulations/${regulationId}?tab=actions&focus=${requirement.requirement_id}`
+            : undefined;
+        const isClickable = Boolean(singleFinding) || Boolean(focusHref);
+
+        function openSingleFindingDetail() {
+          if (singleFinding) setOpenDetail({ finding: singleFinding, requirement });
+        }
 
         return (
           <Card
             key={requirement.requirement_id}
             className={cn(
-              focusHref &&
+              isClickable &&
                 "relative transition-colors focus-within:ring-2 focus-within:ring-ring hover:border-foreground/30",
             )}
           >
@@ -163,7 +180,17 @@ export function RequirementsTab({
                     <HumanStatusBadge status={finding.human_status} />
                   </span>
                 ))}
-                {focusHref ? (
+                {singleFinding ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="relative z-10 ml-auto"
+                    onClick={openSingleFindingDetail}
+                  >
+                    {actionsT("goToRequirement")}
+                    <ChevronRight aria-hidden />
+                  </Button>
+                ) : focusHref ? (
                   <Button asChild size="sm" variant="ghost" className="relative z-10 ml-auto">
                     <Link href={focusHref}>
                       {actionsT("goToRequirement")}
@@ -173,7 +200,17 @@ export function RequirementsTab({
                 ) : null}
               </div>
               <CardTitle className="text-sm font-medium leading-snug">
-                {focusHref ? (
+                {singleFinding ? (
+                  // `::after` couvre toute la carte, comme la variante `Link`
+                  // ci-dessous — mêmes styles, ouvre le détail au lieu de naviguer.
+                  <button
+                    type="button"
+                    onClick={openSingleFindingDetail}
+                    className="text-left after:absolute after:inset-0 hover:underline focus:outline-none"
+                  >
+                    {requirement.normalized_requirement}
+                  </button>
+                ) : focusHref ? (
                   // `::after` couvre toute la carte : cliquer n'importe où dessus
                   // navigue, comme les cartes de régulation (regulations-view.tsx).
                   <Link
@@ -211,6 +248,17 @@ export function RequirementsTab({
           </Card>
         );
       })}
+
+      {openDetail ? (
+        <FindingDetailDialog
+          finding={openDetail.finding}
+          requirement={openDetail.requirement}
+          isOpen
+          onOpenChange={(open) => {
+            if (!open) setOpenDetail(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

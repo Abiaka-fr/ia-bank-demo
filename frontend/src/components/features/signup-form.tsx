@@ -19,33 +19,42 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useRouter } from "@/i18n/navigation";
-import { login } from "@/lib/api/auth";
+import { signUp } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 
-export function LoginForm() {
-  const t = useTranslations("login");
+/** Aligné sur `UserCreate.password` côté backend (`backend/app/schemas/user.py`). */
+const MIN_PASSWORD_LENGTH = 8;
+
+/**
+ * Création de compte (v1.4 du contrat). Le rôle du compte créé est fixé par le
+ * serveur — voir `docs/known-limitations.md` : il n'y a pas d'écran pour le choisir
+ * tant que le backend n'expose pas de route pour le changer après coup.
+ */
+export function SignupForm() {
+  const t = useTranslations("signup");
   const { user, signIn } = useSession();
   const router = useRouter();
 
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Déjà connecté (retour arrière depuis l'app) : on ne réaffiche pas le formulaire.
   useEffect(() => {
     if (user) router.replace("/dashboard");
   }, [user, router]);
 
   const mutation = useMutation({
-    mutationFn: () => login({ email, password }),
+    mutationFn: () => signUp({ email, password, full_name: fullName.trim() || undefined }),
     onSuccess: (result) => {
       signIn(result.user, result.token);
       router.replace("/dashboard");
     },
   });
 
-  const isInvalidCredentials =
+  const isEmailTaken =
     mutation.error instanceof ApiError &&
-    mutation.error.code === "INVALID_CREDENTIALS";
+    (mutation.error.code === "EMAIL_TAKEN" ||
+      (mutation.error.code === "BACKEND_ERROR" && mutation.error.status === 409));
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-muted/40 p-4">
@@ -72,6 +81,17 @@ export function LoginForm() {
               }}
             >
               <div className="space-y-2">
+                <Label htmlFor="full-name">{t("fullName")}</Label>
+                <Input
+                  id="full-name"
+                  type="text"
+                  autoComplete="name"
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="email">{t("email")}</Label>
                 <Input
                   id="email"
@@ -88,18 +108,20 @@ export function LoginForm() {
                 <Input
                   id="password"
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   required
+                  minLength={MIN_PASSWORD_LENGTH}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
               </div>
 
               {mutation.isError ? (
                 <Alert variant="destructive">
                   <TriangleAlert aria-hidden />
                   <AlertDescription>
-                    {isInvalidCredentials ? t("invalidCredentials") : t("failed")}
+                    {isEmailTaken ? t("emailTaken") : t("failed")}
                   </AlertDescription>
                 </Alert>
               ) : null}
@@ -113,9 +135,9 @@ export function LoginForm() {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground">
-          {t("noAccount")}{" "}
-          <Link href="/signup" className="font-medium text-foreground underline-offset-4 hover:underline">
-            {t("createAccount")}
+          {t("haveAccount")}{" "}
+          <Link href="/login" className="font-medium text-foreground underline-offset-4 hover:underline">
+            {t("signIn")}
           </Link>
         </p>
       </div>

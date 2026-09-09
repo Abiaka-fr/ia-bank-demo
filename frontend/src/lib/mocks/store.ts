@@ -14,18 +14,25 @@ import {
   auditHistoryEntrySchema,
   documentDetailSchema,
   findingSchema,
+  userSchema,
   type AuditHistoryEntry,
   type DocumentDetail,
   type Finding,
+  type User,
   type ValidateFindingBody,
 } from "@/types/api";
 
 import { regulations as seedRegulations } from "./data/documents";
 import { seedFindings } from "./data/findings";
+import { users as seedUsers } from "./data/users";
 
 const FINDINGS_KEY = "ia-bank.mock-findings";
 const REGULATIONS_KEY = "ia-bank.mock-regulations";
 const HISTORY_KEY = "ia-bank.mock-history";
+const USERS_KEY = "ia-bank.mock-users";
+/** Mots de passe des comptes créés par `POST /api/auth/signup` — jamais les 4 comptes
+ * de démo d'origine, qui continuent de partager `DEMO_PASSWORD` (voir `data/users.ts`). */
+const PASSWORDS_KEY = "ia-bank.mock-passwords";
 
 function read<T>(key: string, schema: z.ZodType<T>): T | null {
   if (typeof window === "undefined") return null;
@@ -57,6 +64,11 @@ let regulations: readonly DocumentDetail[] =
 
 let history: readonly AuditHistoryEntry[] =
   read(HISTORY_KEY, z.array(auditHistoryEntrySchema)) ?? [];
+
+let users: readonly User[] = read(USERS_KEY, z.array(userSchema)) ?? seedUsers;
+
+let passwordsByEmail: Readonly<Record<string, string>> =
+  read(PASSWORDS_KEY, z.record(z.string(), z.string())) ?? {};
 
 // --- Constats -------------------------------------------------------------
 
@@ -151,16 +163,63 @@ export function updateRegulationAssignee(
   return updated;
 }
 
+// --- Utilisateurs -----------------------------------------------------------
+
+/** Comptes assignables — les 4 comptes de démo, plus tout compte créé via `signup`. */
+export function listUsers(): readonly User[] {
+  return users;
+}
+
+export function findUserByEmail(email: string): User | undefined {
+  const normalized = email.trim().toLowerCase();
+  return users.find((user) => user.email.toLowerCase() === normalized);
+}
+
+export function addUser(user: User): User {
+  users = [...users, user];
+  write(USERS_KEY, users);
+  return user;
+}
+
+/**
+ * v1.5 — aucune restriction ici, comme côté backend réel (`fabd0cf`, « Create API to
+ * update role of user ») : la route n'a pas de contrôle d'autorisation propre. `role`
+ * reste une chaîne libre, pas une énumération.
+ */
+export function updateUserRole(userId: string, role: string): User | undefined {
+  const current = users.find((user) => user.user_id === userId);
+  if (!current) return undefined;
+
+  const updated: User = { ...current, role };
+  users = users.map((user) => (user.user_id === userId ? updated : user));
+  write(USERS_KEY, users);
+  return updated;
+}
+
+/** Absent pour les 4 comptes de démo (voir `data/users.ts::DEMO_PASSWORD`). */
+export function getPassword(email: string): string | undefined {
+  return passwordsByEmail[email.trim().toLowerCase()];
+}
+
+export function setPassword(email: string, password: string): void {
+  passwordsByEmail = { ...passwordsByEmail, [email.trim().toLowerCase()]: password };
+  write(PASSWORDS_KEY, passwordsByEmail);
+}
+
 /** Utilisé par les tests pour repartir d'un état propre. */
 export function resetStore(): void {
   findings = seedFindings;
   regulations = seedRegulations;
   history = [];
+  users = seedUsers;
+  passwordsByEmail = {};
   if (typeof window === "undefined") return;
   try {
     window.sessionStorage.removeItem(FINDINGS_KEY);
     window.sessionStorage.removeItem(REGULATIONS_KEY);
     window.sessionStorage.removeItem(HISTORY_KEY);
+    window.sessionStorage.removeItem(USERS_KEY);
+    window.sessionStorage.removeItem(PASSWORDS_KEY);
   } catch {
     // Rien à nettoyer si le stockage est indisponible.
   }

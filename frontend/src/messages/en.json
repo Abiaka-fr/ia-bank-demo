@@ -30,9 +30,11 @@
   "nav": {
     "sectionAnalysis": "Analysis",
     "sectionAssistance": "Assistance",
+    "sectionAdmin": "Administration",
     "dashboard": "Dashboard",
     "regulations": "Regulatory analysis",
     "copilot": "Copilot",
+    "users": "Users",
     "toggleSidebar": "Show or hide navigation"
   },
   "topBar": {
@@ -143,7 +145,12 @@
     "title": "Loading failed",
     "generic": "The data could not be retrieved.",
     "contract": "The response received does not match the expected API contract.",
-    "notFound": "Resource not found."
+    "notFound": "Resource not found.",
+    "pageTitle": "Something went wrong",
+    "pageBody": "This screen could not be displayed. Your data is not lost — try again, or go back to the dashboard.",
+    "backToDashboard": "Back to dashboard",
+    "notFoundPageTitle": "Page not found",
+    "notFoundPageBody": "This page does not exist or has moved."
   },
   "login": {
     "productName": "IA Bank — Regulatory AI Copilot",
@@ -155,7 +162,23 @@
     "submitting": "Signing in…",
     "invalidCredentials": "Incorrect email address or password.",
     "failed": "Sign-in failed. Please try again.",
-    "demoHint": "Demonstration — test account: {email} / {password}"
+    "noAccount": "Don't have an account yet?",
+    "createAccount": "Create an account"
+  },
+  "signup": {
+    "productName": "IA Bank — Regulatory AI Copilot",
+    "title": "Create an account",
+    "subtitle": "Join the compliance review workspace.",
+    "fullName": "Full name",
+    "email": "Email address",
+    "password": "Password",
+    "passwordHint": "At least 8 characters.",
+    "submit": "Create account",
+    "submitting": "Creating account…",
+    "emailTaken": "This email address is already in use.",
+    "failed": "Account creation failed. Please try again.",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in"
   },
   "assignee": {
     "label": "Assigned to",
@@ -163,6 +186,19 @@
     "updated": "Assignment updated",
     "updateFailed": "The assignment could not be saved.",
     "escalatedTo": "Escalated to"
+  },
+  "users": {
+    "title": "Users",
+    "subtitle": "Manage account roles for this workspace.",
+    "empty": "No users found.",
+    "columnFullName": "Full name",
+    "columnEmail": "Email address",
+    "columnRole": "Role",
+    "roleLabel": "Role for {name}",
+    "save": "Save",
+    "saved": "Role updated.",
+    "saveFailed": "The role could not be saved.",
+    "permissionNotice": "Any signed-in person can currently change any account's role — no fine-grained access control is applied to this action yet."
   },
   "upload": {
     "trigger": "Upload a regulation",
@@ -195,7 +231,7 @@
     "escalateNeedsAssignee": "Choose who the finding is escalated to before escalating.",
     "saved": "Decision saved",
     "saveFailed": "The decision could not be saved.",
-    "expandHint": "Click a requirement id to show its evidence",
+    "expandHint": "Click a row to open the finding's details",
     "goToRequirement": "Handle"
   },
   "procedureDialog": {

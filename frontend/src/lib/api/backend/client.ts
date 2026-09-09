@@ -23,7 +23,7 @@ export class BackendGapError extends Error {
 }
 
 type BackendRequestOptions = {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "PUT";
   body?: unknown;
   /** Une clé peut apparaître plusieurs fois (ex. `document_ids`), d'où le tableau. */
   searchParams?: Record<string, string | string[] | undefined>;

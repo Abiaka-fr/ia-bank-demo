@@ -18,6 +18,7 @@ import {
 import { Link, usePathname } from "@/i18n/navigation";
 
 import {
+  adminNavItems,
   analysisNavItems,
   assistanceNavItems,
   type NavItem,
@@ -83,6 +84,11 @@ export function AppSidebar() {
         <NavGroup
           label={t("sectionAssistance")}
           items={assistanceNavItems}
+          pathname={pathname}
+        />
+        <NavGroup
+          label={t("sectionAdmin")}
+          items={adminNavItems}
           pathname={pathname}
         />
       </SidebarContent>

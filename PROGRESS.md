@@ -14,14 +14,25 @@ exécutable en local sans PostgreSQL. Il ne reste que des points qui ne dépende
 de code frontend : le **déploiement Vercel** et des **décisions à prendre avec Thư en revue commune**
 (voir « Reste à faire » dans le fichier de phase). Détail complet en bas de ce fichier.
 
-**Prochaine étape : Phase 5 — Client Readiness** (`docs/phases/phase-5-client-readiness.md`), pas
-Phase 3. Les Phases 3 (Impact Analysis) et 4 (Evidence & validation humaine) ont leur portée
-frontend déjà couverte — construites en avance dès la Phase 1 (sous forme d'onglets plutôt que
-d'écrans séparés, décision de Giang) puis complétées le 2026-09-07 (couleurs, navigation, historique
-des décisions). Ce qui manque réellement pour ces deux phases est un seul point, commun aux deux :
-**la persistance des filtres/tri dans l'URL** sur l'onglet Analyse d'impact (voir
-`docs/phases/phase-3-impact-engine.md`). Le vrai chantier suivant est la Phase 5 : déploiement
-Vercel, vérification d'un scénario cross-langue, `docs/known-limitations.md`.
+**Phase 5 — Client Readiness, points 1/3/5(doc) traités le 2026-09-09** (`docs/phases/phase-5-client-readiness.md`), pas Phase 3.
+Les Phases 3 (Impact Analysis) et 4 (Evidence & validation humaine) ont leur portée frontend déjà
+couverte — construites en avance dès la Phase 1 puis complétées le 2026-09-07. Un seul point mineur
+reste ouvert pour ces deux phases : la persistance des filtres/tri dans l'URL sur l'onglet Analyse
+d'impact. **Déploiement Vercel fait par Giang le 2026-09-09.** Relecture bilingue complète faite
+(rien trouvé à corriger), `error.tsx`/`not-found.tsx`/`global-error.tsx` ajoutés (trou réel trouvé
+en testant : une route inexistante plantait avec « Missing <html> and <body> tags »),
+`docs/known-limitations.md` créé. Reste de la Phase 5 : rejouer le script de démo sur
+l'environnement Vercel déployé (pas seulement en local).
+
+**Côté backend, 4 nouveaux commits de Thư lus le 2026-09-09** (`GET /api/users`,
+`PUT /api/mappings/:id/human-status`+`/assignee`, `POST /api/documents/{id}/update`,
+`current_version: str|float`) — deux bugs réels trouvés et corrigés côté frontend/outillage local
+au passage (schéma Zod pas à jour, colonne backend sans migration cassant tout `/api/mappings/*`).
+**`GET /api/users` et la validation humaine réelle (`PUT /api/mappings/:id/human-status`+
+`/assignee`) branchés côté frontend le 2026-09-09 soir**, vérifiés en conditions réelles (Accepter
+et Escalader+assignation persistent bien sur le backend local, un troisième bug réel trouvé et
+corrigé au passage — voir l'entrée du soir plus bas). Détail complet dans
+`docs/backend-integration.md`.
 
 Phase 0 — Initialisation : terminée le 2026-09-04.
 
@@ -46,9 +57,12 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
       (auth JWT, documents, exigences). Voir `backend/API.md`.
 - [x] Backend : constats (`Finding`) — routés par Thư le 2026-09-07
       (`GET /api/mappings/*`), voir plus bas
-- [ ] Backend : validation humaine, agrégats de tableau de bord (`/dashboard/overview`,
-      `/summary`, `/map`) — **toujours non commencés côté backend**, restent sur MSW dans
-      les deux modes du frontend
+- [x] Backend : validation humaine — routée par Thư le 2026-09-07 après-midi
+      (`PUT /api/mappings/:id/human-status`+`/assignee`), **branchée côté frontend le
+      2026-09-09 soir**. Liste des utilisateurs (`GET /api/users`) branchée le même soir.
+- [ ] Backend : agrégats de tableau de bord (`/dashboard/overview`, `/summary`, `/map`)
+      et journalisation des décisions (`actor_id`) — **toujours non commencés côté
+      backend**, restent sur MSW dans les deux modes du frontend
 - [x] Frontend branché sur le backend réel pour ce qu'il couvre — connexion, régulations,
       procédures, exigences (couche d'adaptation `frontend/src/lib/api/backend/`, bascule
       par `NEXT_PUBLIC_BACKEND_URL`). Constats, tableau de bord, upload, validation humaine
@@ -68,7 +82,11 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
       découle)
 - [ ] Contrat d'API v1.3 validé avec Thư (`actor_id` sur `validate`, endpoint
       `/history`) — **à faire en réunion**
-- [ ] Déploiement Vercel (frontend) — `vercel.json` prêt, déploiement réel non effectué
+- [x] Déploiement Vercel (frontend) — fait par Giang le 2026-09-09
+- [x] Phase 5 : filets de sécurité Next.js (`error.tsx`, `not-found.tsx`, `global-error.tsx`)
+      pour ne plus jamais montrer un écran blanc/une erreur runtime brute en démo
+- [x] `docs/known-limitations.md` — limitations connues reformulées pour un public client
+- [ ] Phase 5 : rejouer le script de démo (7 min) sur l'environnement Vercel déployé
 
 ## Journal des décisions
 
@@ -671,3 +689,400 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   rester un compteur de périmètre) mérite d'être confirmée avec Giang — l'implémentation
   actuelle a tranché pour « compteur de périmètre inchangé », documenté en commentaire
   dans `lib/mocks/summary.ts` pour être facile à inverser si la lecture est différente.
+
+- **2026-09-09 (Claude Code — 4 commits de Thư, 2 bugs réels trouvés et corrigés côté
+  frontend/outillage, Vercel déployé par Giang)** :
+
+  **Vercel déployé par Giang** — le point resté ouvert depuis la Phase 1 est clos.
+
+  **4 nouveaux commits backend depuis la dernière lecture (`db41421`)** :
+
+  1. `624db76` — **`GET /api/users`** (+ `/{user_id}`) : liste paginée, filtres `role`/`is_active`.
+     Répond à une question ouverte depuis la v1 du contrat. **Pas encore branché côté frontend**
+     (`fetchUsers` reste sur MSW) — forme à vérifier contre `userSchema` avant de basculer.
+  2. `2e747d9` — **`PUT /api/mappings/:id/human-status` et `/assignee`** : la validation humaine
+     peut enfin être persistée côté backend. **Pas encore branchée côté frontend.** Écarts à
+     absorber avant de le faire : énumération différente
+     (`PENDING_REVIEW`/`ACCEPT`/`REJECT`/`ESCALATE` contre
+     `PENDING`/`ACCEPTED`/`REJECTED`/`ESCALATED` du contrat), deux appels séparés au lieu d'un, et
+     surtout **aucun champ `actor_id`/`custom_action`/`reviewer_comment`** — l'onglet Historique
+     resterait vide pour toute décision prise via cette route.
+  3. `c3c0e51` — `POST /api/documents/{id}/update` : nouvelle version d'un document existant
+     (incrémente `current_version`, marque l'ancienne version `SUPERSEDED`). Confirme au passage la
+     convention `VER-{document_id}-{version_no}` déjà déduite dans
+     `current-version-id.ts`. Pas branché, aucun écran ne le déclenche.
+  4. `d34d746` — `DocumentRead.current_version` élargi à `str | float` (un bug qu'elle a rencontré
+     : certains documents ont cette valeur en nombre, pas en chaîne).
+
+  **Bug réel n°1, trouvé en lisant le commit 4 et vérifié en le cherchant chez nous** :
+  `backendDocumentSchema.current_version` (`frontend/src/lib/api/backend/schemas.ts`) n'acceptait
+  que `string` — exactement le bug que Thư venait de corriger côté backend, jamais reporté côté
+  frontend. Un document avec cette valeur en nombre aurait fait échouer `fetchRegulations()` en
+  entier (`ApiContractError` sur tout le tableau, pas seulement la ligne fautive). Corrigé :
+  `z.union([z.string(), z.number()])`, propagé à `deriveCurrentVersionId` et `adaptDocument`
+  (`String(...)` avant usage). Aucun document de la base de référence n'est actuellement concerné
+  (vérifié), mais le prochain corpus importé par Thư pourrait l'être. Test ajouté.
+
+  **Bug réel n°2, trouvé en testant les nouveaux endpoints avant de les documenter** : le commit 2
+  ajoute une colonne `assignee` à `RequirementProcedureMap` **sans migration** (`alembic/versions/`
+  gitignoré côté backend — Thư ne peut pas en committer). Conséquence : SQLAlchemy sélectionne
+  cette colonne dans **toute** requête sur la table, y compris `GET /api/mappings/*` — donc
+  **l'ensemble de l'intégration des constats, construite et vérifiée le 2026-09-07, était cassée**
+  sur notre base locale (`no such column: requirement_procedure_map.assignee`, HTTP 500 partout).
+  Corrigé dans l'outillage local (`scripts/local-dev/seed_dev_db.py::sync_missing_columns`,
+  nouveau) : compare chaque table déclarée dans les modèles à la base réelle et ajoute les colonnes
+  manquantes (`ALTER TABLE ... ADD COLUMN`, toujours nullable). Généralise le contournement déjà en
+  place pour la table `users` à *tout* futur ajout de colonne côté Thư — le prochain écart de ce
+  genre se corrigera tout seul au lieu de re-casser silencieusement l'intégration. Vérifié après
+  correction : `/api/mappings/requirements-to-procedures`, `/human-status` et `/assignee`
+  répondent 200 ; état de test remis à zéro (`PENDING_REVIEW`, `assignee: null`) après vérification.
+
+  **Vérifié** : `pnpm lint`, `pnpm typecheck`, `pnpm test` (93 tests / 12 fichiers, +1) passent.
+  `backend/` non modifié (`git status --short backend/` vide).
+
+  **Reste à faire (prochaine session)** : brancher `GET /api/users`, et brancher la validation
+  humaine (`PUT /api/mappings/:id/human-status`+`/assignee`) avec sa couche d'adaptation
+  d'énumération — l'historique restera sur MSW tant que le backend n'a pas d'`actor_id`. Voir
+  `docs/backend-integration.md` points 6-9 pour le détail.
+
+- **2026-09-09 (Claude Code — Phase 5, points 1/3/5(doc))** : implémentation de la portée Phase 5
+  restante (polish bilingue, états vides/erreurs, `docs/known-limitations.md`).
+
+  **Lu avant de coder** (lecture seule) : `backend/API.md`, `backend/app/routers/`, `git log --
+  backend/` — confirmé qu'aucun commit backend n'est arrivé depuis la lecture du 2026-09-09 matin
+  (toujours `d34d746` en tête). Rien de nouveau à absorber côté intégration pour cette session.
+
+  1. **Polish bilingue (point 1).** Relecture systématique : parité `fr.json`/`en.json` déjà
+     garantie par le test existant (184 clés de chaque côté, aucune vide) ; grep ciblé sur les
+     tournures interdites de `docs/ui-guardrails.md` (« non-compliant », « l'IA a validé »,
+     « viole »…) dans les messages ET dans le JSX — rien trouvé ; grep sur les attributs
+     (`placeholder`/`title`/`alt`/`aria-label`) et le texte JSX littéral pour un texte codé en dur
+     qui aurait échappé à `next-intl` — rien trouvé non plus. La discipline bilingue des sessions
+     précédentes tenait déjà ; rien à corriger.
+  2. **États vides et erreurs (point 3).** Les écrans métier avaient déjà `LoadingState`/
+     `ErrorState`/`EmptyState` (`components/features/query-state.tsx`) sur toutes les vues de
+     données. **Trou réel trouvé en testant dans un navigateur, pas en lisant le code** : aucun
+     fichier de convention Next.js `error.tsx`/`not-found.tsx`/`global-error.tsx` n'existait nulle
+     part dans `src/app/`. Naviguer vers une route inexistante (`/fr/does-not-exist`) tombait sur
+     le `_not-found` généré automatiquement par Next, qui ne rend que `app/layout.tsx` (sans
+     `<html>/<body>`, portés par `[locale]/layout.tsx`) → `Runtime Error: Missing <html> and <body>
+     tags in the root layout` affiché en plein écran. Un vrai écran cassé, exactement ce que le
+     point 3 de la phase interdit.
+     - `src/app/[locale]/error.tsx` : boundary React (obligatoire côté Next), bilingue via
+       next-intl (disponible ici car rendu à l'intérieur de `[locale]/layout.tsx`), bouton
+       Réessayer + lien retour tableau de bord.
+     - `src/app/[locale]/not-found.tsx` : même traitement pour un `notFound()` explicite ou une
+       route manquante *à l'intérieur* de l'arbre `[locale]`.
+     - `src/app/not-found.tsx` et `src/app/global-error.tsx` : filets de secours racine, pour le
+       cas où même `[locale]/layout.tsx` n'a pas pu se monter — hors de portée de
+       `NextIntlClientProvider`, donc texte bilingue écrit en dur, choix documenté en commentaire
+       comme exception assumée (cas limite qui ne devrait jamais s'afficher en usage sain).
+     - Nouvelles clés `errors.pageTitle`/`pageBody`/`backToDashboard`/`notFoundPageTitle`/
+       `notFoundPageBody` ajoutées dans les deux dictionnaires.
+  3. **`docs/known-limitations.md` créé** (point 5 du DoD) : neuf limitations réécrites pour un
+     public client (validation humaine et historique non persistés côté backend réel, preuve
+     interne non ciblée, tableau de bord recalculé côté client, upload simulé, textes backend non
+     traduits, `priority` déduit de `risk_level`, authentification de démo, Copilot en placeholder)
+     à partir de ce qui était déjà noté au fil de l'eau dans `docs/backend-integration.md` et
+     `PROGRESS.md`, sans rien inventer de nouveau.
+
+  **Vérifié dans un navigateur piloté** (pas seulement lu) : `/fr/does-not-exist` affiche
+  maintenant l'écran de secours bilingue au lieu de l'erreur runtime, zéro erreur console ;
+  `/fr/regulations/DOES-NOT-EXIST` (régulation inexistante, à l'intérieur de l'app, connecté en
+  tant que Marie Lefèvre) affiche l'`ErrorState` « Ressource introuvable » existant avec bouton
+  Réessayer ; écran Copilot revérifié en anglais, toujours honnêtement étiqueté « écran prévu pour
+  une phase ultérieure ». `pnpm lint`, `pnpm tsc --noEmit`, `pnpm test` (93/93, inchangé — aucun
+  test n'était attendu sur ces fichiers de convention Next.js, purement structurels), `pnpm build`
+  passent tous. `backend/` vérifié intact.
+
+  **Reste à faire pour clore la Phase 5** : point 5 du DoD — rejouer le script de démo de 7 minutes
+  sur l'environnement Vercel déployé (pas seulement en local), ce qui demande l'URL de déploiement
+  et un passage en direct, non fait depuis cette session. Le point 4 (Copilot UI, P2 optionnel)
+  reste volontairement hors périmètre : le P0 ci-dessus est solide mais le point 5 n'est pas encore
+  vérifié en conditions réelles, et la phase précise de ne construire le Copilot que si tout le P0
+  est solide **et** vérifié.
+
+- **2026-09-09 (soir, Claude Code — GET /api/users et validation humaine réelle branchés)** :
+  Giang a signalé que les deux endpoints de Thư lus le matin même n'étaient en réalité pas encore
+  branchés côté frontend (la session précédente s'était concentrée sur le polish bilingue et les
+  états d'erreur). Fait cette session, dans `frontend/src/lib/api/backend/` sauf indication
+  contraire :
+
+  1. **`GET /api/users`** : `backendUserListSchema` (nouveau, `schemas.ts`), `fetchUsers()`
+     (`resources.ts`, réutilise `adaptUser` déjà écrit le 2026-09-07), branché dans
+     `src/lib/api/auth.ts::fetchUsers` (`isBackendLive ? backend.fetchUsers() : MSW`). Les
+     sélecteurs d'assignation (`AssigneeSelect`, écran de connexion) n'ont pas changé : ils
+     consomment `useUsers()` sans savoir laquelle des deux sources a répondu.
+  2. **Validation humaine réelle** (`PUT /api/mappings/:id/human-status` et `/assignee`,
+     commit `2e747d9`) : nouvelle fonction `validateMapping()` dans `resources.ts`, branchée dans
+     `src/lib/api/findings.ts::validateFinding`. Enchaîne les deux appels PUT (le backend n'a pas de
+     route combinée comme le contrat) ; le second n'a lieu que si `assignee_id` est fourni (évite un
+     appel inutile sur un simple Accepter/Rejeter).
+     - **Bug réel trouvé en écrivant l'adaptateur d'énumération, pas en le lisant après coup** :
+       `finding-adapt.ts::adaptHumanStatus` (écrit le 2026-09-07) ne reconnaissait que le participe
+       passé (`ACCEPTED`/`REJECTED`/`ESCALATED`), en s'appuyant sur le filtre documenté de
+       `GET /api/mappings/all`. Mais l'exemple de réponse de `PUT .../human-status` dans
+       `backend/API.md` montre `"human_status": "ACCEPT"` (verbe court) — c'est cette valeur qui est
+       réellement stockée. Sans correction, une exigence tout juste acceptée via le backend réel
+       serait retombée en « En attente » au chargement suivant. `adaptHumanStatus` accepte
+       maintenant les deux formes ; nouvelle fonction symétrique `adaptHumanStatusToBackend` pour le
+       sens aller (contrat → backend), les deux couvertes par 5 tests.
+     - Une exigence sans procédure associée (préfixe `NO-MAPPING-`, aucun cas dans le corpus actuel)
+       n'a pas de ligne `RequirementProcedureMap` : `validateMapping` lève une `BackendGapError`
+       explicite plutôt que d'appeler une route inexistante.
+     - **Accepté explicitement, documenté dans `docs/known-limitations.md`** : `custom_action` et
+       `reviewer_comment` ne sont pas transmis au backend (pas de colonnes côté serveur) ; l'onglet
+       Historique reste sur MSW dans les deux modes, le backend ne journalisant toujours pas
+       `actor_id`.
+
+  **Vérifié en conditions réelles** (backend de Thư lancé en local via
+  `scripts/local-dev/run-backend.sh`, frontend pointé dessus, navigateur piloté, connecté en tant
+  que Marie Lefèvre) : Accepter sur `MAP-0001` (REQ-0001 × PRC-AML-007) — l'interface affiche
+  aussitôt « Accepté » et la barre de progression passe à 13 % (1/8) ; confirmé indépendamment par
+  `curl GET /api/mappings/all` sur le backend, qui renvoie bien `"human_status": "ACCEPT"`. Escalader
+  `MAP-0003` (REQ-0002 × PRC-AML-008) avec Thomas Rousseau assigné — l'interface affiche « Escaladé »
+  avec le bon nom, confirmé par `curl` : `"human_status": "ESCALATE", "assignee": "USR-002"`. Liste
+  des 4 utilisateurs réels du backend correctement proposée dans le sélecteur d'assignation. **Zéro
+  erreur console** liée à ce changement. Base de développement locale remise à
+  `PENDING_REVIEW`/`assignee: null` sur les deux mappings après vérification (`sqlite3` direct,
+  backend arrêté), pour ne pas laisser de résidu de test à la prochaine session. `pnpm lint`,
+  `pnpm tsc --noEmit`, `pnpm test` (96/96, +3 tests sur l'adaptateur d'énumération) passent tous.
+  `backend/` vérifié intact (`git status --short backend/` vide).
+
+  **Reste ouvert** : point 5 de la Phase 5 (rejouer le script de démo sur Vercel) toujours pas fait ;
+  point mineur de la Phase 3 (filtres non persistés dans l'URL sur l'onglet Analyse d'impact)
+  toujours ouvert, signalé de nouveau par Giang — à traiter à la prochaine session si le temps le
+  permet, non bloquant.
+
+- **2026-09-09 (soir, suite — Claude Code — écran de création de compte, pull backend vérifié)** :
+  trois demandes de Giang après relecture des changements ci-dessus.
+
+  1. **Pull backend de Thư (`b811678`) vérifié avant de coder** : un seul fichier changé
+     (`backend/app/schemas/document.py`), un `field_validator` qui force `current_version` à
+     toujours être une chaîne (le bug inverse de celui contourné le 2026-09-09 matin, maintenant
+     réglé à la source). **Aucun changement lié à `actor_id` ou à l'historique** — confirmé en
+     relisant `backend/app/models/mapping.py`, `backend/app/schemas/mapping.py` et
+     `backend/app/routers/users.py` : toujours pas de colonne `actor_id`, toujours pas de route
+     d'audit. La réponse de la session précédente (Historique reste MSW) tient donc toujours.
+  2. **Écran de création de compte (v1.4 du contrat)** : `POST /api/auth/signup` — déjà exposé par
+     le backend de Thư (`backend/API.md` § 6), mais absent du contrat frontend et jamais branché.
+     Ajouté :
+     - `docs/api-contract.md` v1.4 (`POST /api/auth/signup`), `types/api.ts::signupBodySchema`.
+     - `frontend/src/lib/api/backend/resources.ts::signUp` (backend réel) et
+       `frontend/src/lib/api/auth.ts::signUp` (bascule mock/réel, même motif que `login`).
+     - Mock : `src/lib/mocks/store.ts` gagne un état utilisateurs mutable
+       (`listUsers`/`findUserByEmail`/`addUser`/`getPassword`/`setPassword`, persistant en
+       `sessionStorage` comme le reste) — avant, `data/users.ts` exportait une liste figée non
+       modifiable ; un compte créé en mock rejoint maintenant la liste des utilisateurs assignables
+       pour le reste de la session, avec son propre mot de passe (les 4 comptes de démo continuent
+       de partager `DEMO_PASSWORD`).
+     - `src/app/[locale]/signup/` + `signup-form.tsx` (même structure que l'écran de connexion,
+       hors coquille applicative). `login-form.tsx` : **retrait des identifiants pré-remplis et de
+       l'indice de démo**, ajout d'un lien vers la création de compte (demande explicite de Giang,
+       « bỏ mấy người mặc định đi »).
+     - **Rôle non assignable, décision explicite de Giang après clarification** : le backend fixe
+       `role` à `COMPLIANCE_OFFICER` pour tout nouveau compte (`backend/app/models/user.py`) et
+       n'expose aucune route pour le changer ensuite (`backend/app/routers/users.py` n'a que des
+       `GET`). Un écran d'assignation de poste a donc été **volontairement pas construit** cette
+       session — Giang a choisi de ne pas le faire en mock uniquement (ce qui aurait donné une
+       fonctionnalité qui semble marcher mais ne persiste nulle part en mode réel) et d'attendre que
+       Thư expose une route `PATCH /api/users/:id` (ou équivalent). Suivi dans
+       `docs/backend-integration.md` point 10.
+
+  **Vérifié en conditions réelles** (backend local + frontend, navigateur piloté, deux contextes
+  isolés) : création de compte en mode backend réel → `GET /api/users` sur le vrai backend confirme
+  la ligne créée (`role: "COMPLIANCE_OFFICER"`) ; tentative avec un e-mail déjà utilisé
+  (`marie.lefevre@iabank.fr`) → message « Cette adresse e-mail est déjà utilisée » (409 réel du
+  backend) ; création de compte en mode mock (`NEXT_PUBLIC_BACKEND_URL` vidé temporairement) →
+  connexion automatique, dashboard mock affiché. **Zéro erreur console** dans les deux modes.
+  `pnpm lint`, `pnpm tsc --noEmit`, `pnpm test` (100/100, +4 tests) et `pnpm build` (nouvelles routes
+  `/fr/signup`, `/en/signup`) passent tous. Compte de test créé sur le backend local et
+  `.env.local` remis à son état d'origine (`NEXT_PUBLIC_BACKEND_URL=http://localhost:8000`) après
+  vérification, backend arrêté proprement.
+
+- **2026-09-09 (soir, suite — Claude Code — écran d'assignation de rôle, débloqué par un
+  nouveau commit de Thư arrivé pendant la session)** : Giang a signalé que le
+  signup échouait à nouveau — même cause que le matin (backend local arrêté en fin de
+  session précédente, `.env.local` toujours pointé dessus). Backend relancé. Giang a
+  aussi demandé de revérifier si Thư avait poussé une route de changement de rôle.
+
+  **Pull vérifié avant de coder** : Thư a poussé `fabd0cf` (« Create API to update role
+  of user ») quelques minutes après la session précédente — exactement le blocage noté
+  dans `docs/backend-integration.md` point 10/11. `PUT /api/users/:id/role`, body
+  `{role: string}` → `User`. `role` reste une chaîne libre (pas d'énumération), et la
+  route n'a **aucun contrôle d'autorisation propre** (n'importe quel compte authentifié
+  peut changer le rôle de n'importe quel autre) — limite assumée, affichée directement
+  dans l'écran plutôt que cachée.
+
+  **Fait :**
+  - `docs/api-contract.md` v1.5, `types/api.ts::updateUserRoleBodySchema`.
+  - `backend/resources.ts::updateUserRole` (backend réel) et
+    `frontend/src/lib/api/users.ts` (nouveau fichier — `fetchUsers` en est extrait
+    d'`auth.ts`, `updateUserRole` ajouté ; un fichier par ressource, comme demandé par
+    `frontend/CLAUDE.md`). Mock : `store.ts::updateUserRole`, route
+    `PUT /api/users/:id/role` dans `handlers.ts`.
+  - Écran `/users` (« Utilisateurs ») : nouvelle entrée de sidebar « Administration »,
+    table éditable (nom, e-mail, rôle en texte libre + bouton Enregistrer par ligne,
+    `user-role-row.tsx`), bandeau d'avertissement sur l'absence de contrôle d'accès.
+  - `client.ts` (contrat) élargi à la méthode `PUT`, comme le client backend l'était déjà.
+
+  **Vérifié en conditions réelles** (backend local relancé, frontend, navigateur piloté,
+  connecté en Marie Lefèvre) : rôle de Karim Benali changé « Juriste Réglementaire » →
+  « Analyste Senior », confirmé par `GET /api/users` sur le vrai backend, remis à sa
+  valeur d'origine après vérification. **Zéro erreur console** (un avertissement
+  d'accessibilité mineur — champ sans `id`/`name` — trouvé et corrigé au passage).
+  `pnpm lint`, `pnpm tsc --noEmit`, `pnpm test` (102/102, +2 tests) et `pnpm build`
+  (nouvelles routes `/fr/users`, `/en/users`) passent tous. `backend/` vérifié intact.
+  **Backend local laissé démarré à la fin de cette session** (contrairement aux fois
+  précédentes) pour que Giang puisse continuer à tester sans retomber sur le même
+  blocage — à arrêter manuellement si besoin (`pkill -f uvicorn`).
+
+- **2026-09-09 (nuit, Claude Code — deux bugs réels trouvés en testant, pas en lisant le
+  code)** : Giang a signalé, après usage normal de l'écran : assignation d'une
+  régulation impossible (« ça dit que ça ne peut pas sauvegarder »), même chose à
+  l'escalade, et l'historique qui ne se remplit toujours pas (déjà su et accepté plus
+  tôt dans la session — pas un bug, juste re-signalé en le vivant en conditions
+  réelles).
+
+  **Reproduit dans un navigateur piloté avant de corriger quoi que ce soit** (backend
+  local relancé, resté démarré depuis la session précédente) :
+
+  1. **Bug réel n°1 — assignation d'une régulation, 404 systématique en mode backend
+     réel.** Cliquer sur « Personne en charge » d'une carte régulation
+     (`EXT-EU-AML-001`, un vrai document du backend) et choisir un nom renvoyait bien un
+     404 dans la console, le sélecteur revenait à « Non assigné ». Cause : le code
+     appelait toujours `PATCH /api/regulations/:id`, routé vers le handler MSW —
+     lequel cherche la régulation dans le corpus mocké d'origine (2 régulations),
+     jamais dans le corpus réel de Thư (8 régulations). Corrigé par un nouveau fichier
+     `frontend/src/lib/api/regulation-assignee-overrides.ts` : un overlay purement
+     local au navigateur (`sessionStorage`), indépendant du backend (qui n'a pas ce
+     champ) et du corpus MSW — `fetchRegulations`/`fetchRegulation` l'appliquent en
+     mode backend réel, `updateRegulationAssignee` l'écrit au lieu d'appeler MSW.
+  2. **Bug réel n°2 — l'assigné d'une escalade ne « tenait » pas après rechargement.**
+     La décision (Escaladé) restait bien affichée, mais « Personne en charge » revenait
+     systématiquement à « Non assigné » après un `reload`, alors que
+     `GET /api/mappings/all` sur le vrai backend confirmait `assignee: "USR-002"` —
+     donc bien persisté, seulement jamais relu. Cause : `assembleMappedFinding`
+     (`finding-adapt.ts`) ne mappait pas le champ `assignee` de la réponse backend vers
+     `Finding.assignee_id` — une ligne oubliée en branchant `validateMapping` plus tôt
+     dans la soirée. Corrigée en une ligne, deux tests ajoutés.
+  3. **Historique — pas un bug, confirmation du comportement déjà documenté** : le
+     backend ne journalise toujours pas qui a pris une décision (`actor_id`), donc
+     l'onglet Historique reste sur MSW dans les deux modes (`docs/known-limitations.md`
+     point 2) — déjà expliqué et accepté par Giang plus tôt dans la session, resignalé
+     ici en le constatant à l'usage plutôt qu'en s'en souvenant.
+
+  **Vérifié en conditions réelles après correction** (backend local, navigateur
+  piloté, connecté en Marie Lefèvre) : assigner Marie Lefèvre à `EXT-EU-AML-001` →
+  succès immédiat, aucune erreur console, persiste après `reload` de la page ;
+  escalade avec Claire Dubois assignée sur REQ-0001×PRC-AML-008 → « Escaladé » +
+  « Claire Dubois » toujours affichés après `reload`. En bonus, la carte
+  « Confié par escalade à » (déjà existante) affiche maintenant correctement les noms,
+  ce qui était cassé par le même bug n°2. `pnpm lint`, `pnpm tsc --noEmit`, `pnpm test`
+  (107/107, +5 tests) et `pnpm build` passent tous. `backend/` vérifié intact. Backend
+  local laissé démarré à la fin de cette session, comme la précédente.
+
+- **2026-09-09 (nuit, suite — Claude Code — traduction française des constats, refonte
+  de l'onglet Analyse d'impact)** : Giang a signalé que Thư avait ajouté
+  `explanation_lang_fr`/`recommended_action_lang_fr` dans `backend/API.md`, que la
+  colonne « Explication » manquait dans le tableau Analyse d'impact, et a demandé un
+  brainstorm avant toute modification sur la structure des onglets (largeur du
+  tableau, relation entre « Exigences extraites » et « Analyse d'impact »).
+
+  **Brainstorm mené avant de coder** (`AskUserQuestion`, deux décisions validées par
+  Giang) :
+  1. Détail d'un constat (preuves, explication, éléments manquants) : converti en
+     fenêtre dédiée (`FindingDetailDialog`) plutôt que colonne supplémentaire ou
+     panneau qui pousse les lignes suivantes — le tableau reste compact quel que soit
+     le nombre de constats consultés.
+  2. Les deux onglets restent séparés (lecture vs décision), mais liés plus
+     étroitement : une exigence à un seul constat ouvre directement son détail depuis
+     « Exigences extraites » ; à plusieurs constats, bascule toujours vers « Analyse
+     d'impact » (un seul dialogue ne peut pas représenter plusieurs couples à la fois).
+
+  **Fait :**
+  - **Traduction française (v1.6)** : `Finding.explanation_fr`/`recommended_action_fr`
+    (contrat), mappés depuis `mapping.explanation_lang_fr`/`recommended_action_lang_fr`
+    (`finding-adapt.ts`). Nouveau `lib/localized-text.ts::pickLocalizedText` (pure,
+    testée) choisit la variante selon la langue de l'interface — les deux variantes
+    étant déjà chargées, changer FR/EN n'a pas besoin de recharger les données.
+  - **`FindingDetailDialog`** (nouveau composant) : preuves côte à côte, explication,
+    force de la preuve, éléments manquants, action recommandée complète — extrait de
+    l'ancien panneau qui s'ouvrait dans `finding-action-row.tsx`. Les boutons de
+    décision restent dans la ligne du tableau (rester rapide pour trancher plusieurs
+    constats à la suite).
+  - **`requirements-tab.tsx`** : exigence à un seul constat → bouton « Traiter » et
+    carte cliquable ouvrent `FindingDetailDialog` directement ; à plusieurs constats →
+    comportement inchangé (bascule vers Analyse d'impact, lignes mises en avant).
+
+  **Deux bugs réels trouvés en vérifiant en conditions réelles, un dans mon propre
+  code du soir, un côté backend :**
+  1. **`ScrollArea` (Radix) ne défilait pas dans `FindingDetailDialog`** — le contenu
+     débordait silencieusement sous la fenêtre sans scrollbar ni erreur. Diagnostiqué
+     en comparant les hauteurs calculées (`scrollHeight`/`clientHeight`) du viewport
+     interne de Radix par script : `height:100%` refusait de se résoudre dans ce
+     contexte flexbox imbriqué, cause non identifiée avec certitude malgré plusieurs
+     essais (wrapper intermédiaire compris, comme dans `ProcedureEvidenceDialog`).
+     Contourné en remplaçant `ScrollArea` par un simple `div` à défilement natif
+     (`overflow-y-auto`), qui n'a pas ce problème.
+  2. **`GET /api/mappings/*` cassé (HTTP 500) sur la base locale** : Thư a ajouté les
+     deux colonnes `explanation_lang_fr`/`recommended_action_lang_fr` au modèle sans
+     migration (même défaut que le bug `assignee` du 2026-09-09 matin —
+     `alembic/versions/` reste gitignoré côté backend). Corrigé en relançant
+     l'outillage local déjà écrit pour ce problème
+     (`scripts/local-dev/seed_dev_db.py::sync_missing_columns`) — aucun code frontend
+     à changer.
+
+  **Bug réel repéré mais non corrigé, hors périmètre de la demande** : un jeton JWT
+  expiré (session ouverte depuis plusieurs heures) laisse l'écran croire l'utilisateur
+  connecté tout en affichant une erreur générique sur chaque donnée, sans jamais
+  proposer de se reconnecter — noté dans `docs/backend-integration.md` point 15 et
+  `docs/known-limitations.md` point 12 comme piste pour une session future
+  (`AuthGuard`/`SessionProvider` devraient réagir à `ApiError.code ===
+  "UNAUTHENTICATED"` en forçant une déconnexion).
+
+  **Vérifié en conditions réelles** (backend local, navigateur piloté, connecté en
+  Marie Lefèvre, variantes françaises posées manuellement en base sur `MAP-0001` pour
+  le test) : tableau Analyse d'impact affiche le texte français dans la colonne
+  « Action recommandée » ; `FindingDetailDialog` affiche « Explication »/« Action
+  recommandée » en français, défile correctement (scrollbar visible, contenu complet
+  atteignable) ; depuis « Exigences extraites », REQ-0002 (un seul constat) ouvre le
+  dialogue directement au clic sur « Traiter » ou sur la carte. **Zéro erreur console**
+  liée à ces changements. Base de test remise à son état d'origine après vérification.
+  `pnpm lint`, `pnpm tsc --noEmit`, `pnpm test` (112/112, +7 tests) et `pnpm build`
+  passent tous. `backend/` vérifié intact. Backend local laissé démarré à la fin de
+  cette session.
+
+- **2026-09-09 (nuit, encore — Claude Code — même bug de scroll trouvé dans une
+  fenêtre plus ancienne, badge Next.js Dev Tools retiré)** : Giang a signalé, capture
+  DevTools à l'appui, ne pas réussir à lire un document interne au-delà de sa première
+  section alors que la réponse réseau (visible dans l'onglet Network) contenait bien
+  tous les chunks (`chunk_no` 1 à 4+) — et que la fenêtre de lecture ne défilait pas
+  non plus. A aussi signalé un badge « N » (Next.js Dev Tools) gênant en bas à gauche.
+
+  **Vérifié avant de conclure** : le backend ne pagine pas `GET /api/documents/content/
+  {version_id}` (`total_chunks=len(chunks)`, tous les chunks toujours renvoyés) — la
+  donnée complète était bien reçue, comme le montrait la capture. Le problème n'était
+  donc pas côté backend ni côté assemblage du texte (`adaptExtractedText` recolle déjà
+  tous les chunks) : c'était le même bug de `ScrollArea` (Radix) que celui corrigé plus
+  tôt dans la soirée dans `FindingDetailDialog`, présent depuis le début dans
+  `ProcedureEvidenceDialog` (la fenêtre de lecture d'une procédure complète) — resté
+  invisible jusqu'ici faute d'avoir testé un document assez long pour déborder.
+
+  **Fait :**
+  - `ProcedureEvidenceDialog` : même correctif que `FindingDetailDialog` — `ScrollArea`
+    remplacé par un `div` à défilement natif (`overflow-y-auto`). Un document plus long
+    que la fenêtre est maintenant entièrement atteignable en défilant.
+  - `next.config.ts` : `devIndicators: false` — retire le badge « N » (visible
+    seulement en `pnpm dev`, jamais sur Vercel, mais gênant pendant une démo lancée en
+    local).
+
+  **Vérifié en conditions réelles** (backend local, navigateur piloté) : ouverture de
+  PROC-AML-007 depuis un constat, mesure directe du conteneur de défilement
+  (`scrollHeight` 762 vs `clientHeight` 551, `scrollTop` réglable jusqu'à 210,5) —
+  confirme que le document déborde bien et que le défilement fonctionne
+  mécaniquement, avec la scrollbar visible dans la fenêtre. Badge Next.js Dev Tools
+  absent après redémarrage du serveur de dev. `pnpm lint`, `pnpm tsc --noEmit`,
+  `pnpm test` (112/112, inchangé — correctif de layout, rien à tester côté logique) et
+  `pnpm build` passent tous. `backend/` vérifié intact. Backend local laissé démarré à
+  la fin de cette session.

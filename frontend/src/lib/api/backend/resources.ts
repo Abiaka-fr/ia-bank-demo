@@ -4,11 +4,17 @@
  * Chaque fonction renvoie des types du **contrat** : l'appelant (`src/lib/api/*.ts`)
  * choisit la source, les écrans ne savent pas laquelle a répondu.
  *
- * Couvert ici : authentification, documents (régulations et procédures), exigences,
+ * Couvert ici : authentification (`signin` et `signup`, v1.4), documents (régulations et
+ * procédures), exigences,
  * constats (`GET /api/mappings/*`, ajouté par Thư le 2026-09-07 — voir
- * `finding-adapt.ts` pour les limites assumées de cette traduction).
+ * `finding-adapt.ts` pour les limites assumées de cette traduction), liste des
+ * utilisateurs (`GET /api/users`, 2026-09-07 ; `PUT /api/users/:id/role`, 2026-09-09 soir)
+ * et validation humaine (`PUT /api/mappings/:id/human-status`+`/assignee`,
+ * 2026-09-07 après-midi).
  * Non couvert par le backend et donc absent de ce fichier — cela reste sur MSW :
- * tableau de bord global, upload, validation humaine, liste des utilisateurs.
+ * tableau de bord global, upload. L'onglet Historique reste sur MSW lui aussi même en
+ * mode backend réel : le backend persiste une décision mais ne dit toujours pas qui
+ * l'a prise (pas d'`actor_id`) — voir `docs/known-limitations.md` point 2.
  */
 import type {
   DocumentDetail,
@@ -17,6 +23,10 @@ import type {
   LoginBody,
   LoginResponse,
   Requirement,
+  SignupBody,
+  UpdateUserRoleBody,
+  User,
+  ValidateFindingBody,
 } from "@/types/api";
 
 import { ApiError } from "../client";
@@ -29,14 +39,23 @@ import {
 } from "./adapt";
 import { BackendGapError, backendFetch } from "./client";
 import { deriveCurrentVersionId } from "./current-version-id";
-import { assembleMappedFinding, assembleUnmappedFinding } from "./finding-adapt";
+import {
+  adaptAssessment,
+  adaptHumanStatus,
+  adaptHumanStatusToBackend,
+  assembleMappedFinding,
+  assembleUnmappedFinding,
+} from "./finding-adapt";
 import {
   backendDocumentContentSchema,
   backendDocumentListSchema,
   backendDocumentSchema,
+  backendMappingSchema,
   backendRequirementListSchema,
   backendRequirementsToProceduresSchema,
   backendTokenSchema,
+  backendUserListSchema,
+  backendUserSchema,
   type BackendProcedureMinimal,
 } from "./schemas";
 
@@ -54,6 +73,22 @@ export async function signIn(body: LoginBody): Promise<LoginResponse> {
   const response = await backendFetch("/api/auth/signin", backendTokenSchema, {
     method: "POST",
     body: { email: body.email, password: body.password },
+    skipAuth: true,
+  });
+
+  return { user: adaptUser(response.user), token: response.access_token };
+}
+
+/**
+ * `POST /api/auth/signup` (v1.4) — crée un compte et renvoie un JWT, comme `signin`.
+ * Le backend fixe `role` à `COMPLIANCE_OFFICER` pour tout nouveau compte : rien dans le
+ * corps de la requête ne permet de le choisir, et aucune route ne permet de le changer
+ * ensuite (voir `docs/backend-integration.md`).
+ */
+export async function signUp(body: SignupBody): Promise<LoginResponse> {
+  const response = await backendFetch("/api/auth/signup", backendTokenSchema, {
+    method: "POST",
+    body: { email: body.email, password: body.password, full_name: body.full_name },
     skipAuth: true,
   });
 
@@ -260,4 +295,105 @@ export async function fetchFindings(
   }
 
   return findings;
+}
+
+// --- Utilisateurs -------------------------------------------------------------
+
+/**
+ * `GET /api/users` (ajouté par Thư le 2026-09-07) — répond à la question ouverte n°6
+ * de `docs/backend-integration.md`. Sert les mêmes sélecteurs d'assignation que le
+ * mode mock (`AssigneeSelect`, `useUsers`) : les écrans ne savent pas laquelle a
+ * répondu.
+ */
+export async function fetchUsers(): Promise<User[]> {
+  const response = await backendFetch("/api/users", backendUserListSchema, {
+    searchParams: { limit: PAGE_LIMIT },
+  });
+  return response.items.map(adaptUser);
+}
+
+/**
+ * `PUT /api/users/:id/role` (v1.5, commit `fabd0cf` — « Create API to update role of
+ * user ») : répond au point resté ouvert en v1.4 (aucune route ne permettait de
+ * choisir ou changer `User.role`). **Limite assumée** : la route n'a aucun contrôle
+ * d'autorisation — n'importe quel compte authentifié peut changer le rôle de
+ * n'importe quel autre, voir `docs/backend-integration.md`.
+ */
+export async function updateUserRole(
+  userId: string,
+  body: UpdateUserRoleBody,
+): Promise<User> {
+  const response = await backendFetch(
+    `/api/users/${encodeURIComponent(userId)}/role`,
+    backendUserSchema,
+    { method: "PUT", body: { role: body.role } },
+  );
+  return adaptUser(response);
+}
+
+// --- Validation humaine ---------------------------------------------------------
+
+/**
+ * Persiste une décision humaine via `PUT /api/mappings/:id/human-status` puis, si un
+ * assigné est fourni, `PUT /api/mappings/:id/assignee` (deux appels séparés — le
+ * backend n'a pas de route combinée, contrairement au contrat). Voir
+ * `finding-adapt.ts::adaptHumanStatusToBackend` pour la traduction d'énumération
+ * (verbe court côté backend, participe passé côté contrat).
+ *
+ * Limites assumées, documentées dans `docs/known-limitations.md` :
+ * - le backend ne connaît ni `actor_id` ni `reviewer_comment` : la décision est
+ *   persistée, mais pas journalisée — l'onglet Historique reste sur MSW ;
+ * - une exigence sans procédure associée (`assembleUnmappedFinding`, préfixe
+ *   `NO-MAPPING-`) n'a pas de ligne `RequirementProcedureMap` côté backend : il n'y a
+ *   rien à persister, l'appel échoue explicitement plutôt que de faire semblant.
+ */
+export async function validateMapping(
+  mappingId: string,
+  body: ValidateFindingBody,
+): Promise<Finding> {
+  if (mappingId.startsWith("NO-MAPPING-")) {
+    throw new BackendGapError(
+      `Aucun mapping backend pour ${mappingId} : cette exigence n'a aucune procédure ` +
+        "associée, il n'y a donc rien à persister côté serveur.",
+    );
+  }
+
+  const statusResponse = await backendFetch(
+    `/api/mappings/${encodeURIComponent(mappingId)}/human-status`,
+    backendMappingSchema,
+    {
+      method: "PUT",
+      body: { human_status: adaptHumanStatusToBackend(body.human_status) },
+    },
+  );
+
+  const latest =
+    body.assignee_id !== undefined
+      ? await backendFetch(
+          `/api/mappings/${encodeURIComponent(mappingId)}/assignee`,
+          backendMappingSchema,
+          { method: "PUT", body: { assignee: body.assignee_id } },
+        )
+      : statusResponse;
+
+  // `priority` vit sur l'exigence (`risk_level`), pas sur le mapping : la valeur
+  // exacte revient au prochain chargement de la liste, invalidé juste après par
+  // l'appelant (`finding-action-row.tsx`) — ce retour ne sert qu'au toast immédiat.
+  return {
+    finding_id: latest.mapping_id,
+    requirement_id: latest.requirement_id,
+    procedure_id: latest.procedure_id,
+    assessment: adaptAssessment(latest.assessment),
+    regulatory_evidence: [],
+    internal_evidence: [],
+    explanation: latest.explanation ?? "",
+    missing_or_ambiguous_elements: [],
+    recommended_action: latest.recommended_action ?? "",
+    custom_action: body.custom_action,
+    priority: "MEDIUM",
+    confidence_or_evidence_strength: latest.confidence ?? undefined,
+    human_status: adaptHumanStatus(latest.human_status),
+    assignee_id: body.assignee_id,
+    updated_at: new Date().toISOString(),
+  };
 }

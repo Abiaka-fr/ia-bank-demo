@@ -98,6 +98,16 @@ export const findingSchema = z.object({
   explanation: z.string(),
   missing_or_ambiguous_elements: z.array(z.string()),
   recommended_action: z.string(),
+  /**
+   * v1.6 — variantes françaises, quand le backend les fournit (`explanation_lang_fr`/
+   * `recommended_action_lang_fr`, ajoutés le 2026-09-09). `explanation`/
+   * `recommended_action` restent la langue d'origine du corpus (souvent l'anglais en
+   * mode backend réel) ; l'écran choisit laquelle afficher selon la langue de
+   * l'interface — voir `lib/localized-text.ts`. Absentes en mode mock, où le corpus de
+   * démo est déjà rédigé en français.
+   */
+  explanation_fr: z.string().optional(),
+  recommended_action_fr: z.string().optional(),
   /** Action retenue par le relecteur ; vide = `recommended_action` fait foi. */
   custom_action: z.string().optional(),
   priority: prioritySchema,
@@ -256,3 +266,22 @@ export const loginBodySchema = z.object({
 });
 
 export type LoginBody = z.infer<typeof loginBodySchema>;
+
+/** v1.4 — `POST /api/auth/signup`. Réponse : `LoginResponse` (même forme que `login`). */
+export const signupBodySchema = z.object({
+  email: z.string(),
+  password: z.string(),
+  full_name: z.string().optional(),
+});
+
+export type SignupBody = z.infer<typeof signupBodySchema>;
+
+/**
+ * v1.5 — `PUT /api/users/:id/role`. `role` reste une chaîne libre côté backend (pas
+ * d'énumération) : le contrat ne lui en impose pas une non plus.
+ */
+export const updateUserRoleBodySchema = z.object({
+  role: z.string(),
+});
+
+export type UpdateUserRoleBody = z.infer<typeof updateUserRoleBodySchema>;

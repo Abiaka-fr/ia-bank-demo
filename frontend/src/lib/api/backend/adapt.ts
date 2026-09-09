@@ -86,7 +86,8 @@ export function adaptDocument(document: BackendDocument): DocumentMeta {
     authority_or_owner: adaptAuthority(document),
     domain: adaptDomain(document.domain),
     language: adaptLanguage(document.language),
-    version: document.current_version ?? "",
+    // Vu en base : parfois un nombre plutôt qu'une chaîne — voir `schemas.ts`.
+    version: String(document.current_version ?? ""),
     status: adaptDocumentStatus(),
     uploaded_at: document.created_at,
   };

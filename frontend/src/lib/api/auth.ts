@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { loginResponseSchema, userSchema, type LoginBody } from "@/types/api";
+import { loginResponseSchema, type LoginBody, type SignupBody } from "@/types/api";
 
 import { isBackendLive } from "./backend/config";
 import * as backend from "./backend/resources";
@@ -19,6 +19,19 @@ export function login(body: LoginBody) {
 }
 
 /**
+ * Création de compte (v1.4). Réponse identique à `login` — un compte tout juste créé
+ * est aussitôt connecté. Le rôle est fixé automatiquement à la création ; pour le
+ * changer ensuite, voir `updateUserRole` (`./users.ts`, v1.5).
+ */
+export function signUp(body: SignupBody) {
+  if (isBackendLive) return backend.signUp(body);
+  return apiFetch("/api/auth/signup", loginResponseSchema, {
+    method: "POST",
+    body,
+  });
+}
+
+/**
  * Le backend n'expose pas de déconnexion : un JWT n'est pas révocable côté serveur, on
  * se contente d'oublier le jeton localement (fait par le `SessionProvider`).
  */
@@ -27,13 +40,4 @@ export function logout() {
   return apiFetch("/api/auth/logout", z.object({ ok: z.literal(true) }), {
     method: "POST",
   });
-}
-
-/**
- * Liste des utilisateurs assignables. `GET /api/users` n'existe pas côté backend
- * (question ouverte n°6 de `docs/backend-integration.md`) : servi par MSW dans les
- * deux modes, sinon l'assignation et l'escalade n'auraient personne à proposer.
- */
-export function fetchUsers() {
-  return apiFetch("/api/users", z.array(userSchema));
 }

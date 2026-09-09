@@ -2,15 +2,14 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
-import { ArrowUpCircle, Check, ChevronDown, X } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { ArrowUpCircle, Check, X } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AssessmentBadge } from "@/components/features/assessment-badge";
 import { AssigneeSelect } from "@/components/features/assignee-select";
-import { EvidenceCard } from "@/components/features/evidence-card";
-import { EvidenceStrength } from "@/components/features/evidence-strength";
+import { FindingDetailDialog } from "@/components/features/finding-detail-dialog";
 import { HumanStatusBadge } from "@/components/features/human-status-badge";
 import { PriorityBadge } from "@/components/features/priority-badge";
 import { useSession } from "@/components/providers/session-provider";
@@ -20,15 +19,18 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { validateFinding } from "@/lib/api/findings";
 import { queryKeys } from "@/lib/api/query-keys";
+import { pickLocalizedText } from "@/lib/localized-text";
 import type { Finding, HumanStatus, Requirement } from "@/types/api";
 
 /**
  * Une ligne = un couple (exigence × procédure) — contrat v1.1.
  *
- * « Action retenue » vide signifie que l'action recommandée s'applique telle quelle ;
- * si elle est remplie, c'est elle qui fait foi. La ligne se déplie pour montrer les
- * preuves source, jamais de constat affiché sans sa traçabilité
- * (`docs/ui-guardrails.md`).
+ * « Action retenue » vide signifie que l'action recommandée s'applique telle quelle.
+ * Cliquer sur la ligne ouvre `FindingDetailDialog` (preuves, explication, éléments
+ * manquants) — jamais un constat affiché sans sa traçabilité (`docs/ui-guardrails.md`),
+ * seulement dans une fenêtre dédiée plutôt qu'un panneau poussant les lignes suivantes
+ * (retour Giang, 2026-09-09 : plusieurs panneaux ouverts à la fois rendaient le
+ * tableau difficile à suivre).
  */
 export function FindingActionRow({
   finding,
@@ -46,11 +48,11 @@ export function FindingActionRow({
 }) {
   const t = useTranslations("actions");
   const statusLabels = useTranslations("humanStatus");
-  const evidenceT = useTranslations("evidence");
   const queryClient = useQueryClient();
   const { user } = useSession();
+  const locale = useLocale();
 
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const rowRef = useRef<HTMLTableRowElement | null>(null);
 
   useEffect(() => {
@@ -100,6 +102,11 @@ export function FindingActionRow({
   }
 
   const isPending = mutation.isPending;
+  const recommendedAction = pickLocalizedText(
+    locale,
+    finding.recommended_action,
+    finding.recommended_action_fr,
+  );
 
   return (
     <>
@@ -113,25 +120,20 @@ export function FindingActionRow({
       >
         <TableCell
           className="cursor-pointer whitespace-normal py-3"
-          onClick={() => setIsExpanded((current) => !current)}
+          onClick={() => setIsDetailOpen(true)}
         >
           <div className="flex flex-wrap items-center gap-1.5">
             <button
               type="button"
               // Empêche le second déclenchement par le `onClick` de la cellule :
-              // sans lui, cliquer précisément sur le bouton basculerait deux fois
-              // (bouton, puis bulle jusqu'à la cellule) et annulerait l'action.
+              // sans lui, cliquer précisément sur le bouton ouvrirait deux fois la
+              // fenêtre (sans effet visible, mais deux appels pour rien).
               onClick={(event) => {
                 event.stopPropagation();
-                setIsExpanded((current) => !current);
+                setIsDetailOpen(true);
               }}
-              aria-expanded={isExpanded}
               className="inline-flex items-center gap-1 rounded font-mono text-xs font-medium hover:underline"
             >
-              <ChevronDown
-                className={`size-3.5 transition-transform ${isExpanded ? "" : "-rotate-90"}`}
-                aria-hidden
-              />
               {finding.requirement_id}
             </button>
             {requirement ? (
@@ -148,7 +150,7 @@ export function FindingActionRow({
 
         <TableCell
           className="cursor-pointer whitespace-normal"
-          onClick={() => setIsExpanded((current) => !current)}
+          onClick={() => setIsDetailOpen(true)}
         >
           {finding.procedure_id ? (
             <Badge variant="outline" className="font-mono text-[11px]">
@@ -164,9 +166,9 @@ export function FindingActionRow({
 
         <TableCell
           className="cursor-pointer whitespace-normal"
-          onClick={() => setIsExpanded((current) => !current)}
+          onClick={() => setIsDetailOpen(true)}
         >
-          <p className="max-w-xs text-sm">{finding.recommended_action}</p>
+          <p className="max-w-xs text-sm">{recommendedAction}</p>
         </TableCell>
 
         <TableCell className="whitespace-normal">
@@ -222,75 +224,12 @@ export function FindingActionRow({
         </TableCell>
       </TableRow>
 
-      {isExpanded ? (
-        <TableRow className="bg-muted/30 hover:bg-muted/30">
-          <TableCell colSpan={5} className="whitespace-normal p-4">
-            <div className="grid gap-4 lg:grid-cols-2">
-              <section className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {evidenceT("regulatorySide")}
-                </h3>
-                {finding.regulatory_evidence.map((evidence) => (
-                  <EvidenceCard
-                    key={`${evidence.document_id}-${evidence.section_reference}`}
-                    evidence={evidence}
-                  />
-                ))}
-              </section>
-
-              <section className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {evidenceT("internalSide")}
-                </h3>
-                {finding.internal_evidence.length ? (
-                  finding.internal_evidence.map((evidence) => (
-                    <EvidenceCard
-                      key={`${evidence.document_id}-${evidence.section_reference}`}
-                      evidence={evidence}
-                      openable
-                    />
-                  ))
-                ) : (
-                  <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                    {evidenceT("noInternalEvidence")}
-                  </p>
-                )}
-              </section>
-            </div>
-
-            <div className="mt-4 grid gap-4 lg:grid-cols-2">
-              <div>
-                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {evidenceT("explanation")}
-                </h3>
-                <p className="text-sm leading-relaxed">{finding.explanation}</p>
-                <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                  {evidenceT("evidenceStrength")}
-                  <EvidenceStrength
-                    value={finding.confidence_or_evidence_strength}
-                  />
-                </p>
-              </div>
-              <div>
-                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {evidenceT("missingElements")}
-                </h3>
-                {finding.missing_or_ambiguous_elements.length ? (
-                  <ul className="list-disc space-y-1 pl-5 text-sm">
-                    {finding.missing_or_ambiguous_elements.map((element) => (
-                      <li key={element}>{element}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    {evidenceT("noMissingElements")}
-                  </p>
-                )}
-              </div>
-            </div>
-          </TableCell>
-        </TableRow>
-      ) : null}
+      <FindingDetailDialog
+        finding={finding}
+        requirement={requirement}
+        isOpen={isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+      />
     </>
   );
 }

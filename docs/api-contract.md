@@ -40,6 +40,32 @@ section 12) et le "Shared Interface Contract" (section 16.4).
 >     ne portent plus que sur les constats **encore en attente** — un constat déjà tranché ne doit
 >     plus gonfler "ce qu'il reste à faire". `requirements_identified` et `regulations_total`
 >     restent des compteurs de périmètre, non affectés.
+>
+> **v1.4 — proposition du 2026-09-09 (demande Giang, écran de connexion).**
+> 11. `POST /api/auth/signup` : body `{ email, password, full_name? }` → `{ user: User, token:
+>     string }` (même forme que `login`). Le backend de Thư expose déjà cette route
+>     (`backend/API.md` § 6) — le contrat se met à jour pour refléter une capacité réelle, ce
+>     n'est pas une proposition en attente côté backend. **Limite assumée à l'époque, résolue en
+>     v1.5** : voir ci-dessous.
+>
+> **v1.5 — proposition du 2026-09-09 soir (le blocage du point 11 est résolu).**
+> 12. `PUT /api/users/:id/role` : body `{ role: string }` → `User`. Le backend de Thư l'expose
+>     depuis le commit `fabd0cf` (« Create API to update role of user »), quelques minutes après la
+>     v1.4 ci-dessus — répond exactement au point resté ouvert. `role` reste une chaîne libre côté
+>     backend (pas d'énumération imposée, voir `backend/app/schemas/user.py`), le frontend ne lui en
+>     invente pas une. **Limite assumée, à trancher avec Thư** : la route n'a aucun contrôle
+>     d'autorisation propre à l'action — n'importe quel compte authentifié peut changer le rôle de
+>     n'importe quel autre compte, pas seulement le sien ou celui d'un compte qu'il gère.
+>
+> **v1.6 — proposition du 2026-09-09 (nuit).**
+> 13. `Finding.explanation_fr` / `recommended_action_fr` (optionnels) : variantes françaises des
+>     textes générés par le backend, quand il les fournit. Le backend de Thư les expose depuis le
+>     commit `ea02f49` (« Add French for explanation and recommendation »,
+>     `explanation_lang_fr`/`recommended_action_lang_fr` sur `MappingRead`) — c'était le point
+>     ouvert n°5 de `docs/backend-integration.md` (« textes générés non localisables »), résolu côté
+>     backend. `explanation`/`recommended_action` restent la langue d'origine du corpus (l'anglais
+>     en mode backend réel) ; l'écran choisit la variante à afficher selon la langue de l'interface.
+>     Absentes en mode mock, où le corpus de démo est déjà rédigé en français.
 
 ## Conventions générales
 
@@ -115,8 +141,12 @@ interface Finding {
   regulatory_evidence: EvidenceRef[];
   internal_evidence: EvidenceRef[];
   explanation: string;                   // doit respecter docs/ui-guardrails.md
+  explanation_fr?: string;               // v1.6 — variante française, si le backend
+                                         // en fournit une (`explanation` reste la
+                                         // langue d'origine du corpus)
   missing_or_ambiguous_elements: string[];
   recommended_action: string;            // action proposée par le système
+  recommended_action_fr?: string;        // v1.6 — idem, variante française
   custom_action?: string;                // v1.1 — action retenue par le relecteur.
                                          // Si absente/vide, c'est `recommended_action`
                                          // qui fait foi.
@@ -268,9 +298,11 @@ Authentification simple pour la démo — pas de SSO, pas de gestion de rôles f
 | Méthode | Route | Description | Réponse |
 |---|---|---|---|
 | POST | `/api/auth/login` | body `{ email, password }` | `{ user: User, token: string }` |
+| POST | `/api/auth/signup` | v1.4 — body `{ email, password, full_name? }`, crée un compte | `{ user: User, token: string }` |
 | POST | `/api/auth/logout` | Termine la session | `{ ok: true }` |
 | GET | `/api/auth/me` | Utilisateur de la session courante | `User` |
 | GET | `/api/users` | Liste des utilisateurs assignables | `User[]` |
+| PUT | `/api/users/:id/role` | v1.5 — body `{ role: string }`, change le rôle d'un compte | `User` |
 
 ### Copilot (P2 — optionnel, ne pas bloquer le P0 dessus)
 
