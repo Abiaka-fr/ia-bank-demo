@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     # Auth (JWT)
     secret_key: str = "dev-secret-key-change-me"  # override via .env — never use in production
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60
+    access_token_expire_minutes: int = 1440
 
     class Config:
         env_file = ".env"
