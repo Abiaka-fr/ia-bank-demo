@@ -350,9 +350,11 @@ GET /api/requirements/by-documents?document_ids=EXT-ACPR-LCBFT-003&language=FR&d
       "requirement_id": "REQ-0001",
       "source_document_id": "EXT-EU-AML-001",
       "title": "Risk classification",
+      "title_lang_fr": "Classification des risques",
       "domain": "AML/CFT",
       "language": "EN",
       "requirement_text": "Customers must be classified using documented money-laundering and terrorist-financing risk factors.",
+      "requirement_text_lang_fr": "Les clients doivent être classés selon les facteurs documentés de risque de blanchiment de capitaux et de financement du terrorisme.",
       "risk_level": "MEDIUM",
       "source_reference": "Section 3",
       "status": "ACTIVE"
@@ -361,9 +363,11 @@ GET /api/requirements/by-documents?document_ids=EXT-ACPR-LCBFT-003&language=FR&d
       "requirement_id": "REQ-0002",
       "source_document_id": "EXT-EU-AML-001",
       "title": "Enhanced due diligence",
+      "title_lang_fr": "Diligence renforcée",
       "domain": "AML/CFT",
       "language": "EN",
       "requirement_text": "High-risk customers require enhanced due diligence and documented approval.",
+      "requirement_text_lang_fr": "Les clients à risque élevé nécessitent une diligence renforcée et une approbation documentée.",
       "risk_level": "HIGH",
       "source_reference": "Section 4",
       "status": "ACTIVE"
@@ -415,9 +419,11 @@ GET /api/requirements/REQ-0001
   "requirement_id": "REQ-0001",
   "source_document_id": "EXT-EU-AML-001",
   "title": "Risk classification",
+  "title_lang_fr": "Classification des risques",
   "domain": "AML/CFT",
   "language": "EN",
   "requirement_text": "Customers must be classified using documented money-laundering and terrorist-financing risk factors.",
+  "requirement_text_lang_fr": "Les clients doivent être classés selon les facteurs documentés de risque de blanchiment de capitaux et de financement du terrorisme.",
   "risk_level": "MEDIUM",
   "source_reference": "Section 3",
   "status": "ACTIVE"
@@ -629,6 +635,7 @@ GET /api/mappings/requirements-to-procedures?requirement_ids=REQ-0001&assessment
         "requirement_id": "REQ-0001",
         "source_document_id": "EXT-EU-AML-001",
         "title": "Risk classification",
+        "title_lang_fr": "Classification des risques",
         "domain": "AML/CFT",
         "risk_level": "MEDIUM",
         "status": "ACTIVE"
@@ -702,6 +709,7 @@ GET /api/mappings/procedures-to-requirements?procedure_ids=PRC-KYC-002&domain=KY
             "requirement_id": "REQ-0001",
             "source_document_id": "EXT-EU-AML-001",
             "title": "Risk classification",
+            "title_lang_fr": "Classification des risques",
             "domain": "AML/CFT",
             "risk_level": "MEDIUM"
           },

@@ -9,9 +9,11 @@ class RegulatoryRequirementRead(BaseModel):
     requirement_id: str
     source_document_id: str
     title: str | None = None
+    title_lang_fr: str | None = None
     domain: str | None = None
     language: str | None = None
     requirement_text: str | None = None
+    requirement_text_lang_fr: str | None = None
     risk_level: str | None = None
     source_reference: str | None = None
     status: str | None = None

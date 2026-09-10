@@ -13,10 +13,12 @@ class RegulatoryRequirement(Base):
 
     requirement_id = Column(String, primary_key=True)
     source_document_id = Column(String, ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
-    title = Column(String)
+    title = Column(String)  # English title
+    title_lang_fr = Column(String, nullable=True)  # French title
     domain = Column(String)  # e.g., AML/CFT, KYC
     language = Column(String)  # EN, FR
-    requirement_text = Column(Text)
+    requirement_text = Column(Text)  # English requirement text
+    requirement_text_lang_fr = Column(Text, nullable=True)  # French requirement text
     risk_level = Column(String)  # LOW, MEDIUM, HIGH
     source_reference = Column(String)  # e.g., Article 5, Section 2.1
     status = Column(String)  # ACTIVE, SUPERSEDED, etc.
