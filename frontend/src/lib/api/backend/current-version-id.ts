@@ -25,9 +25,11 @@
 /** Une seule ligne à supprimer le jour où le backend renvoie l'identifiant. */
 export function deriveCurrentVersionId(
   documentId: string,
-  currentVersion: string | null | undefined,
+  // Vu en base : `current_version` est parfois un nombre plutôt qu'une chaîne (voir
+  // `schemas.ts`) — `String(...)` avant `parseInt` couvre les deux cas.
+  currentVersion: string | number | null | undefined,
 ): string | null {
-  const versionNumber = Number.parseInt(currentVersion ?? "", 10);
+  const versionNumber = Number.parseInt(String(currentVersion ?? ""), 10);
   if (!Number.isFinite(versionNumber) || versionNumber <= 0) return null;
   return `VER-${documentId}-${String(versionNumber).padStart(2, "0")}`;
 }

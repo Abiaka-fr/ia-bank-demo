@@ -30,9 +30,11 @@
   "nav": {
     "sectionAnalysis": "Analyse",
     "sectionAssistance": "Assistance",
+    "sectionAdmin": "Administration",
     "dashboard": "Tableau de bord",
     "regulations": "Analyse réglementaire",
     "copilot": "Copilot",
+    "users": "Utilisateurs",
     "toggleSidebar": "Afficher ou masquer la navigation"
   },
   "topBar": {
@@ -143,7 +145,12 @@
     "title": "Le chargement a échoué",
     "generic": "Les données n'ont pas pu être récupérées.",
     "contract": "La réponse reçue ne correspond pas au contrat d'API attendu.",
-    "notFound": "Ressource introuvable."
+    "notFound": "Ressource introuvable.",
+    "pageTitle": "Un problème est survenu",
+    "pageBody": "L'écran n'a pas pu s'afficher correctement. Vos données ne sont pas perdues — réessayez, ou revenez au tableau de bord.",
+    "backToDashboard": "Retour au tableau de bord",
+    "notFoundPageTitle": "Page introuvable",
+    "notFoundPageBody": "Cette page n'existe pas ou a été déplacée."
   },
   "login": {
     "productName": "IA Bank — Regulatory AI Copilot",
@@ -155,7 +162,23 @@
     "submitting": "Connexion…",
     "invalidCredentials": "Adresse e-mail ou mot de passe incorrect.",
     "failed": "La connexion a échoué. Réessayez.",
-    "demoHint": "Démonstration — compte de test : {email} / {password}"
+    "noAccount": "Pas encore de compte ?",
+    "createAccount": "Créer un compte"
+  },
+  "signup": {
+    "productName": "IA Bank — Regulatory AI Copilot",
+    "title": "Créer un compte",
+    "subtitle": "Rejoignez l'espace de revue de conformité.",
+    "fullName": "Nom complet",
+    "email": "Adresse e-mail",
+    "password": "Mot de passe",
+    "passwordHint": "8 caractères minimum.",
+    "submit": "Créer le compte",
+    "submitting": "Création du compte…",
+    "emailTaken": "Cette adresse e-mail est déjà utilisée.",
+    "failed": "La création du compte a échoué. Réessayez.",
+    "haveAccount": "Déjà un compte ?",
+    "signIn": "Se connecter"
   },
   "assignee": {
     "label": "Personne en charge",
@@ -163,6 +186,19 @@
     "updated": "Assignation mise à jour",
     "updateFailed": "L'assignation n'a pas pu être enregistrée.",
     "escalatedTo": "Confié par escalade à"
+  },
+  "users": {
+    "title": "Utilisateurs",
+    "subtitle": "Gestion des rôles des comptes de l'espace.",
+    "empty": "Aucun utilisateur trouvé.",
+    "columnFullName": "Nom complet",
+    "columnEmail": "Adresse e-mail",
+    "columnRole": "Rôle",
+    "roleLabel": "Rôle de {name}",
+    "save": "Enregistrer",
+    "saved": "Rôle mis à jour.",
+    "saveFailed": "Le rôle n'a pas pu être enregistré.",
+    "permissionNotice": "Toute personne connectée peut actuellement changer le rôle de n'importe quel compte — aucun contrôle d'accès fin n'est encore appliqué à cette action."
   },
   "upload": {
     "trigger": "Importer une régulation",
@@ -195,7 +231,7 @@
     "escalateNeedsAssignee": "Choisissez la personne à qui confier le constat avant d'escalader.",
     "saved": "Décision enregistrée",
     "saveFailed": "La décision n'a pas pu être enregistrée.",
-    "expandHint": "Cliquer sur l'identifiant d'une exigence pour afficher ses preuves",
+    "expandHint": "Cliquer sur une ligne pour ouvrir le détail du constat",
     "goToRequirement": "Traiter"
   },
   "procedureDialog": {

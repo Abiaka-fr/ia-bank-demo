@@ -1,12 +1,18 @@
 /**
- * Utilisateurs de démonstration (v1.1 du contrat).
+ * Utilisateurs de démonstration (v1.1 du contrat) — état initial du corpus mock.
  *
- * Authentification simulée : aucun mot de passe n'est vérifié côté serveur réel, et
- * ces identifiants ne donnent accès à rien. Corpus fictif, aucune personne réelle.
+ * Mutable au fil d'une session via `../store.ts` (comptes créés par
+ * `POST /api/auth/signup`, v1.4) : ce fichier ne décrit que le point de départ, jamais
+ * consulté directement pour lire ou chercher un utilisateur — voir `store.ts::listUsers`/
+ * `findUserByEmail`.
+ *
+ * Authentification simulée : aucun mot de passe réel n'est vérifié côté serveur, et ces
+ * identifiants ne donnent accès à rien. Corpus fictif, aucune personne réelle.
  */
 import type { User } from "@/types/api";
 
-/** Mot de passe unique de démo, affiché sur l'écran de connexion. */
+/** Mot de passe partagé par les 4 comptes de démo ci-dessous — pas par un compte créé
+ * via `signup`, qui a le sien (voir `store.ts::setPassword`/`getPassword`). */
 export const DEMO_PASSWORD = "demo1234";
 
 export const users: readonly User[] = [
@@ -35,8 +41,3 @@ export const users: readonly User[] = [
     role: "Juriste Réglementaire",
   },
 ];
-
-export function findUserByEmail(email: string): User | undefined {
-  const normalized = email.trim().toLowerCase();
-  return users.find((user) => user.email.toLowerCase() === normalized);
-}

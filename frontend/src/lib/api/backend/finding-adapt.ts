@@ -46,20 +46,48 @@ export function adaptAssessment(raw: string | null | undefined): Assessment {
 }
 
 /**
- * La base de référence ne contient que `PENDING_REVIEW` : les autres valeurs sont
- * gérées par prudence, si le backend les introduit un jour.
+ * La base de référence ne contient que `PENDING_REVIEW` au repos, mais
+ * `PUT /api/mappings/:id/human-status` (2026-09-07) stocke le verbe court
+ * (`ACCEPT`/`REJECT`/`ESCALATE`) — pas le participe passé documenté par erreur dans le
+ * filtre de `GET /api/mappings/all`. Les deux formes sont acceptées ici : sans ça, une
+ * exigence tout juste acceptée via `validateMapping` (`resources.ts`) réapparaîtrait
+ * en attente au prochain chargement, la valeur stockée ("ACCEPT") ne correspondant à
+ * aucun `case` reconnu.
  */
 export function adaptHumanStatus(raw: string | null | undefined): HumanStatus {
   switch (raw) {
+    case "ACCEPT":
     case "ACCEPTED":
       return "ACCEPTED";
+    case "REJECT":
     case "REJECTED":
       return "REJECTED";
+    case "ESCALATE":
     case "ESCALATED":
       return "ESCALATED";
     case "PENDING_REVIEW":
     default:
       return "PENDING";
+  }
+}
+
+/**
+ * Sens inverse d'`adaptHumanStatus`, pour le corps de
+ * `PUT /api/mappings/:id/human-status` : le contrat parle au participe passé
+ * (`ACCEPTED`/`REJECTED`/`ESCALATED`/`PENDING`), le backend attend le verbe court
+ * (`ACCEPT`/`REJECT`/`ESCALATE`/`PENDING_REVIEW`, voir `backend/API.md` § 4).
+ */
+export function adaptHumanStatusToBackend(status: HumanStatus): string {
+  switch (status) {
+    case "ACCEPTED":
+      return "ACCEPT";
+    case "REJECTED":
+      return "REJECT";
+    case "ESCALATED":
+      return "ESCALATE";
+    case "PENDING":
+    default:
+      return "PENDING_REVIEW";
   }
 }
 
@@ -139,11 +167,17 @@ export function assembleMappedFinding(input: {
     regulatory_evidence: [buildRegulatoryEvidence(requirement, regulationTitle)],
     internal_evidence: internalEvidence ? [internalEvidence] : [],
     explanation: mapping.explanation ?? "",
+    explanation_fr: mapping.explanation_lang_fr ?? undefined,
     missing_or_ambiguous_elements: [],
     recommended_action: mapping.recommended_action ?? "",
+    recommended_action_fr: mapping.recommended_action_lang_fr ?? undefined,
     priority: adaptPriorityFromRiskLevel(riskLevel),
     confidence_or_evidence_strength: mapping.confidence ?? undefined,
     human_status: adaptHumanStatus(mapping.human_status),
+    // Sans cette ligne, l'assigné choisi à une escalade (persisté par `validateMapping`
+    // via `PUT .../assignee`) redevenait « Non assigné » au chargement suivant : la
+    // valeur était bien sauvegardée côté backend, seulement jamais relue.
+    assignee_id: mapping.assignee ?? undefined,
     // Le backend ne date pas ses constats : horodatage de synchronisation, pas une
     // vraie date de dernière décision (il n'y a pas encore de validation humaine réelle).
     updated_at: new Date().toISOString(),

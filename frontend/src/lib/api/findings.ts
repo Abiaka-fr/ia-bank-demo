@@ -31,10 +31,14 @@ export function fetchFindingsByRequirement(requirementId: string) {
 }
 
 /**
- * Validation humaine — non couverte par le backend (aucune route de validation sous
- * `/api/mappings`), reste sur MSW dans les deux modes.
+ * Validation humaine — `PUT /api/mappings/:id/human-status`+`/assignee` depuis le
+ * 2026-09-07 après-midi (commit `2e747d9`). L'onglet Historique, lui, reste sur MSW
+ * dans les deux modes : le backend persiste la décision mais ne dit toujours pas qui
+ * l'a prise (`actor_id`) — voir `docs/known-limitations.md` point 2 et
+ * `backend/resources.ts::validateMapping` pour le détail de l'adaptation d'énumération.
  */
 export function validateFinding(findingId: string, body: ValidateFindingBody) {
+  if (isBackendLive) return backend.validateMapping(findingId, body);
   return apiFetch(`/api/findings/${findingId}/validate`, findingSchema, {
     method: "POST",
     body,

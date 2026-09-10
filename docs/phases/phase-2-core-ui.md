@@ -87,11 +87,18 @@ sans bloquer).
    définitive, mais elle ne bloque plus l'intégration.
 5. Points hérités du contrat, toujours ouverts : localisation des textes générés (concerne
    maintenant aussi `Finding.explanation`/`recommended_action`, en anglais dans le corpus
-   backend), suivi de l'avancement de `POST /analyze`, `GET /api/users` pour l'assignation.
-6. **Nouveau (2026-09-07)** : validation humaine des constats (Accepter/Rejeter/Escalader) —
-   aucune route backend, reste entièrement sur MSW dans les deux modes. Sans elle, un constat
-   chargé depuis le backend réel ne peut être « traité » que dans le mock (l'onglet Historique
-   n'enregistre donc que les décisions prises en mode mock).
+   backend), suivi de l'avancement de `POST /analyze`.
+   ~~`GET /api/users` pour l'assignation~~ — **résolu le 2026-09-07** (`624db76`), pas encore
+   branché côté frontend (`fetchUsers` reste sur MSW).
+6. **Résolu en grande partie le 2026-09-07 après-midi** (`2e747d9`) : validation humaine des
+   constats — `PUT /api/mappings/:id/human-status` et `/assignee` existent désormais. Pas encore
+   branché côté frontend (écart d'énumération à absorber). Toujours manquant côté backend :
+   `actor_id`/commentaire — l'onglet Historique restera sur MSW tant qu'ils n'existent pas.
+7. **Bug trouvé le 2026-09-09** : le commit `2e747d9` ajoute une colonne (`assignee`) à un modèle
+   existant sans migration (`alembic/versions/` gitignoré côté backend) — cassait
+   `GET /api/mappings/*` en entier sur toute base plus ancienne que le changement. Contourné dans
+   `scripts/local-dev/seed_dev_db.py` (ajoute automatiquement les colonnes manquantes), pas corrigé
+   à la source (lecture seule sur `backend/`).
 
 ### B. Réalisable dès maintenant côté frontend — fait le 2026-09-07
 

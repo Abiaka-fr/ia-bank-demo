@@ -1,4 +1,9 @@
-import { LayoutDashboard, MessagesSquare, ScrollText } from "lucide-react";
+import {
+  LayoutDashboard,
+  MessagesSquare,
+  ScrollText,
+  Users,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 /**
@@ -10,7 +15,7 @@ import type { LucideIcon } from "lucide-react";
  */
 export type NavItem = {
   href: string;
-  labelKey: "dashboard" | "regulations" | "copilot";
+  labelKey: "dashboard" | "regulations" | "copilot" | "users";
   icon: LucideIcon;
 };
 
@@ -21,4 +26,9 @@ export const analysisNavItems: readonly NavItem[] = [
 
 export const assistanceNavItems: readonly NavItem[] = [
   { href: "/copilot", labelKey: "copilot", icon: MessagesSquare },
+];
+
+/** v1.5 — gestion des rôles utilisateurs (`PUT /api/users/:id/role`). */
+export const adminNavItems: readonly NavItem[] = [
+  { href: "/users", labelKey: "users", icon: Users },
 ];

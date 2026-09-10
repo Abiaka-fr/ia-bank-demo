@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { DEMO_PASSWORD } from "@/lib/mocks/data/users";
 
-import { fetchUsers, login } from "./auth";
+import { login, signUp } from "./auth";
+import { fetchUsers } from "./users";
 import { ApiError } from "./client";
 import {
   fetchRegulations,
@@ -44,6 +45,45 @@ describe("authentification (v1.1)", () => {
   it("expose les utilisateurs assignables", async () => {
     const users = await fetchUsers();
     expect(users.length).toBeGreaterThan(1);
+  });
+});
+
+describe("création de compte (v1.4)", () => {
+  it("crée un compte, le connecte aussitôt, et l'ajoute aux utilisateurs assignables", async () => {
+    const email = `nouveau.${Date.now()}@iabank.fr`;
+    const result = await signUp({
+      email,
+      password: "MotDePasse123",
+      full_name: "Nouvel Utilisateur",
+    });
+
+    expect(result.user.email).toBe(email);
+    expect(result.user.full_name).toBe("Nouvel Utilisateur");
+    expect(result.token).not.toBe("");
+
+    const users = await fetchUsers();
+    expect(users.some((user) => user.email === email)).toBe(true);
+  });
+
+  it("permet ensuite de se connecter avec le mot de passe choisi à l'inscription", async () => {
+    const email = `autre.${Date.now()}@iabank.fr`;
+    await signUp({ email, password: "MotDePasse123" });
+
+    const result = await login({ email, password: "MotDePasse123" });
+    expect(result.user.email).toBe(email);
+  });
+
+  it("refuse une adresse déjà utilisée avec le code EMAIL_TAKEN", async () => {
+    await expect(
+      signUp({ email: KNOWN_EMAIL, password: "MotDePasse123" }),
+    ).rejects.toMatchObject({ code: "EMAIL_TAKEN" });
+  });
+
+  it("retombe sur la partie locale de l'adresse quand aucun nom n'est fourni", async () => {
+    const email = `sansnom.${Date.now()}@iabank.fr`;
+    const result = await signUp({ email, password: "MotDePasse123" });
+
+    expect(result.user.full_name).toBe(email.split("@")[0]);
   });
 });
 

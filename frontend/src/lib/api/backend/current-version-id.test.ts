@@ -13,6 +13,12 @@ describe("deriveCurrentVersionId", () => {
     );
   });
 
+  it("accepte un nombre — vu en base pour certains documents (`3.0` plutôt que `\"3.0\"`)", () => {
+    expect(deriveCurrentVersionId("EXT-EU-AML-001", 3.0)).toBe(
+      "VER-EXT-EU-AML-001-03",
+    );
+  });
+
   it("renvoie null si la version courante est absente ou illisible", () => {
     // Un null explicite signale l'appelant plutôt qu'un identifiant halluciné.
     expect(deriveCurrentVersionId("EXT-EU-AML-001", null)).toBeNull();

@@ -7,24 +7,36 @@ import { HttpResponse, http } from "msw";
 import { toMeta } from "./data/documents";
 import { ACPR_REGULATION_ID, procedures } from "./data/documents";
 import { requirements } from "./data/requirements";
-import { DEMO_PASSWORD, findUserByEmail, users } from "./data/users";
+import { DEMO_PASSWORD } from "./data/users";
 import {
   addRegulation,
+  addUser,
   appendHistoryEntry,
   applyValidation,
   findFinding,
   findRegulation,
+  findUserByEmail,
+  getPassword,
   listFindings,
   listHistory,
   listRegulations,
+  listUsers,
+  setPassword,
   updateRegulationAssignee,
+  updateUserRole,
 } from "./store";
 import {
   buildDashboardSummary,
   buildPortfolioSummary,
   buildRegulationMap,
 } from "./summary";
-import { validateFindingBodySchema, type DocumentDetail } from "@/types/api";
+import {
+  signupBodySchema,
+  updateUserRoleBodySchema,
+  validateFindingBodySchema,
+  type DocumentDetail,
+  type User,
+} from "@/types/api";
 
 /** Latence simulée : rend visibles les états de chargement pendant la démo. */
 const MOCK_LATENCY_MS = 220;
@@ -60,9 +72,11 @@ export const handlers = [
     await delay();
     const body = (await request.json()) as { email?: string; password?: string };
     const user = findUserByEmail(body.email ?? "");
+    // Les 4 comptes de démo d'origine partagent `DEMO_PASSWORD` (aucun mot de passe
+    // propre stocké pour eux) ; tout compte créé via `signup` a le sien.
+    const expectedPassword = user ? (getPassword(user.email) ?? DEMO_PASSWORD) : null;
 
-    // Démo : un mot de passe unique partagé, affiché sur l'écran de connexion.
-    if (!user || body.password !== DEMO_PASSWORD) {
+    if (!user || body.password !== expectedPassword) {
       return errorResponse(
         401,
         "INVALID_CREDENTIALS",
@@ -73,6 +87,41 @@ export const handlers = [
     return HttpResponse.json({ user, token: `demo-token-${user.user_id}` });
   }),
 
+  // v1.4 — le backend de Thư expose déjà cette route ; côté mock, un compte créé ici
+  // rejoint la liste des utilisateurs assignables (`GET /api/users`) pour le reste de
+  // la session. Le rôle est fixé, comme côté backend réel : aucune route ne permet
+  // encore de le choisir ou de le changer (voir `docs/backend-integration.md`).
+  http.post("/api/auth/signup", async ({ request }) => {
+    await delay();
+    const parsed = signupBodySchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return errorResponse(422, "INVALID_BODY", "Requête invalide.");
+    }
+    const { email, password, full_name } = parsed.data;
+
+    if (findUserByEmail(email)) {
+      return errorResponse(
+        409,
+        "EMAIL_TAKEN",
+        "Cette adresse e-mail est déjà utilisée.",
+      );
+    }
+
+    const user: User = {
+      user_id: `USR-${Date.now().toString(36)}${Math.round(Math.random() * 1000)}`,
+      full_name: full_name?.trim() || email.split("@")[0],
+      email,
+      role: "Responsable Conformité",
+    };
+    addUser(user);
+    setPassword(email, password);
+
+    return HttpResponse.json(
+      { user, token: `demo-token-${user.user_id}` },
+      { status: 201 },
+    );
+  }),
+
   http.post("/api/auth/logout", async () => {
     await delay();
     return HttpResponse.json({ ok: true });
@@ -80,7 +129,22 @@ export const handlers = [
 
   http.get("/api/users", async () => {
     await delay();
-    return HttpResponse.json(users);
+    return HttpResponse.json(listUsers());
+  }),
+
+  // v1.5 — le backend de Thư expose déjà cette route (`fabd0cf`) ; côté mock, aucune
+  // restriction non plus (voir `store.ts::updateUserRole`).
+  http.put("/api/users/:userId/role", async ({ params, request }) => {
+    await delay();
+    const parsed = updateUserRoleBodySchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return errorResponse(422, "INVALID_BODY", "Requête invalide.");
+    }
+
+    const updated = updateUserRole(String(params.userId), parsed.data.role);
+    if (!updated) return notFound("Utilisateur introuvable.");
+
+    return HttpResponse.json(updated);
   }),
 
   // --- Régulations --------------------------------------------------------

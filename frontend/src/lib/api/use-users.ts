@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-import { fetchUsers } from "./auth";
+import { fetchUsers } from "./users";
 import { queryKeys } from "./query-keys";
 
 /** Liste des utilisateurs assignables, partagée par tous les sélecteurs d'assignation. */

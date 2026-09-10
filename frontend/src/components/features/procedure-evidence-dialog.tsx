@@ -15,7 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { queryKeys } from "@/lib/api/query-keys";
 import { fetchProcedure } from "@/lib/api/procedures";
 import { findQuotedLineIndexes } from "@/lib/evidence-match";
@@ -100,52 +99,53 @@ function ProcedureBody({
 
   return (
     // `min-h-0` : sans ça, un enfant flex refuse de rétrécir sous sa taille de
-    // contenu et le ScrollArea ci-dessous ignorerait `flex-1`, débordant la fenêtre.
+    // contenu et le `div` à défilement ci-dessous ignorerait `flex-1`, débordant la fenêtre.
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       {quotedIndexes.size === 0 ? (
         <p className="text-xs text-muted-foreground">{t("noHighlight")}</p>
       ) : null}
 
-      {/* `overflow-hidden` en plus de `min-h-0 flex-1` : sans lui, le viewport interne
-          du ScrollArea (Radix) ne se limite pas toujours strictement à la hauteur que
-          lui donne flexbox dans un conteneur imbriqué, et le texte déborde visuellement
-          sous la bordure au lieu d'être coupé et défilable. */}
-      <ScrollArea className="min-h-0 flex-1 overflow-hidden rounded-lg border">
-        <div className="space-y-2 p-4" lang={language.toLowerCase()}>
-          {lines.map((line, index) => {
-            const isQuoted = quotedIndexes.has(index);
+      {/* `overflow-y-auto` natif plutôt que `ScrollArea` (Radix) : dans ce dialogue
+          comme dans `FindingDetailDialog`, le viewport interne de `ScrollArea` ne se
+          limitait jamais à la hauteur donnée par flexbox (`height:100%` refusait de se
+          résoudre ici, cause non identifiée avec certitude) et le contenu débordait
+          sans défiler — un document plus long que la fenêtre restait coupé après sa
+          première section, sans indication qu'il continuait. Un `div` à défilement
+          natif n'a pas ce problème. */}
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-lg border p-4" lang={language.toLowerCase()}>
+        {lines.map((line, index) => {
+          const isQuoted = quotedIndexes.has(index);
 
-            if (!line.trim()) return <div key={index} className="h-2" />;
+          if (!line.trim()) return <div key={index} className="h-2" />;
 
-            return (
-              <div
-                // Les lignes du document n'ont pas d'identifiant stable : leur
-                // position dans le texte est la seule clé disponible.
-                key={index}
-                ref={index === firstQuotedIndex ? firstQuotedRef : undefined}
-                className={cn(
-                  "scroll-mt-4 text-sm leading-relaxed",
-                  // Teinte neutre : les couleurs de statut restent réservées à
-                  // `assessment` (docs/ui-guidelines.md).
-                  isQuoted &&
-                    "rounded-md bg-foreground/8 px-3 py-2 font-medium ring-1 ring-foreground/20",
-                )}
-              >
-                <MarkdownLine
-                  text={line}
-                  leading={
-                    isQuoted ? (
-                      <Badge variant="secondary" className="mr-2 align-middle text-[10px]">
-                        {t("citedBadge")}
-                      </Badge>
-                    ) : null
-                  }
-                />
-              </div>
-            );
-          })}
-        </div>
-      </ScrollArea>
+          return (
+            <div
+              // Les lignes du document n'ont pas d'identifiant stable : leur
+              // position dans le texte est la seule clé disponible.
+              key={index}
+              ref={index === firstQuotedIndex ? firstQuotedRef : undefined}
+              className={cn(
+                "scroll-mt-4 text-sm leading-relaxed",
+                // Teinte neutre : les couleurs de statut restent réservées à
+                // `assessment` (docs/ui-guidelines.md).
+                isQuoted &&
+                  "rounded-md bg-foreground/8 px-3 py-2 font-medium ring-1 ring-foreground/20",
+              )}
+            >
+              <MarkdownLine
+                text={line}
+                leading={
+                  isQuoted ? (
+                    <Badge variant="secondary" className="mr-2 align-middle text-[10px]">
+                      {t("citedBadge")}
+                    </Badge>
+                  ) : null
+                }
+              />
+            </div>
+          );
+        })}
+      </div>
 
       <p className="text-[11px] text-muted-foreground">{t("sourceNote")}</p>
     </div>

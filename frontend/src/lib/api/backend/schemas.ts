@@ -33,6 +33,9 @@ export const backendUserSchema = z.object({
   created_at: z.string(),
 });
 
+/** `GET /api/users` (2026-09-07, commit `624db76`) — liste paginée. */
+export const backendUserListSchema = paginated(backendUserSchema);
+
 export const backendTokenSchema = z.object({
   access_token: z.string(),
   token_type: z.string(),
@@ -49,7 +52,10 @@ export const backendDocumentSchema = z.object({
   /** Chaîne unique côté backend, tableau côté contrat — voir `adapt.ts`. */
   domain: z.string().nullable().optional(),
   language: z.string().nullable().optional(),
-  current_version: z.string().nullable().optional(),
+  // Vu en base : parfois un nombre (`3.0`) plutôt qu'une chaîne — Thư a élargi son
+  // propre schéma Pydantic le 2026-09-09 (`Fix API get documents`) après l'avoir
+  // rencontré. Même élargissement ici, pas un assouplissement de notre cru.
+  current_version: z.union([z.string(), z.number()]).nullable().optional(),
   current_file_path: z.string().nullable().optional(),
   data_classification: z.string().nullable().optional(),
   created_at: z.string(),
@@ -117,7 +123,14 @@ export const backendMappingSchema = z.object({
   confidence: z.number().nullable().optional(),
   explanation: z.string().nullable().optional(),
   recommended_action: z.string().nullable().optional(),
+  // Ajoutés par Thư le 2026-09-09 soir (`ea02f49`, « Add French for explanation and
+  // recommendation ») — variantes françaises, absentes sur les couples plus anciens.
+  explanation_lang_fr: z.string().nullable().optional(),
+  recommended_action_lang_fr: z.string().nullable().optional(),
   human_status: z.string().nullable().optional(),
+  // Ajouté par Thư le 2026-09-07 après-midi (`PUT .../assignee`), sans migration —
+  // absent d'une base non synchronisée. Optionnel ici pour la même raison.
+  assignee: z.string().nullable().optional(),
 });
 
 export const backendMappingListSchema = paginated(backendMappingSchema);
