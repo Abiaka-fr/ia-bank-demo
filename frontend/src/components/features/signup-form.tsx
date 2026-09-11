@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useRouter } from "@/i18n/navigation";
+import { landingRouteForUser } from "@/lib/access-profile";
 import { signUp } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 
@@ -40,14 +41,14 @@ export function SignupForm() {
   const [password, setPassword] = useState("");
 
   useEffect(() => {
-    if (user) router.replace("/dashboard");
+    if (user) router.replace(landingRouteForUser(user));
   }, [user, router]);
 
   const mutation = useMutation({
     mutationFn: () => signUp({ email, password, full_name: fullName.trim() || undefined }),
     onSuccess: (result) => {
       signIn(result.user, result.token);
-      router.replace("/dashboard");
+      router.replace(landingRouteForUser(result.user));
     },
   });
 

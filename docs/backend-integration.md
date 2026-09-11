@@ -292,3 +292,19 @@ branchement se fera **endpoint par endpoint**, sans réécrire les écrans. Conc
     une session future : sur `ApiError.code === "UNAUTHENTICATED"`, forcer
     `signOut()` (pas seulement purger le jeton) pour renvoyer vers l'écran de
     connexion au lieu d'un message d'erreur générique.
+16. **Nouveau (v1.9, 2026-09-11, pull suivant)** : `Requirement.normalized_requirement_fr` /
+    `.source_text_fr`, en réponse au commit `be74658` de Thư (« Add requirement and title in
+    French », `title_lang_fr`/`requirement_text_lang_fr` sur `RegulatoryRequirement`) — même
+    famille que le point 14 ci-dessus, appliquée cette fois à l'exigence plutôt qu'au constat.
+    Branché côté frontend (`lib/api/backend/schemas.ts`, `adapt.ts::adaptRequirement`,
+    `lib/localized-text.ts::pickLocalizedText`, utilisé dans `requirements-tab.tsx`,
+    `finding-action-row.tsx` et `finding-detail-dialog.tsx`) : même mécanique que
+    `explanation_fr`/`recommended_action_fr`, aucun nouveau composant. **⚠️ Piège déjà vu au
+    point 14 : colonnes ajoutées sans migration** (`alembic/versions/` toujours gitignoré côté
+    backend) — sur une base locale antérieure au 2026-09-10, `GET /api/requirements/*` cassera
+    avec `no such column: regulatory_requirement.title_lang_fr` tant que
+    `scripts/local-dev/seed_dev_db.py` (qui appelle `sync_missing_columns()`, générique, aucun
+    changement nécessaire de ce script) n'a pas été relancé après ce pull.
+
+    **Même pull, hors contrat (commit `462fd58`, « extend signin time »)** : durée du jeton JWT
+    allongée de 60 à 1440 minutes — voir `docs/known-limitations.md` point 12, mis à jour.

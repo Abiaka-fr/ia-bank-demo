@@ -128,6 +128,11 @@ export function adaptRequirement(requirement: BackendRequirement): Requirement {
     source_reference: requirement.source_reference ?? "",
     source_text: requirement.requirement_text ?? "",
     normalized_requirement: requirement.title ?? "",
+    // v1.9 — `title_lang_fr`/`requirement_text_lang_fr` (Thư, `be74658`) : `undefined`
+    // plutôt que `null` converti en chaîne vide, pour que `pickLocalizedText` retombe
+    // proprement sur la variante principale quand le backend ne les a pas encore.
+    normalized_requirement_fr: requirement.title_lang_fr ?? undefined,
+    source_text_fr: requirement.requirement_text_lang_fr ?? undefined,
     domain: adaptDomain(requirement.domain),
     impacted_activity: [],
     language: adaptLanguage(requirement.language),

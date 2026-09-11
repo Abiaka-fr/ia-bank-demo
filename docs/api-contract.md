@@ -66,6 +66,75 @@ section 12) et le "Shared Interface Contract" (section 16.4).
 >     backend. `explanation`/`recommended_action` restent la langue d'origine du corpus (l'anglais
 >     en mode backend réel) ; l'écran choisit la variante à afficher selon la langue de l'interface.
 >     Absentes en mode mock, où le corpus de démo est déjà rédigé en français.
+>
+> **v1.7 — proposition du 2026-09-11 (Extended European Regulatory Search, demande Francis).**
+> Non-breaking : tous les nouveaux champs sont optionnels ou ont une valeur par défaut qui
+> reproduit exactement le comportement actuel (`source: "BANK_KB"` partout tant que rien
+> d'européen n'est branché).
+> 14. `RegulatorySource = "BANK_KB" | "EU_LIVE"` — ajouté sur `Requirement.source` et
+>     `Finding.source`. Distingue une exigence/un constat déjà connu du corpus Bank de celui
+>     découvert via la recherche européenne. Badges `[BANK KB]` / `[EU LIVE]` dans l'UI.
+> 15. `Applicability = "CONFIRMED" | "LIKELY_APPLICABLE" | "TO_BE_CONFIRMED" | "NOT_APPLICABLE"` —
+>     nouveau champ optionnel `Finding.applicability`. Dimension indépendante de `assessment` (ne
+>     remplace ni n'étend le mapping des 5 statuts existants — voir `docs/glossary.md`, qui reste
+>     inchangé). `CONFIRMED` réservé aux décisions validées côté Bank ; un constat `EU_LIVE`
+>     démarre par défaut à `TO_BE_CONFIRMED`, jamais `CONFIRMED` d'emblée (l'IA ne doit pas décider
+>     seule qu'une exigence européenne s'applique).
+> 16. `Finding.eu_provenance?` (présent seulement si `source === "EU_LIVE"`) :
+>     `{ repository: string; celex?: string; eli?: string; publication_date?: string;
+>     retrieved_at: string; source_type: string; original_url?: string }` — panneau de provenance
+>     (§7 du retour Francis), condition de crédibilité pour un résultat européen.
+> 17. Nouvel endpoint `POST /api/procedures/:id/analyze` — body `{ scope: "BANK" |
+>     "BANK_PLUS_EU" }` → `{ bank_requirements_identified: number; eu_candidate_requirements?:
+>     number; already_in_bank_kb?: number; additional_eu_candidates?: number; findings: Finding[] }`.
+>     Nécessaire pour la direction inverse (Procédure → Bank KB → extension Europe, UC02/UC03) —
+>     **absente aujourd'hui côté frontend, aucun écran Procédure n'existe encore** (voir
+>     `docs/phases/phase-7-european-search.md` § Jour 0). `scope` absent ou `"BANK"` reproduit
+>     exactement le comportement `analyzeRegulation` actuel, orchestré Bank-first : un échec de la
+>     recherche européenne ne doit jamais faire échouer l'analyse Bank (règle explicite de
+>     Francis — voir le diagramme `/analyze-procedure` dans son email du 2026-09-11).
+> 18. `GET /api/procedures` / `GET /api/procedures/:id` — pour lister/sélectionner une procédure à
+>     analyser (le backend expose déjà les procédures via `/api/documents?category=INTERNAL`,
+>     donc potentiellement juste un alias, à confirmer avec Thư).
+>
+> **v1.8 — proposition du 2026-09-11 (écran « Analyze », fusion phase-6 §2.2 / phase-7 Jour 0).**
+> Comme les propositions précédentes de Giang : déjà implémentée côté frontend + mock MSW, en
+> attente de revue par Thư — ne bloque pas la démo (aucune route backend réelle n'existe pour
+> l'upload/l'analyse de procédure aujourd'hui).
+> 19. `POST /api/procedures` — mêmes règles que `POST /api/regulations` (v1.1) : multipart `file`
+>     (**.docx uniquement**), `file_name`, `assignee_id?`, `uploaded_by_id?` → `DocumentMeta` avec
+>     `document_type: "INTERNAL_PROCEDURE"`, `status: "NOT_ANALYZED"`. Nécessaire pour l'écran
+>     `/procedures` (liste + upload), demandé par Giang le 2026-09-11 — aucune route backend
+>     n'existe encore, à confirmer avec Thư.
+> 20. `AnalyzeProcedureResponse` (item 17 ci-dessus, v1.7) gagne un champ `requirements:
+>     Requirement[]` — les exigences pleines (pas seulement leur ID) couvertes par les
+>     `findings` retournés, pour permettre à l'écran de réutiliser `FindingsActionsTable` tel quel
+>     sans requête supplémentaire par exigence (pattern déjà écarté ailleurs dans ce contrat —
+>     voir phase-6 §2 sur le résumé document). Non-breaking : champ additionnel, pas de
+>     changement sur les champs existants de la v1.7.
+>
+> **v1.9 — confirmée le 2026-09-11 (commit Thư `be74658`, « Add requirement and title in
+> French »).** Contrairement aux propositions précédentes de Giang, ceci reflète une capacité
+> réelle déjà exposée côté backend (comme la v1.4/v1.5) — le contrat se met à jour pour en rendre
+> compte, ce n'est pas une proposition en attente.
+> 21. `RegulatoryRequirement.title_lang_fr` / `.requirement_text_lang_fr` (optionnels) : variantes
+>     françaises de `title`/`requirement_text`, exposées par le backend
+>     (`backend/app/schemas/requirement.py`) sur `GET /api/requirements/*` et dans l'arborescence
+>     `GET /api/mappings/requirements-to-procedures`. Mappées côté frontend sur
+>     `Requirement.normalized_requirement_fr` / `.source_text_fr` — même convention que
+>     `Finding.explanation_fr`/`recommended_action_fr` (v1.6) : `normalized_requirement`/
+>     `source_text` restent la langue d'origine du corpus, l'écran choisit la variante à afficher
+>     selon la langue de l'interface.
+>
+> **Note hors contrat (même pull, commit `462fd58`, « extend signin time »)** : la durée de vie du
+> jeton JWT (`access_token_expire_minutes`) passe de 60 à 1440 minutes (24h) côté backend — résout
+> `docs/known-limitations.md` point 12 (déconnexion après 1h de session). Aucun champ de réponse
+> concerné, rien à changer côté frontend au-delà de la note dans les limitations connues.
+>
+> Champs volontairement **non ajoutés** malgré le retour Francis, car ce sont des concepts
+> produit plus larges qu'un simple champ API — à trancher séparément si besoin :
+> `Hierarchy Level` (L1-L6), `Document Criticality`, `Legal status` (BINDING/GUIDANCE/...),
+> `Operational Priority` calculée sur plusieurs facteurs (`priority` reste tel quel pour l'instant).
 
 ## Conventions générales
 
@@ -283,12 +352,14 @@ n'est pas toujours conservé dans la partie multipart. Le backend valide l'exten
 | GET | `/api/dashboard/map` | v1.2 — Arborescence Régulation → Exigence → Procédure (carte mentale) | `RegulationMapNode[]` |
 | GET | `/api/dashboard/summary?regulation_id=...` | Agrégats KPI d'une régulation (écran de détail) | `DashboardSummary` |
 
-### Procédures internes (lecture seule côté frontend)
+### Procédures internes
 
 | Méthode | Route | Description | Réponse |
 |---|---|---|---|
 | GET | `/api/procedures` | Liste des procédures internes indexées | `DocumentMeta[]` |
+| POST | `/api/procedures` | v1.8 — Upload (multipart : `file` **.docx uniquement**, `file_name`, `assignee_id?`, `uploaded_by_id?`) | `DocumentMeta` |
 | GET | `/api/procedures/:id` | Détail d'une procédure | `DocumentMeta & { extracted_text: string }` |
+| POST | `/api/procedures/:id/analyze` | v1.7/v1.8 — Analyse Bank (+ Europe optionnel) — body `{ scope?: "BANK" \| "BANK_PLUS_EU" }` | `AnalyzeProcedureResponse` |
 
 ### Authentification et utilisateurs (v1.1)
 

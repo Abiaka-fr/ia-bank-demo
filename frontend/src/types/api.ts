@@ -85,6 +85,17 @@ export const requirementSchema = z.object({
   impacted_activity: z.array(z.string()),
   effective_date: z.string().optional(),
   language: languageSchema,
+  /**
+   * v1.9 — variantes françaises, quand le backend les fournit (`title_lang_fr`/
+   * `requirement_text_lang_fr`, ajoutés par Thư le 2026-09-10, commit `be74658`).
+   * Même convention que `Finding.explanation_fr`/`recommended_action_fr` (v1.6) :
+   * `normalized_requirement`/`source_text` restent la langue d'origine du corpus,
+   * l'écran choisit la variante à afficher selon la langue de l'interface (voir
+   * `lib/localized-text.ts`). Absentes en mode mock, où le corpus de démo est déjà
+   * rédigé en français.
+   */
+  normalized_requirement_fr: z.string().optional(),
+  source_text_fr: z.string().optional(),
 });
 
 export const findingSchema = z.object({
@@ -191,6 +202,35 @@ export const portfolioSummarySchema = z.object({
   ),
 });
 
+/**
+ * v1.7 — Extended European Regulatory Search. `BANK` reproduit exactement le
+ * comportement actuel (recherche dans le seul corpus Bank) ; `BANK_PLUS_EU` ajoute une
+ * recherche complémentaire dans les sources réglementaires européennes, jamais
+ * bloquante si elle échoue (règle explicite de Francis).
+ */
+export const regulatoryScopeSchema = z.enum(["BANK", "BANK_PLUS_EU"]);
+
+export const analyzeProcedureBodySchema = z.object({
+  scope: regulatoryScopeSchema.optional(),
+});
+
+/**
+ * v1.7/v1.8 — réponse de `POST /api/procedures/:id/analyze`. Les 3 compteurs Europe
+ * sont optionnels : absents (ou non fiables) tant qu'aucune recherche européenne
+ * réelle n'est branchée — l'écran affiche `AwaitingBackendBadge` à leur place plutôt
+ * que d'inventer un chiffre (voir `docs/phases/phase-7-european-search.md` §
+ * Convention « en attente backend »). `requirements` (v1.8) évite une requête par
+ * exigence pour réutiliser `FindingsActionsTable` tel quel.
+ */
+export const analyzeProcedureResponseSchema = z.object({
+  bank_requirements_identified: z.number(),
+  eu_candidate_requirements: z.number().optional(),
+  already_in_bank_kb: z.number().optional(),
+  additional_eu_candidates: z.number().optional(),
+  findings: z.array(findingSchema),
+  requirements: z.array(requirementSchema),
+});
+
 export const loginResponseSchema = z.object({
   user: userSchema,
   token: z.string(),
@@ -218,6 +258,9 @@ export type Requirement = z.infer<typeof requirementSchema>;
 export type Finding = z.infer<typeof findingSchema>;
 export type DashboardSummary = z.infer<typeof dashboardSummarySchema>;
 export type User = z.infer<typeof userSchema>;
+export type RegulatoryScope = z.infer<typeof regulatoryScopeSchema>;
+export type AnalyzeProcedureBody = z.infer<typeof analyzeProcedureBodySchema>;
+export type AnalyzeProcedureResponse = z.infer<typeof analyzeProcedureResponseSchema>;
 export type RegulationSummary = z.infer<typeof regulationSummarySchema>;
 export type PortfolioSummary = z.infer<typeof portfolioSummarySchema>;
 export type RegulationMapNode = z.infer<typeof regulationMapNodeSchema>;

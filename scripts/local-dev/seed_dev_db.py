@@ -49,6 +49,10 @@ DEMO_USERS = [
     ("USR-002", "thomas.rousseau@iabank.fr", "Thomas Rousseau", "Analyste Conformité"),
     ("USR-003", "claire.dubois@iabank.fr", "Claire Dubois", "Auditeur Interne"),
     ("USR-004", "karim.benali@iabank.fr", "Karim Benali", "Juriste Réglementaire"),
+    # 5e compte — profil COMPLIANCE_ADMIN côté frontend (voir
+    # frontend/src/lib/access-profile.ts), ajouté pour la Phase 6 § 1
+    # (docs/phases/phase-6-francis-feedback.md).
+    ("USR-005", "sophie.nguyen@iabank.fr", "Sophie Nguyen", "Admin Base de Connaissances"),
 ]
 
 

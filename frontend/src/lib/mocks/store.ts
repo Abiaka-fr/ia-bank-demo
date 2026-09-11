@@ -22,12 +22,13 @@ import {
   type ValidateFindingBody,
 } from "@/types/api";
 
-import { regulations as seedRegulations } from "./data/documents";
+import { procedures as seedProcedures, regulations as seedRegulations } from "./data/documents";
 import { seedFindings } from "./data/findings";
 import { users as seedUsers } from "./data/users";
 
 const FINDINGS_KEY = "ia-bank.mock-findings";
 const REGULATIONS_KEY = "ia-bank.mock-regulations";
+const PROCEDURES_KEY = "ia-bank.mock-procedures";
 const HISTORY_KEY = "ia-bank.mock-history";
 const USERS_KEY = "ia-bank.mock-users";
 /** Mots de passe des comptes créés par `POST /api/auth/signup` — jamais les 4 comptes
@@ -61,6 +62,10 @@ let findings: readonly Finding[] =
 
 let regulations: readonly DocumentDetail[] =
   read(REGULATIONS_KEY, z.array(documentDetailSchema)) ?? seedRegulations;
+
+/** Écran `/procedures` (Phase 6 §2.2 / Phase 7 Jour 0) — même pattern que `regulations`. */
+let procedures: readonly DocumentDetail[] =
+  read(PROCEDURES_KEY, z.array(documentDetailSchema)) ?? seedProcedures;
 
 let history: readonly AuditHistoryEntry[] =
   read(HISTORY_KEY, z.array(auditHistoryEntrySchema)) ?? [];
@@ -163,6 +168,22 @@ export function updateRegulationAssignee(
   return updated;
 }
 
+// --- Procédures internes ----------------------------------------------------
+
+export function listProcedures(): readonly DocumentDetail[] {
+  return procedures;
+}
+
+export function findProcedureDoc(id: string): DocumentDetail | undefined {
+  return procedures.find((procedure) => procedure.document_id === id);
+}
+
+export function addProcedure(procedure: DocumentDetail): DocumentDetail {
+  procedures = [procedure, ...procedures];
+  write(PROCEDURES_KEY, procedures);
+  return procedure;
+}
+
 // --- Utilisateurs -----------------------------------------------------------
 
 /** Comptes assignables — les 4 comptes de démo, plus tout compte créé via `signup`. */
@@ -210,6 +231,7 @@ export function setPassword(email: string, password: string): void {
 export function resetStore(): void {
   findings = seedFindings;
   regulations = seedRegulations;
+  procedures = seedProcedures;
   history = [];
   users = seedUsers;
   passwordsByEmail = {};
@@ -217,6 +239,7 @@ export function resetStore(): void {
   try {
     window.sessionStorage.removeItem(FINDINGS_KEY);
     window.sessionStorage.removeItem(REGULATIONS_KEY);
+    window.sessionStorage.removeItem(PROCEDURES_KEY);
     window.sessionStorage.removeItem(HISTORY_KEY);
     window.sessionStorage.removeItem(USERS_KEY);
     window.sessionStorage.removeItem(PASSWORDS_KEY);

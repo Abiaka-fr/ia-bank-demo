@@ -2,7 +2,7 @@
 
 import { cn } from "cn";
 import { ChevronRight, Search } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 import { AssessmentBadge } from "@/components/features/assessment-badge";
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Link } from "@/i18n/navigation";
 import { humanStatusValues } from "@/lib/assessment";
+import { pickLocalizedText } from "@/lib/localized-text";
 import type { Finding, Requirement } from "@/types/api";
 
 const ALL_DOMAINS = "ALL";
@@ -49,6 +50,7 @@ export function RequirementsTab({
 }) {
   const t = useTranslations("regulations");
   const actionsT = useTranslations("actions");
+  const locale = useLocale();
   const [openDetail, setOpenDetail] = useState<{
     finding: Finding;
     requirement: Requirement;
@@ -76,7 +78,9 @@ export function RequirementsTab({
           requirement.requirement_id,
           requirement.source_reference,
           requirement.normalized_requirement,
+          requirement.normalized_requirement_fr ?? "",
           requirement.source_text,
+          requirement.source_text_fr ?? "",
         ].some((field) => field.toLowerCase().includes(query));
       return matchesDomain && matchesQuery;
     });
@@ -149,6 +153,24 @@ export function RequirementsTab({
             : undefined;
         const isClickable = Boolean(singleFinding) || Boolean(focusHref);
 
+        // v1.9 — variantes françaises (Thư, `be74658`) : la langue d'origine du corpus
+        // reste `requirement.language`, l'interface choisit la variante à afficher
+        // (voir `lib/localized-text.ts`, même convention que `Finding.explanation_fr`).
+        const displayedRequirementText = pickLocalizedText(
+          locale,
+          requirement.normalized_requirement,
+          requirement.normalized_requirement_fr,
+        );
+        const displayedSourceText = pickLocalizedText(
+          locale,
+          requirement.source_text,
+          requirement.source_text_fr,
+        );
+        const sourceTextLang =
+          locale === "fr" && requirement.source_text_fr
+            ? "fr"
+            : requirement.language.toLowerCase();
+
         function openSingleFindingDetail() {
           if (singleFinding) setOpenDetail({ finding: singleFinding, requirement });
         }
@@ -208,7 +230,7 @@ export function RequirementsTab({
                     onClick={openSingleFindingDetail}
                     className="text-left after:absolute after:inset-0 hover:underline focus:outline-none"
                   >
-                    {requirement.normalized_requirement}
+                    {displayedRequirementText}
                   </button>
                 ) : focusHref ? (
                   // `::after` couvre toute la carte : cliquer n'importe où dessus
@@ -217,10 +239,10 @@ export function RequirementsTab({
                     href={focusHref}
                     className="after:absolute after:inset-0 hover:underline focus:outline-none"
                   >
-                    {requirement.normalized_requirement}
+                    {displayedRequirementText}
                   </Link>
                 ) : (
-                  requirement.normalized_requirement
+                  displayedRequirementText
                 )}
               </CardTitle>
             </CardHeader>
@@ -229,10 +251,10 @@ export function RequirementsTab({
                 <ReviewProgressBar counts={counts} showBreakdown={false} />
               ) : null}
               <blockquote
-                lang={requirement.language.toLowerCase()}
+                lang={sourceTextLang}
                 className="border-l-2 pl-3 text-sm leading-relaxed text-muted-foreground"
               >
-                {requirement.source_text}
+                {displayedSourceText}
               </blockquote>
               <div className="flex flex-wrap items-center gap-1">
                 <span className="text-xs text-muted-foreground">
@@ -257,6 +279,7 @@ export function RequirementsTab({
           onOpenChange={(open) => {
             if (!open) setOpenDetail(null);
           }}
+          regulationId={regulationId}
         />
       ) : null}
     </div>

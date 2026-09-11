@@ -114,13 +114,13 @@
   --expert-ink: #3d2f8c;
   /* Palette categorielle des graphiques : ordre fixe, 8 series maximum. */
   --cat-1: #2a78d6;
-  --cat-2: #eb6834;
+  --cat-2: #93126b; /* remplace l'orange — voir docs/phases/phase-6-francis-feedback.md §0 (2026-09-11) */
   --cat-3: #1baf7a;
   --cat-4: #eda100;
   --cat-5: #e87ba4;
   --cat-6: #008300;
   --cat-7: #4a3aa7;
-  --cat-8: #e34948;
+  --cat-8: #7b4a00; /* remplace le rouge — voir docs/phases/phase-6-francis-feedback.md §0 (2026-09-11) */
 }
 
 .dark {
@@ -168,13 +168,13 @@
   --expert: #8b7ce0;
   --expert-ink: #b0a5ee;
   --cat-1: #6fa8e8;
-  --cat-2: #f28e63;
+  --cat-2: #d162a5; /* remplace l'orange — voir docs/phases/phase-6-francis-feedback.md §0 (2026-09-11) */
   --cat-3: #4ecfa0;
   --cat-4: #f0be4d;
   --cat-5: #f0a2c0;
   --cat-6: #46b246;
   --cat-7: #8b7ce0;
-  --cat-8: #ee7a79;
+  --cat-8: #b08a00; /* remplace le rouge — voir docs/phases/phase-6-francis-feedback.md §0 (2026-09-11) */
 }
 
 @layer base {

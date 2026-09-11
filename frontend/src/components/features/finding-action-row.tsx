@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { accessProfileForUser, canValidateFindings } from "@/lib/access-profile";
 import { validateFinding } from "@/lib/api/findings";
 import { queryKeys } from "@/lib/api/query-keys";
 import { pickLocalizedText } from "@/lib/localized-text";
@@ -51,6 +52,7 @@ export function FindingActionRow({
   const queryClient = useQueryClient();
   const { user } = useSession();
   const locale = useLocale();
+  const canValidate = canValidateFindings(accessProfileForUser(user));
 
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const rowRef = useRef<HTMLTableRowElement | null>(null);
@@ -144,7 +146,13 @@ export function FindingActionRow({
             <PriorityBadge priority={finding.priority} />
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {requirement?.normalized_requirement}
+            {requirement
+              ? pickLocalizedText(
+                  locale,
+                  requirement.normalized_requirement,
+                  requirement.normalized_requirement_fr,
+                )
+              : null}
           </p>
         </TableCell>
 
@@ -179,47 +187,56 @@ export function FindingActionRow({
             placeholder={t("customActionPlaceholder")}
             rows={3}
             className="min-w-56 text-sm"
+            disabled={!canValidate}
           />
         </TableCell>
 
         <TableCell className="whitespace-normal">
           <div className="flex flex-col gap-2">
             <HumanStatusBadge status={finding.human_status} />
-            <div className="flex flex-wrap gap-1">
-              <Button
-                size="sm"
-                variant={finding.human_status === "ACCEPTED" ? "default" : "outline"}
-                disabled={isPending}
-                onClick={() => decide("ACCEPTED")}
-              >
-                <Check aria-hidden />
-                {t("accept")}
-              </Button>
-              <Button
-                size="sm"
-                variant={finding.human_status === "REJECTED" ? "default" : "outline"}
-                disabled={isPending}
-                onClick={() => decide("REJECTED")}
-              >
-                <X aria-hidden />
-                {t("reject")}
-              </Button>
-              <Button
-                size="sm"
-                variant={finding.human_status === "ESCALATED" ? "default" : "outline"}
-                disabled={isPending}
-                onClick={() => decide("ESCALATED")}
-              >
-                <ArrowUpCircle aria-hidden />
-                {t("escalate")}
-              </Button>
-            </div>
-            <AssigneeSelect
-              value={assigneeId}
-              onChange={setAssigneeId}
-              disabled={isPending}
-              className="w-full"
-            />
+            {canValidate ? (
+              <>
+                <div className="flex flex-wrap gap-1">
+                  <Button
+                    size="sm"
+                    variant={finding.human_status === "ACCEPTED" ? "default" : "outline"}
+                    disabled={isPending}
+                    onClick={() => decide("ACCEPTED")}
+                  >
+                    <Check aria-hidden />
+                    {t("accept")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={finding.human_status === "REJECTED" ? "default" : "outline"}
+                    disabled={isPending}
+                    onClick={() => decide("REJECTED")}
+                  >
+                    <X aria-hidden />
+                    {t("reject")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={finding.human_status === "ESCALATED" ? "default" : "outline"}
+                    disabled={isPending}
+                    onClick={() => decide("ESCALATED")}
+                  >
+                    <ArrowUpCircle aria-hidden />
+                    {t("escalate")}
+                  </Button>
+                </div>
+                <AssigneeSelect
+                  value={assigneeId}
+                  onChange={setAssigneeId}
+                  disabled={isPending}
+                  className="w-full"
+                />
+              </>
+            ) : (
+              // Profil AUDITOR : consultation seule (phase-6-francis-feedback.md § 1),
+              // pas un vrai contrôle d'accès — voir docs/known-limitations.md.
+              <p className="text-xs text-muted-foreground">{t("readOnlyNotice")}</p>
+            )}
           </div>
         </TableCell>
       </TableRow>
@@ -229,6 +246,7 @@ export function FindingActionRow({
         requirement={requirement}
         isOpen={isDetailOpen}
         onOpenChange={setIsDetailOpen}
+        regulationId={regulationId}
       />
     </>
   );

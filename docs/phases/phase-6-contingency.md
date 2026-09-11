@@ -1,5 +1,8 @@
 # Phase 6 — Contingence / Polish (≈ Semaine 6, optionnelle)
 
+> **Remplacée le 2026-09-10** par `docs/phases/phase-6-francis-feedback.md` — Francis a donné un backlog concret (session vocale + 2 emails) en fin de Semaine 1, donc cette portée générique "contingence/polish" n'est plus le plan de la Semaine 2. Gardée ici pour l'historique seulement ; ne pas suivre cette page pour prioriser du travail.
+
+
 Source : Full Project Guide, section 17, semaine 6 ("contingency and showcase enhancement").
 
 À n'entamer que si les Phases 1-5 sont terminées et stables. Ne pas commencer le polish avant que le

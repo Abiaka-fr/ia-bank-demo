@@ -58,16 +58,28 @@ de graphique, un statut de document, etc.) afin qu'un statut reste immédiatemen
 
 Ordre fixe, ne jamais permuter ni faire cycler au-delà de 8 séries (au-delà, regrouper en "Autres") :
 
-| Slot | Teinte | Hex |
-|---|---|---|
-| 1 | bleu | `#2a78d6` |
-| 2 | orange | `#eb6834` |
-| 3 | aqua | `#1baf7a` |
-| 4 | jaune | `#eda100` |
-| 5 | magenta | `#e87ba4` |
-| 6 | vert | `#008300` |
-| 7 | violet | `#4a3aa7` |
-| 8 | rouge | `#e34948` |
+| Slot | Teinte | Hex (clair) | Hex (sombre) |
+|---|---|---|---|
+| 1 | bleu | `#2a78d6` | `#6fa8e8` |
+| 2 | prune/magenta | `#93126b` | `#d162a5` |
+| 3 | aqua | `#1baf7a` | `#4ecfa0` |
+| 4 | jaune | `#eda100` | `#f0be4d` |
+| 5 | rose | `#e87ba4` | `#f0a2c0` |
+| 6 | vert | `#008300` | `#46b246` |
+| 7 | violet | `#4a3aa7` | `#8b7ce0` |
+| 8 | brun/olive | `#7b4a00` | `#b08a00` |
+
+**Révision du 2026-09-11 (retour Francis) :** slots 2 (orange) et 8 (rouge) remplacés — Francis a
+signalé que le rouge/l'orange sur un graphique à plusieurs séries est lu comme « urgent/important »
+même quand il s'agit d'un simple domaine métier (« Red or orange means important. When I look at
+your screen, straight away I'm looking at potential gap because red »). Les deux nouvelles teintes
+ont été cherchées et vérifiées avec `scripts/validate_palette.js` de la compétence `dataviz`
+(bande de luminosité, plancher de chroma, séparation CVD protan/deutan/tritan, plancher de vision
+normale ΔE≥15 en mode `--pairs all`) plutôt qu'improvisées — voir
+`docs/phases/phase-6-francis-feedback.md` §0 pour le détail de la recherche. Les valeurs en mode
+sombre suivent le même déplacement de teinte que les 6 autres slots (jamais validées
+indépendamment par le script — la palette sombre entière ne passe pas encore la validation
+complète, voir `docs/known-limitations.md`, item séparé du sujet rouge/orange).
 
 Note : le slot 7 (violet) est intentionnellement la même teinte que `EXPERT_REVIEW` — si un
 graphique catégoriel affiche aussi une répartition par assessment, réutiliser directement les
@@ -110,6 +122,42 @@ traiter.
 - Légende toujours présente à partir de 2 séries ; labels directs sélectifs, pas un chiffre sur
   chaque point.
 - Traits fins, marqueurs ≥ 8px, coins arrondis 4px sur les extrémités de données.
+
+## Convention : donnée en attente côté backend (« Awaiting backend »)
+
+**Décision de Giang, 2026-09-11** : plutôt que de laisser une fonctionnalité invisible tant que
+Thư n'a pas exposé le champ/endpoint nécessaire, on construit l'écran maintenant avec les données
+réellement disponibles, et on **marque visuellement** l'endroit qui attend une donnée backend — un
+signal clair pour Thư (et pour Francis en démo, si besoin d'expliquer) plutôt qu'un silence. Ce
+n'est **pas** une exception à la règle « ne jamais inventer une donnée » (`docs/ui-guardrails.md`)
+— c'est l'inverse : on montre honnêtement qu'il en manque une, au lieu de la cacher ou de la
+fabriquer.
+
+**Composant** : badge neutre (gris, jamais une des 5 couleurs de statut ni la palette catégorielle
+— cohérent avec la règle « tout le reste = niveaux de gris » ci-dessus), bordure en tirets pour le
+distinguer visuellement d'un badge de statut normal, icône `Wrench` (lucide-react), texte court
+(`awaitingBackend.badge` : « Backend requis » / « Backend pending »). Au survol/focus, un
+`Tooltip` précise quoi exactement (`awaitingBackend.tooltip`, ex. : « En attente : champ `summary`
+sur `DocumentMeta`, à confirmer avec Thư — voir `docs/phases/phase-6-francis-feedback.md` §2 »).
+Composant à créer : `components/features/awaiting-backend-badge.tsx`, props `{ field: string }`
+pour que le tooltip cite le champ exact sans dupliquer le texte à chaque usage.
+
+**Où l'utiliser (état au 2026-09-11)** :
+- Résumé court par document (Phase 6 §2) — la carte affiche le badge à la place du texte de résumé
+  tant que `DocumentMeta.summary` n'existe pas.
+- Filtre par classification (Phase 6 §2) — l'option de filtre reste visible dans le menu mais
+  désactivée, avec le badge en regard, plutôt que de disparaître silencieusement.
+- Date de création réelle du document source (Phase 6 §4) — à côté de `uploaded_at` (déjà affiché,
+  réel), un second slot avec le badge tant qu'on ne sait pas si le corpus a une vraie date de
+  publication distincte.
+- European Search (Phase 7) — chaque compteur/valeur qui vient d'un mock en attendant Thư
+  (`eu_candidate_requirements`, etc.) porte ce badge plutôt que d'afficher un chiffre mocké sans le
+  signaler comme tel — cohérent avec les badges `[BANK KB]`/`[EU LIVE]` déjà prévus.
+
+**Ce que ça change dans les items déjà notés « bloqué » / « pas implémenté »** : le statut redevient
+actionnable — construire l'emplacement + le badge maintenant, sans attendre Thư ; retirer le badge
+au champ par champ dès qu'il répond. Les sections concernées ci-dessous ont été mises à jour en
+conséquence.
 
 ## Ce qu'on évite
 

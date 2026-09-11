@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { roleLabel } from "@/lib/access-profile";
 import { useUsers } from "@/lib/api/use-users";
 
 /** Sélecteur de la personne chargée du traitement (régulation ou constat escaladé). */
@@ -28,6 +29,7 @@ export function AssigneeSelect({
   className?: string;
 }) {
   const t = useTranslations("assignee");
+  const rolesT = useTranslations("roles");
   const { data: users, isPending } = useUsers();
 
   if (isPending) return <Skeleton className="h-8 w-44" />;
@@ -41,7 +43,7 @@ export function AssigneeSelect({
       <SelectContent>
         {users?.map((user) => (
           <SelectItem key={user.user_id} value={user.user_id}>
-            {user.full_name} — {user.role}
+            {user.full_name} — {roleLabel(user.role, rolesT)}
           </SelectItem>
         ))}
       </SelectContent>

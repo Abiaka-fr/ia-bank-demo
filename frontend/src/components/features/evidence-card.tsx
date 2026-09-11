@@ -22,9 +22,14 @@ import type { EvidenceRef } from "@/types/api";
 export function EvidenceCard({
   evidence,
   openable = false,
+  regulationId,
+  requirementId,
 }: {
   evidence: EvidenceRef;
   openable?: boolean;
+  /** Transmis tels quels à `ProcedureEvidenceDialog` — voir ce fichier. */
+  regulationId?: string;
+  requirementId?: string;
 }) {
   const t = useTranslations("evidence");
   const dialogT = useTranslations("procedureDialog");
@@ -87,6 +92,8 @@ export function EvidenceCard({
         evidence={evidence}
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
+        regulationId={regulationId}
+        requirementId={requirementId}
       />
     </>
   );

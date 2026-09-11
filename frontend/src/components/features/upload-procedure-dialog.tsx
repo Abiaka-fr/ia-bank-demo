@@ -23,15 +23,20 @@ import { Label } from "@/components/ui/label";
 import { useRouter } from "@/i18n/navigation";
 import { accessProfileForUser, canUploadRegulations } from "@/lib/access-profile";
 import { queryKeys } from "@/lib/api/query-keys";
-import { uploadRegulation } from "@/lib/api/regulations";
+import { uploadProcedure } from "@/lib/api/procedures";
 
-/** Le backend refuse aussi les autres formats — ce filtre n'est qu'un confort. */
+/**
+ * Copie de `UploadRegulationDialog` (Phase 7 Jour 0, écran `/procedures`) — même
+ * contrainte de fichier, même flux, seule la ressource cible et la redirection après
+ * succès changent. Le backend n'expose aucune route `POST /api/procedures`
+ * aujourd'hui (contrat v1.8, proposition) : toujours servi par MSW.
+ */
 const ACCEPTED_EXTENSION = ".docx";
 const ACCEPTED_MIME =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-export function UploadRegulationDialog() {
-  const t = useTranslations("upload");
+export function UploadProcedureDialog() {
+  const t = useTranslations("uploadProcedure");
   const queryClient = useQueryClient();
   const router = useRouter();
   const { user } = useSession();
@@ -43,19 +48,17 @@ export function UploadRegulationDialog() {
 
   const mutation = useMutation({
     mutationFn: () =>
-      uploadRegulation({
+      uploadProcedure({
         file: file!,
         assigneeId,
         uploadedById: user?.user_id,
       }),
     onSuccess: async (created) => {
       toast.success(t("succeeded"), { description: created.title });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.regulations() });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.portfolioSummary() });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.procedures() });
       setIsOpen(false);
       setFile(null);
-      // Après l'upload, on ouvre directement le détail de la régulation créée.
-      router.push(`/regulations/${created.document_id}`);
+      router.push(`/procedures/${created.document_id}`);
     },
     onError: () => toast.error(t("failed")),
   });
@@ -71,8 +74,8 @@ export function UploadRegulationDialog() {
     setFile(selected);
   }
 
-  // Profil AUDITOR : lecture seule (phase-6-francis-feedback.md § 1) — masqué, pas
-  // désactivé, comme le reste des contrôles de décision.
+  // Même restriction que l'upload de régulation (Phase 6 § 1) : lecture seule pour
+  // l'auditeur, masqué plutôt que grisé.
   if (!canUploadRegulations(accessProfileForUser(user))) return null;
 
   return (
@@ -91,9 +94,9 @@ export function UploadRegulationDialog() {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="regulation-file">{t("fileLabel")}</Label>
+            <Label htmlFor="procedure-file">{t("fileLabel")}</Label>
             <Input
-              id="regulation-file"
+              id="procedure-file"
               ref={inputRef}
               type="file"
               accept={`${ACCEPTED_EXTENSION},${ACCEPTED_MIME}`}
@@ -110,7 +113,6 @@ export function UploadRegulationDialog() {
               size="default"
               className="w-full"
             />
-            <p className="text-xs text-muted-foreground">{t("assigneeHelp")}</p>
           </div>
         </div>
 

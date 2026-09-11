@@ -71,13 +71,54 @@ anglais ↔ procédures internes en français) est couvert par le corpus de dém
     dédié permet ensuite de le modifier. Limite assumée : n'importe quelle personne connectée peut
     changer le rôle de n'importe quel autre compte, pas seulement le sien — annoncé directement dans
     l'écran plutôt que caché.
-11. **Le Copilot est un écran de présentation (P2), pas une fonctionnalité.** Il ne doit jamais
-    devenir l'écran principal du script de démo — voir `docs/phases/phase-5-client-readiness.md`.
-12. **Une session expirée (JWT, 60 min) en mode backend réel affiche une erreur générique plutôt
-    que de renvoyer vers la connexion.** L'écran continue d'afficher la personne comme connectée
-    (nom en haut à droite) mais chaque écran de données affiche « Le chargement a échoué » sans
-    expliquer pourquoi. Contournement en attendant une session, à démo : se déconnecter puis se
-    reconnecter suffit à repartir avec un jeton frais.
+11. **Le Copilot reste un écran de présentation (P2)** pour la toute première démo client — il
+    ne doit pas devenir l'écran principal du script de démo (`docs/phases/phase-5-client-readiness.md`).
+    **Précision du 2026-09-11** : Francis l'a lui-même classé comme l'un des « 5 écrans officiels »
+    de l'application (pas un 6e écran optionnel) dans sa réponse sur la structure de navigation
+    (voir `docs/phases/phase-6-francis-feedback.md` §2.2) — il confirme cependant que Dashboard et
+    Copilot « add polish and commercial impact » et ne sont pas sur le chemin critique de la 1ère
+    démo (Analyze / Impact Analysis / Evidence & Validation le sont). Donc : toujours pas prioritaire
+    à construire maintenant, mais à ne plus présenter comme un simple à-côté à terme — le Copilot a
+    vocation à répondre à de vraies questions (UC09/UC10, `docs/use-cases.md`), pas seulement à
+    exister comme vitrine.
+12. **Une session expirée (JWT) en mode backend réel affiche une erreur générique plutôt que de
+    renvoyer vers la connexion.** L'écran continue d'afficher la personne comme connectée (nom en
+    haut à droite) mais chaque écran de données affiche « Le chargement a échoué » sans expliquer
+    pourquoi. Contournement en attendant une session, à démo : se déconnecter puis se reconnecter
+    suffit à repartir avec un jeton frais. **Durée du jeton allongée le 2026-09-10 côté backend**
+    (`access_token_expire_minutes`, commit Thư `462fd58`) : 60 min → 1440 min (24h) — le symptôme
+    ne devrait plus se voir en démo normale, seulement sur une session laissée ouverte plus d'une
+    journée. Le comportement lui-même (erreur générique au lieu d'une redirection) n'est pas
+    corrigé, juste beaucoup moins probable de se déclencher.
+
+13. **La palette catégorielle en mode sombre n'a jamais été validée par le script
+    `validate_palette.js` (compétence `dataviz`).** Corrigé le 2026-09-11 : les slots 2 et 8
+    (rouge/orange) ont été remplacés en clair ET en sombre (voir `docs/ui-guidelines.md`), mais
+    en passant le jeu de 6 couleurs sombres restantes dans le validateur, **la bande de luminosité
+    échoue déjà pour 5 des 6** (`--mode dark` attend L 0.48–0.67 OKLCH, les valeurs actuelles vont
+    jusqu'à 0.826) — un problème préexistant, indépendant de la demande de Francis sur rouge/orange,
+    jamais détecté avant faute d'avoir fait tourner le script. Pas bloquant pour la démo (mode clair
+    par défaut), mais à refaire en entier (8 slots) avec le validateur avant de considérer le mode
+    sombre présentable au client.
+
+14. **Les 4 profils d'accès (Head of Compliance / Compliance Officer / Auditeur / Admin Base de
+    Connaissances, `frontend/src/lib/access-profile.ts`) sont un habillage d'expérience de démo, pas
+    un contrôle d'accès réel.** Le profil est déduit du seul libellé `role` (chaîne libre, jamais
+    validée par le backend — voir point 10 ci-dessus) déjà présent dans la session du navigateur :
+    changer son propre rôle depuis l'écran « Utilisateurs » change instantanément ce qu'on voit
+    (sidebar, écran d'atterrissage, boutons de décision), sans passer par le serveur. Décision de
+    cadrage assumée par Giang le 2026-09-10
+    (`docs/phases/phase-6-francis-feedback.md` § 1) : reproduire ce que verrait chaque profil en
+    démo, pas construire une vraie autorisation serveur.
+
+15. **« Ouvrir dans un nouvel onglet » (procédure) échoue silencieusement si le navigateur bloque
+    les popups.** `lib/open-in-new-tab.ts` ouvre une fenêtre vide (`window.open("", "_blank")`)
+    pour pouvoir y copier la session avant de la naviguer — si le navigateur bloque cet appel
+    (absence de geste utilisateur direct, réglages stricts), rien ne se passe et aucun message
+    d'erreur n'est affiché. Le clic vient toujours d'un vrai clic utilisateur dans l'usage normal,
+    donc non reproduit en pratique, mais à garder en tête si un jour on automatise ce clic.
+    Le bouton Imprimer qui l'accompagne (`canPrint`) est le même garde-fou d'expérience que les
+    profils d'accès (point 14) — pas un vrai contrôle d'accès.
 
 ## Garde-fou produit, rappel
 

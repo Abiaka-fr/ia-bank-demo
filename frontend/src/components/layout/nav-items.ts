@@ -1,5 +1,7 @@
 import {
+  ClipboardList,
   LayoutDashboard,
+  Library,
   MessagesSquare,
   ScrollText,
   Users,
@@ -15,14 +17,29 @@ import type { LucideIcon } from "lucide-react";
  */
 export type NavItem = {
   href: string;
-  labelKey: "dashboard" | "regulations" | "copilot" | "users";
+  labelKey:
+    | "dashboard"
+    | "regulations"
+    | "procedures"
+    | "copilot"
+    | "users"
+    | "knowledgeBase";
   icon: LucideIcon;
 };
 
+/** `/procedures` (Phase 6 § 2.2 / Phase 7 Jour 0) — même visibilité que `/regulations`. */
 export const analysisNavItems: readonly NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
   { href: "/regulations", labelKey: "regulations", icon: ScrollText },
+  { href: "/procedures", labelKey: "procedures", icon: ClipboardList },
 ];
+
+/** Phase 6 § 3 — visible seulement pour `COMPLIANCE_ADMIN`/`HEAD_OF_COMPLIANCE`. */
+export const knowledgeBaseNavItem: NavItem = {
+  href: "/knowledge-base",
+  labelKey: "knowledgeBase",
+  icon: Library,
+};
 
 export const assistanceNavItems: readonly NavItem[] = [
   { href: "/copilot", labelKey: "copilot", icon: MessagesSquare },

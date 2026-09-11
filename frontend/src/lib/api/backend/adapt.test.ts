@@ -199,6 +199,31 @@ describe("adaptRequirement", () => {
       language: "EN",
     });
   });
+
+  it("reprend les variantes françaises quand le backend les fournit (v1.9, be74658)", () => {
+    // Arrange
+    const requirement = {
+      requirement_id: "REQ-0001",
+      source_document_id: "EXT-EU-AML-001",
+      title: "Risk classification",
+      title_lang_fr: "Classification des risques",
+      domain: "AML/CFT",
+      language: "EN",
+      requirement_text: "Customers must be classified using documented risk factors.",
+      requirement_text_lang_fr:
+        "Les clients doivent être classés selon des facteurs de risque documentés.",
+      risk_level: "MEDIUM",
+      source_reference: "Section 3",
+      status: "ACTIVE",
+    };
+    // Act
+    const result = adaptRequirement(requirement);
+    // Assert
+    expect(result.normalized_requirement_fr).toBe("Classification des risques");
+    expect(result.source_text_fr).toBe(
+      "Les clients doivent être classés selon des facteurs de risque documentés.",
+    );
+  });
 });
 
 describe("adaptUser", () => {

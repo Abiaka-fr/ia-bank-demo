@@ -34,6 +34,30 @@ et Escalader+assignation persistent bien sur le backend local, un troisième bug
 corrigé au passage — voir l'entrée du soir plus bas). Détail complet dans
 `docs/backend-integration.md`.
 
+**Phase 6 — Retours Francis (Semaine 2)** : plan écrit le 2026-09-10 dans `docs/phases/phase-6-francis-feedback.md`, à partir du feedback de Francis en fin de Semaine 1 (session vocale + 2 emails, `Feedback week 1.docx`). Remplace l'ancienne Phase 6 (« contingence/polish », gardée pour l'historique). Cadrage retenu par Giang : le frontend avance sans attendre de décision backend, et les rôles/profils d'accès sont gérés 100 % côté frontend (aucune autorisation réelle côté serveur — `User.role` reste une chaîne libre non validée, contrat v1.5). Priorité n°1 de la phase : la palette catégorielle de domaine chevauche la palette de statut à 3 endroits sur 8 (diagnostic précis dans le fichier de phase) — c'est ce que Francis a signalé en réunion (rouge/orange lus comme "important" même sur un domaine).
+
+**Phase 7 — Extended European Regulatory Search (Semaine 2, suite)** : plan écrit le 2026-09-11 dans `docs/phases/phase-7-european-search.md`, à partir de la réponse détaillée de Francis du 2026-09-11 (plan 10 jours Dev-A/Dev-B, ruling couleur, tableau UC01–UC10). Portée frontend uniquement (colonne "Developer A / App" du plan de Francis) — la colonne backend (CELLAR/SPARQL, dédoublonnage) reste à la main de Thư et n'est notée que comme dépendance jour par jour. Cadrage retenu par Giang : ignorer pour l'instant les liens de téléchargement manquants (corpus V2, base SQLite mise à jour, sources ACPR/EBA/EUR-Lex) — non bloquant pour le frontend. **Constat bloquant découvert avant d'écrire le plan : aucun écran/route Procédure n'existe côté frontend** (seule la direction Régulation → Exigences → Procédures existe via `analyzeRegulation()`), alors que tout le plan de Francis part de l'analyse Procédure → Bank KB → Europe. Un « Jour 0 » a donc été ajouté avant le D1 de Francis pour construire ce minimum (route `/procedures/[id]`, bouton d'analyse, endpoint `POST /api/procedures/:id/analyze`). Contrat `docs/api-contract.md` étendu en v1.7 (RegulatorySource, Applicability, eu_provenance, endpoints procédures) — proposition frontend, pas encore alignée avec Thư. Le tableau de cas d'usage UC01–UC10 de Francis (remplace l'ancien lien « 6 user journeys » illisible) est capturé dans `docs/use-cases.md`, avec le golden scenario CASE-09 (PROC-ICT-017 / DORA) comme test de bout en bout de cette phase.
+
+**Phase 6 — CLOSE le 2026-09-11 pour son périmètre propre (§0 à §6).** Couleurs (§0), rôles/profils
+d'accès (§1), dashboard exécutif + filtre autorité (§2), écran Knowledge Base (§3), dates + tri
+(§4, partiellement bloqué côté backend — voir détail plus bas), onglet séparé + impression (§5)
+tous faits et vérifiés en conditions réelles. §6 sans objet côté frontend. Seul le §7 (Extended
+European Search) n'a pas été traité dans cette phase : remplacé par
+`docs/phases/phase-7-european-search.md`, décision actée le 2026-09-11. Détail complet de chaque
+point dans `docs/phases/phase-6-francis-feedback.md` et les notes de session ci-dessous.
+
+**Phase 6 §0 (couleurs) — FAIT le 2026-09-11** : slots 2 (orange) et 8 (rouge) de la palette catégorielle 8 couleurs remplacés (clair + sombre), suite à la décision finale de Francis (seulement rouge/orange à bannir des graphiques multi-couleurs, la barre Force de la preuve rouge/jaune/vert reste inchangée). Nouvelles teintes cherchées et vérifiées avec `scripts/validate_palette.js` du skill `dataviz` (pas de hex improvisé) — voir `docs/phases/phase-6-francis-feedback.md` §0 pour le détail et `docs/ui-guidelines.md` pour la table à jour. **Découverte annexe** : la palette catégorielle sombre (les 6 autres slots, non touchés ici) ne passe pas la validation de bande de luminosité du script — limitation préexistante, documentée séparément dans `docs/known-limitations.md` (point 13), non bloquante pour la démo (mode clair par défaut). Vérification visuelle faite le 2026-09-11 (voir notes de session).
+
+**Phase 6 — relecture du transcript brut (`Feedback week 1.docx`) le 2026-09-11**, 3 corrections/ajouts dans `docs/phases/phase-6-francis-feedback.md` après vérification du texte exact de Francis (les notes précédentes reposaient sur un résumé, pas la citation) : (1) §2 Dashboard — Francis ne demande PAS un dashboard « façon ticket », il reproche l'inverse (le dashboard actuel ressemble à un suivi de tickets, pas à un outil d'analyse) ; le layout `portfolio-dashboard-view.tsx` (commentaire `v1.1` dans le code) n'a en réalité pas changé depuis avant son retour — nouveaux items : résumé court par document, filtre par classification. (2) §4 Dates — Francis veut 3 dates distinctes (Created / Uploaded / Updated), pas une seule ; `uploaded_at` n'est PAS un substitut de `created_at`, l'écart entre les deux est la donnée qu'il veut suivre (délai création → enregistrement). (3) §5/nouveau §10 — fil d'Ariane (breadcrumb) : constat de Giang, aucun composant breadcrumb n'existe dans l'app (vérifié dans le code), ajouté comme nouvel item avec écrans concernés et action.
+
+**Convention « en attente backend », 2026-09-11 (décision Giang)** : Giang a déjà signalé à Thư les champs/endpoints manquants (résumé document, classification, dates création/mise à jour, endpoints Procédure/European Search). Plutôt que d'attendre ses réponses pour coder, règle retenue pour toute la suite : construire l'écran maintenant avec les données réelles disponibles, et marquer l'emplacement d'une donnée manquante avec le nouveau composant `AwaitingBackendBadge` (badge gris, bordure en tirets, tooltip citant le champ exact) — voir `docs/ui-guidelines.md` § « donnée en attente côté backend ». Ce n'est pas une exception à la règle anti-fabrication de données (`docs/ui-guardrails.md`), c'est son application honnête : montrer clairement qu'il manque une donnée plutôt que de la cacher ou de l'inventer. Thư verra les badges directement dans l'app et complétera à son rythme. Appliqué dans `docs/phases/phase-6-francis-feedback.md` (§2 résumé/filtre, §4 dates) et `docs/phases/phase-7-european-search.md` (compteurs/provenance European Search).
+
+**2 nouvelles trouvailles le 2026-09-11 en relisant le transcript, suite à une question de Giang sur une capture d'écran du dashboard réel** (§2.1 et §2.2 de `docs/phases/phase-6-francis-feedback.md`) : (1) Carte des impacts (mindmap) — le nœud Exigence a déjà le texte humain disponible côté API (`normalized_requirement`) mais ne l'affiche pas (oubli pur, pas de backend requis, correction rapide) ; le nœud Procédure lui n'a vraiment aucun titre dans le contrat (`RegulationMapProcedure`) — vrai ajout de contrat, badge `AwaitingBackendBadge` en attendant. (2) Francis a dit vouloir « 5 ou 6 dashboards » différents selon le rôle, pas juste un dashboard ajusté — plus gros qu'un simple redesign, et lui-même a dit vouloir renvoyer sa propre liste après coup : **pas encore une spec exploitable**, à redemander directement plutôt que deviner la découpe.
+
+**§2.2 RÉSOLU le 2026-09-11** : Francis a envoyé sa réponse sur la structure de navigation — 5 écrans, pas 6 (Compliance Dashboard, Regulatory/Procedure Analysis, Impact Analysis, Evidence & Explainability, Compliance Copilot/Actions), l'extension Europe modifie les 4 premiers écrans + le Copilot (nouveau : filtre Bank/EU sur les questions), **pas de 6e écran**. Priorité de Francis lui-même pour la 1ère démo : Analyze / Impact Analysis / Evidence & Validation sont essentiels, Dashboard et Copilot sont du polish. **Écart concret trouvé en comparant au code** : il manque un vrai écran « Analyze » unifié (aujourd'hui : upload régulation = simple modale sans scope, aucun équivalent pour une procédure) — à fusionner avec l'écran `/procedures` déjà prévu (demande de Giang) + le sélecteur de scope de la Phase 7 (D1). Detail complet dans `docs/phases/phase-6-francis-feedback.md` §2.2. `docs/known-limitations.md` #11 (Copilot) et `docs/phases/phase-7-european-search.md` (nouveau D9bis) mis à jour en conséquence.
+
+**Phase 6 — Ordre d'exécution et Definition of Done réécrits le 2026-09-11** (`docs/phases/phase-6-francis-feedback.md`) : la clôture précédente de la phase était prématurée (posée avant la réponse de Francis sur les 5 écrans et avant les trouvailles mindmap/breadcrumb) — document repris comme actif. **Nouvelle priorité n°1 : l'écran « Analyze »** (upload régulation existant + nouvel upload/liste procédure + sélecteur de scope Bank/Bank+EU), qui fusionne ce qui était noté séparément (demande de Giang pour un écran procédure, et le Jour 0 de `docs/phases/phase-7-european-search.md`) — Francis a confirmé que cet écran + Impact Analysis + Evidence & Validation sont les 3 seuls essentiels pour la 1ère démo, Dashboard et Copilot passent en polish. `docs/phases/phase-7-european-search.md` mis à jour pour pointer vers phase-6 plutôt que dupliquer le Jour 0. Prêt pour reprise du code côté frontend.
+
 Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Résumé d'avancement
@@ -1086,3 +1110,379 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   `pnpm test` (112/112, inchangé — correctif de layout, rien à tester côté logique) et
   `pnpm build` passent tous. `backend/` vérifié intact. Backend local laissé démarré à
   la fin de cette session.
+
+- **2026-09-11 (Claude Code — faux négatif « backend cassé », en réalité un conflit de
+  port avec un autre projet)** : Giang a signalé que `pnpm dev` faisait à nouveau
+  échouer la connexion. Contrairement aux deux fois précédentes (backend local
+  simplement arrêté), **le backend de Thư n'était même pas la cause** cette fois :
+
+  - `curl localhost:8000/health` répondait `200` — mais `POST /api/auth/signin`
+    renvoyait `404 Not Found`. `lsof -i :8000` a montré qu'un tout autre projet sur
+    cette machine (`abiaka-weekly-report`, lancé via `concurrently -n next,python`)
+    fait aussi tourner un service Python sur le port 8000, avec sa propre route
+    `/health` — d'où le faux positif : le port répondait, mais pas au bon service.
+  - Le vrai backend de Thư n'était pas démarré du tout (aucun processus
+    `app.main:app` trouvé).
+
+  **Fait** : backend relancé sur le port **8010** (`PORT=8010
+  ./scripts/local-dev/run-backend.sh`) plutôt que d'arrêter le service de l'autre
+  projet, qui n'est pas à nous ; `frontend/.env.local` mis à jour
+  (`NEXT_PUBLIC_BACKEND_URL=http://localhost:8010`) ; le serveur `pnpm dev` déjà lancé
+  a dû être redémarré (Next.js ne relit `.env.local` qu'au démarrage). Piège documenté
+  dans `scripts/local-dev/README.md` pour la prochaine fois (vérifier
+  `lsof`/`openapi.json` avant de conclure que le backend est cassé).
+
+  **Vérifié en conditions réelles** : connexion réussie dans un navigateur piloté,
+  tableau de bord affiché avec les vraies données (8 régulations, 44 exigences), zéro
+  erreur console.
+
+- **2026-09-11 (suite — Claude Code — vérification visuelle § 0, puis Phase 6 § 1 : rôles
+  et profils d'accès)** : reprise de `docs/phases/phase-6-francis-feedback.md` dans
+  l'ordre recommandé par Giang.
+
+  **§ 0 (couleurs) — vérifié visuellement, rien à corriger.** Le tableau de bord réel
+  (backend local, connecté en Marie Lefèvre) confirme que le slot 2 (« AI_GOVERNANCE »)
+  s'affiche bien en prune/magenta (`#93126b`), plus en orange — le remplacement fait
+  plus tôt dans la journée est correct en usage réel, pas seulement en CSS isolé. Point
+  « reste à faire » du § 0 clos.
+
+  **§ 1 (rôles/profils) — fait.**
+  - `frontend/src/lib/access-profile.ts` (nouveau, 13 tests) : table `role string →
+    AccessProfile` (`HEAD_OF_COMPLIANCE`/`COMPLIANCE_OFFICER`/`AUDITOR`/
+    `COMPLIANCE_ADMIN`), défaut `COMPLIANCE_OFFICER` pour un rôle non reconnu,
+    `landingRouteForUser`, `canValidateFindings`, `canUploadRegulations`, `canPrint`,
+    `canSeeKnowledgeBase`, `canSeeUserAdmin` — aucune requête réseau, uniquement un
+    `switch` sur le `role` déjà en session (garde-fou d'expérience, pas une sécurité).
+  - **Note de conception** : `COMPLIANCE_ADMIN` devrait atterrir sur `/knowledge-base`
+    (§ 3 de la phase), mais cet écran n'existe pas encore — pointé temporairement vers
+    `/regulations` pour ne pas rediriger vers une route absente ; à corriger dès que
+    l'écran Knowledge Base sera livré.
+  - `app-sidebar.tsx` : la section « Administration » (« Utilisateurs ») est **masquée**,
+    pas grisée, pour tout profil autre que `COMPLIANCE_ADMIN` — avant ce changement,
+    n'importe quel compte connecté la voyait.
+  - `login-form.tsx`/`signup-form.tsx` : redirection post-connexion vers
+    `landingRouteForUser(user)` au lieu de `/dashboard` en dur.
+  - `finding-action-row.tsx` : les boutons Accepter/Rejeter/Escalader, le champ
+    « Action retenue » et le sélecteur d'assigné sont remplacés par un message
+    « Lecture seule… » pour le profil `AUDITOR` (nouvelle clé `actions.readOnlyNotice`,
+    fr + en).
+  - `upload-regulation-dialog.tsx` : le bouton « Importer une régulation » ne se rend
+    plus du tout pour `AUDITOR` (composant retourne `null`).
+  - **5ᵉ compte démo** « Sophie Nguyen » / `sophie.nguyen@iabank.fr` / rôle
+    « Admin Base de Connaissances » ajouté à la fois dans
+    `scripts/local-dev/seed_dev_db.py` (hors `backend/`, autorisé) et dans
+    `frontend/src/lib/mocks/data/users.ts` (corpus MSW), mêmes identifiants dans les
+    deux modes comme les 4 comptes existants.
+  - `docs/known-limitations.md` : nouveau point 14 sur le caractère purement frontend
+    du système de profils.
+
+  **Vérifié en conditions réelles** (backend local relancé sur le port 8010, base
+  re-seedée pour ajouter Sophie Nguyen sans toucher aux comptes existants, navigateur
+  piloté, trois profils testés à la suite) :
+  - Marie Lefèvre (`HEAD_OF_COMPLIANCE`) : sidebar sans section Administration
+    (régression du comportement précédent, corrigée par ce changement).
+  - Claire Dubois (`AUDITOR`) : onglet Analyse d'impact affiche « Lecture seule… » à la
+    place des boutons de décision ; écran Régulations sans bouton d'import.
+  - Sophie Nguyen (`COMPLIANCE_ADMIN`, nouveau compte) : connexion réussie, atterrit sur
+    Régulations (en attendant l'écran Knowledge Base), sidebar avec « Administration »
+    visible.
+  - **Zéro erreur console** dans les trois cas. `pnpm lint`, `pnpm typecheck`, `pnpm test`
+    (124/124, +12 tests) passent tous.
+
+  **Reste à faire pour clore le § 1** : rien — DoD de la phase entièrement cochée pour
+  cette section. **Prochaine étape** : § 2 (dashboard exécutif + filtre autorité), § 3
+  (écran Knowledge Base, qui débloquera aussi la vraie destination de
+  `COMPLIANCE_ADMIN`), puis § 4/§ 5, puis bascule vers
+  `docs/phases/phase-7-european-search.md` à la place de l'ancien § 7 (décision déjà
+  actée le 2026-09-11 après-midi, voir plus haut dans ce fichier).
+
+  **Fix immédiat demandé par Giang après relecture** : l'écran « Utilisateurs »
+  proposait le rôle en champ texte libre (pré-existant, avant la Phase 6) — source
+  d'erreurs de frappe (un « COMPLIANCE_OFFICER » tapé à la main sur le compte de Karim
+  Benali ne correspondait à aucun profil reconnu). `KNOWN_ROLES` exporté depuis
+  `lib/access-profile.ts` (même source que la résolution de profil, pas de liste
+  dupliquée) et `user-role-row.tsx` converti en liste déroulante (`Select` shadcn) sur
+  ces 5 libellés ; enregistrement immédiat au choix, plus de bouton « Enregistrer ».
+  Un rôle existant non reconnu (cas de Karim) reste proposé comme option supplémentaire
+  en tête de liste, pour ne pas le faire disparaître silencieusement. Vérifié en
+  conditions réelles (backend local, connecté en Sophie Nguyen) : rôle de Karim Benali
+  corrigé de « COMPLIANCE_OFFICER » vers « Juriste Réglementaire » via la liste, zéro
+  erreur console. `pnpm lint`, `pnpm typecheck`, `pnpm test` (124/124, inchangé —
+  refactor sans nouvelle logique testable séparément) passent tous.
+
+- **2026-09-11 (suite — Claude Code — bilingue des rôles + fin de la Phase 6, §2 à §5)** :
+  Giang a demandé de finir toute la Phase 6 et de corriger l'affichage du rôle, resté en
+  français même en interface anglaise.
+
+  **Bilingue des rôles.** `lib/access-profile.ts::KNOWN_ROLES` porte désormais un
+  `labelKey` par rôle, `roleLabel(role, t)` traduit vers `messages.roles.*` (nouveau
+  namespace, fr + en) sans changer la valeur stockée côté serveur (toujours en
+  français, chaîne libre). Branché dans `user-menu.tsx`, `assignee-select.tsx` et
+  `user-role-row.tsx` (la liste déroulante elle-même : la valeur soumise à l'API reste
+  le libellé français canonique, seul l'affichage change selon la langue).
+
+  **§ 2 — Dashboard exécutif.** CTA « Lancer une nouvelle analyse d'impact » en haut du
+  dashboard (mène à `/regulations`, pas d'écran « Analyse d'impact » global depuis la
+  revue v1.1). Filtre par autorité ajouté — mais sur l'écran « Analyse réglementaire »
+  (liste des régulations), pas sur l'onglet Exigences comme le texte de la phase le
+  suggérait : `authority_or_owner` est un champ de la régulation, pas de l'exigence, et
+  toutes les exigences d'une régulation déjà ouverte partagent la même autorité — un
+  filtre à cet endroit aurait été un no-op. Décision de conception documentée dans
+  `docs/phases/phase-6-francis-feedback.md` § 2.
+
+  **§ 3 — Écran Knowledge Base.** Nouvelle route `/knowledge-base`
+  (`knowledge-base-view.tsx`), visible pour `COMPLIANCE_ADMIN` et `HEAD_OF_COMPLIANCE`
+  (nav filtrée comme la section Administration). Bloc « Bank Compliance Knowledge
+  Base » : compteurs régulations/procédures/exigences et sources (autorités uniques)
+  calculés côté client à partir des endpoints déjà consommés ailleurs
+  (`fetchRegulations`, `fetchProcedures`, `fetchPortfolioSummary` — aucun nouvel
+  endpoint). Bloc « European Regulatory Sources » : statut honnête « Non connecté »
+  (`docs/ui-guardrails.md`), renvoie vers `docs/phases/phase-7-european-search.md`.
+  `COMPLIANCE_ADMIN` atterrit maintenant réellement sur `/knowledge-base` (provisoire
+  vers `/regulations` levé, l'écran existe).
+
+  **§ 4 — Dates + tri.** Date d'import (`uploaded_at`) ajoutée à l'en-tête de la vue
+  détail d'une régulation (déjà présente sur les cartes de liste, absente du détail).
+  Tri (Plus récent / Plus ancien / Titre) ajouté sur l'écran « Analyse réglementaire »,
+  combiné au nouveau filtre autorité. Le blocage backend (aucune colonne de date sur
+  `RegulatoryRequirement`/`Procedure`) reste entier et documenté — rien contourné.
+
+  **§ 5 — Onglet séparé + impression.** `ProcedureBody` extrait de
+  `procedure-evidence-dialog.tsx` vers son propre fichier pour être réutilisé par la
+  nouvelle route `/procedures/[id]` (`procedure-page-view.tsx`). Bouton Imprimer
+  (`window.print()`) sur cette page, cohérent avec `canPrint` (masqué pour `AUDITOR`).
+  Sidebar et barre du haut passées en `print:hidden` (Tailwind), donc masquées à
+  l'impression sur tout l'écran, pas seulement cette page.
+
+  **Bug réel trouvé et corrigé en testant, pas en lisant le code** : le bouton
+  « Ouvrir dans un nouvel onglet » atterrissait systématiquement sur l'écran de
+  connexion. Cause : un `<a target="_blank">` classique — même sans
+  `rel="noopener"`, contrairement à l'hypothèse initiale — n'hérite pas de la
+  `sessionStorage` de l'onglet d'origine dans les navigateurs actuels, or c'est là que
+  vit la session (`session-provider.tsx`). Corrigé par `lib/open-in-new-tab.ts` :
+  ouvrir une fenêtre vide (`window.open("", "_blank")`), y copier `sessionStorage` par
+  script pendant qu'elle est encore de même origine accessible, puis seulement ensuite
+  la naviguer vers l'URL réelle. Documenté comme limite résiduelle dans
+  `docs/known-limitations.md` (point 15) : silencieux si le navigateur bloque le
+  popup — non reproduit en usage normal (le clic est un vrai geste utilisateur).
+
+  **Vérifié en conditions réelles** (backend local, navigateur piloté, trois comptes) :
+  Sophie Nguyen (`COMPLIANCE_ADMIN`) — Knowledge Base en anglais avec les vrais
+  compteurs (8/18/44), rôle affiché « Knowledge Base Admin » dans le menu utilisateur ;
+  Analyse réglementaire avec filtre autorité + tri fonctionnels ; procédure ouverte
+  dans un nouvel onglet en conservant la session, bouton Imprimer visible. Claire
+  Dubois (`AUDITOR`) — même page procédure sans bouton Imprimer. **Zéro erreur
+  console** dans tous les cas testés. `pnpm lint`, `pnpm typecheck`, `pnpm test`
+  (126/126, +2 tests `roleLabel`), `pnpm build` (nouvelles routes `/knowledge-base` et
+  `/procedures/[id]`) passent tous.
+
+  **Phase 6 close pour son périmètre propre (§0–§6).** Seul le § 7 (Extended European
+  Search) n'est pas traité ici — remplacé par `docs/phases/phase-7-european-search.md`,
+  décision déjà actée par Giang le 2026-09-11 avant cette session. Reste ouvert, hors
+  périmètre frontend : ajouter `created_at`/`updated_at` sur `RegulatoryRequirement`/
+  `Procedure` côté backend (point à soulever avec Thư, pas urgent).
+
+- **2026-09-11 (suite — Claude Code — recherche régulations par nom + rattrapage des
+  ajouts de Francis dans `phase-6-francis-feedback.md`)** : Giang a demandé une barre de
+  recherche sur l'écran Régulations, et de vérifier/traiter ce qu'une autre session
+  Claude avait ajouté entre-temps au fichier de phase (relecture du transcript brut,
+  points §2/§4 précisés, nouveau §10 « fil d'Ariane »).
+
+  **Recherche par titre/identifiant** sur l'écran « Analyse réglementaire »
+  (`regulations-view.tsx`) — même pattern que la recherche déjà existante dans
+  `requirements-tab.tsx`, combinée au filtre autorité et au tri déjà en place.
+
+  **§ 10 — Fil d'Ariane (nouveau, remonté par Giang dans le fichier de phase).**
+  `components/layout/breadcrumb-trail.tsx` (composant shadcn `breadcrumb` installé via
+  `pnpm dlx shadcn@latest add breadcrumb`, une seule implémentation réutilisée) : ajouté
+  en haut de la vue détail régulation (`Analyse réglementaire / <titre>`). Sur
+  `/procedures/[id]` (nouvel onglet, pas d'historique de navigation), lien contextuel
+  « Retour au constat REQ-XXX » vers la ligne d'origine — construit à partir de deux
+  nouveaux paramètres d'URL (`regulationId`/`requirementId`) transmis en props
+  optionnelles à travers `FindingDetailDialog` → `EvidenceCard` →
+  `ProcedureEvidenceDialog` (aucune régression sur la preuve réglementaire, qui n'a pas
+  ce contexte et n'est pas cliquable).
+
+  **Bug réel trouvé et corrigé en vérifiant visuellement** (pas en lisant le code) :
+  console affichait une erreur d'hydratation React sur la vue détail régulation
+  (`<li> cannot be a descendant of <li>`). Cause : `BreadcrumbTrail` imbriquait
+  `BreadcrumbSeparator` (un `<li>`) à l'intérieur de `BreadcrumbItem` (un autre `<li>`)
+  au lieu de le poser comme élément frère entre deux items — écart à la convention
+  shadcn. Corrigé, zéro erreur console après correction.
+
+  **§ 2 / § 4 (ajouts de l'autre session, vérifiés, non implémentés à raison)** :
+  « résumé court par document » et « filtre par classification de document » (§2) —
+  aucun champ de ce type n'existe dans `DocumentMeta` ni le corpus, backend ou mock ; les
+  inventer aurait fabriqué une donnée (`docs/ui-guardrails.md`). Les « 3 dates
+  distinctes » (§4, created/uploaded/updated) restent explicitement bloquées côté
+  backend selon le fichier de phase lui-même — rien codé, pas de contournement.
+  Documenté comme tel dans `docs/phases/phase-6-francis-feedback.md` plutôt que laissé
+  sans réponse.
+
+  **Vérifié en conditions réelles** (backend local, connecté en Thomas Rousseau,
+  navigateur piloté) : recherche « DORA » réduit la liste à la bonne régulation ;
+  breadcrumb sur la vue détail ; ouverture d'une preuve interne dans un nouvel onglet
+  affichant bien « Back to finding REQ-0019 › <titre procédure> », clic dessus ramène
+  à la bonne ligne (`?tab=actions&focus=REQ-0019`) sur la régulation d'origine. **Zéro
+  erreur console** après le correctif du breadcrumb. `pnpm lint`, `pnpm typecheck`,
+  `pnpm test` (126/126, inchangé — pas de nouvelle logique pure isolée à tester
+  séparément, tout est du rendu) et `pnpm build` passent tous. `backend/` vérifié
+  intact.
+
+- **2026-09-11 (suite — Claude Code — convention « Awaiting backend », §2/§4 de la
+  phase)** : Giang a mis à jour `phase-6-francis-feedback.md` et `docs/ui-guidelines.md`
+  entre-temps (relecture du transcript brut avec un autre outil) : décision de
+  construire dès maintenant les emplacements « résumé », « classification » et
+  « 3 dates » plutôt que de les laisser invisibles en attendant Thư, avec un badge
+  visuel « Backend requis » à l'endroit exact qui manque.
+
+  **`AwaitingBackendBadge`** (`components/features/awaiting-backend-badge.tsx`, nouveau)
+  : badge gris pointillé + icône `Wrench` + `Tooltip` citant le champ exact
+  (`field` en prop) — conforme à la spec écrite dans `docs/ui-guidelines.md` §
+  « donnée en attente côté backend ». `Tooltip`/`TooltipProvider` shadcn déjà
+  installés, réutilisés tels quels.
+
+  **§ 2** : sur chaque carte de `regulations-view.tsx`, ligne « Summary » avec le
+  badge (`field="DocumentMeta.summary"`) ; filtre « Classification » ajouté dans la
+  barre de filtres, `Select` désactivé + badge (`field="DocumentMeta.classification"`)
+  — aucun des deux champs n'existe dans le corpus (backend ni mock), inventer le
+  contenu aurait été fabriquer une donnée.
+
+  **§ 4** : deux nouveaux slots « Created date » et « Last updated » ajoutés à côté de
+  « Uploaded on », sur les cartes et sur l'en-tête de détail
+  (`regulation-detail-view.tsx`). « Created » affiche la vraie valeur
+  (`regulation.publication_date`) quand elle répond — déjà le cas en mode mock,
+  contrairement au mode backend réel où elle est toujours absente aujourd'hui — sinon
+  le badge (`field="DocumentMeta.publication_date"`). « Last updated » reste
+  systématiquement en badge (`field="DocumentMeta.updated_at"`, aucun champ de ce type
+  nulle part encore).
+
+  **Vérifié en conditions réelles** (backend local, connecté en Thomas Rousseau) :
+  les 8 régulations affichent bien les badges « Backend pending » aux bons
+  emplacements (Summary, Classification, Created, Last updated), rien d'inventé,
+  `Uploaded on` reste la vraie date partout. **Incident sans rapport avec le code**
+  rencontré en testant : `/regulations` affichait un « Loading failed » générique —
+  diagnostiqué comme le jeton JWT expiré après plus d'une heure de session (limitation
+  déjà connue, `docs/known-limitations.md` point 12), pas un bug introduit ici ;
+  reconnexion et tout redevient normal. **Zéro erreur console** après reconnexion.
+  `pnpm lint`, `pnpm typecheck`, `pnpm test` (126/126) et `pnpm build` passent tous.
+  `backend/` vérifié intact.
+
+- **2026-09-11 (Claude Code — Phase 6 § 10 + Phase 6 § 2.2 / Phase 7 Jour 0, reprise sur
+  « Ordre d'exécution » réécrit)** : session ouverte pour suivre le nouvel ordre de priorité de
+  `docs/phases/phase-6-francis-feedback.md` (« Ordre d'exécution recommandé — réécrit le
+  2026-09-11 »). Vérifié en code (pas seulement dans les docs) : le breadcrumb (§10) était déjà en
+  place (`breadcrumb-trail.tsx`, posé sur `regulation-detail-view.tsx` et
+  `procedure-page-view.tsx`) — rien à refaire. Tout l'effort de cette session a donc porté sur la
+  nouvelle priorité n°1 : **l'écran « Analyze »** (fusion `/procedures` liste+upload + sélecteur de
+  scope, Phase 6 § 2.2 = Jour 0 de `docs/phases/phase-7-european-search.md`).
+
+  **Fait :**
+  - `docs/api-contract.md` v1.8 (proposition, comme les précédentes de Giang) : `POST
+    /api/procedures` (upload, miroir de `POST /api/regulations`) et `requirements:
+    Requirement[]` ajouté à `AnalyzeProcedureResponse` (v1.7) pour réutiliser
+    `FindingsActionsTable` sans requête par exigence.
+  - `types/api.ts` : `regulatoryScopeSchema`, `analyzeProcedureBodySchema`,
+    `analyzeProcedureResponseSchema` (+ types inférés).
+  - `lib/api/procedures.ts` : `uploadProcedure()`, `analyzeProcedure(id, scope)` — toujours servis
+    par MSW (aucune route réelle côté backend), même en mode backend réel pour `fetchProcedures`.
+  - `lib/mocks/store.ts` + `handlers.ts` : store `procedures` mutable (comme `regulations`),
+    `POST /api/procedures`, `POST /api/procedures/:id/analyze` (filtre les constats déjà rattachés
+    à la procédure dans le corpus de démo — jamais un constat inventé).
+  - Nouveaux composants : `RegulatoryScopeSelector` (Select à 2 options, pas de nouvelle primitive
+    shadcn installée), `UploadProcedureDialog` (copie de `UploadRegulationDialog`),
+    `ProceduresView` (liste + recherche + tri, même pattern que `RegulationsView`).
+  - Nouvelle route `/procedures` (liste + upload) + entrée de nav (icône `ClipboardList`, même
+    visibilité que `/regulations`).
+  - `ProcedurePageView` (`/procedures/[id]`) enrichi : carte « Analyser contre la base de
+    conformité » (sélecteur de scope + bouton + résultats via `FindingsActionsTable` réutilisé
+    tel quel), masquée à l'impression et pour `AUDITOR` (`canAnalyzeProcedures`, nouvelle fonction
+    dans `access-profile.ts`, testée). Conteneur élargi (`max-w-3xl` → `max-w-5xl`) pour accueillir
+    la table de résultats sans casser le défilement interne de `ProcedureBody`.
+  - Compteurs Europe (`eu_candidate_requirements`, `additional_eu_candidates`) : jamais renvoyés
+    par le mock, affichés avec `AwaitingBackendBadge` côté écran — convention Phase 7 respectée à
+    la lettre (pas de chiffre inventé même en scope `BANK_PLUS_EU`).
+  - 44 nouvelles clés `fr.json`/`en.json` (namespaces `procedures`, `uploadProcedure`,
+    `regulatoryScope`, `procedureAnalysis`, + `nav.procedures`) — testé synchronisé par
+    `messages.test.ts`.
+  - **Bug réel trouvé et corrigé en testant visuellement** (backend local connecté, Thomas
+    Rousseau) : le handler mock `POST /api/procedures/:id/analyze` renvoyait 404 pour toute
+    procédure venant du backend réel (jamais présente dans le corpus mock) — le bouton « Analyser »
+    échouait systématiquement en mode backend réel. Corrigé : plus de `notFound`, le mock répond
+    honnêtement `bank_requirements_identified: 0` plutôt qu'une erreur. Revérifié après correction :
+    fonctionne en mode backend réel (0 constat, message honnête) et en scope `BANK_PLUS_EU`
+    (badges « Backend requis » sur les 2 compteurs Europe).
+  - `pnpm tsc --noEmit`, `pnpm lint`, `pnpm test` (126/126) tous verts. `backend/` non touché.
+
+  **Reste à faire** (pas dans le périmètre de cette session, ordre de phase-6 à respecter) :
+  - Impact Analysis (§2.1) : nœud Exigence de la mindmap → `normalized_requirement`, badge sur le
+    nœud Procédure.
+  - Dashboard/Copilot (polish, §2/§4/D9bis) : résumé document + filtre classification, 3 dates,
+    filtre Bank/EU sur Copilot.
+  - Phase 7 D2–D10 (au-delà du Jour 0 maintenant fait) : reste à la main de Giang dans une session
+    suivante, dépend en partie de décisions à trancher avec Thư (§7 de phase-6).
+
+- **2026-09-11 (Claude Code — suite immédiate, §2/§2.1 de phase-6)** : reprise sur la même session
+  de travail pour les deux points suivants dans l'ordre d'exécution (Impact Analysis §2.1, puis
+  Dashboard §2), plus un bug UX remonté par Giang en testant l'écran Procédure livré juste avant.
+
+  **Bug corrigé (remonté par Giang, capture d'écran à l'appui)** : `/procedures/[id]` accédé
+  directement depuis la liste `/procedures` (même onglet, pas un lien de constat) n'affichait
+  aucun fil d'Ariane — le breadcrumb de `procedure-page-view.tsx` ne couvrait que le cas « ouvert
+  depuis un constat » (`regulationId`/`requirementId` dans l'URL). Corrigé : un second breadcrumb
+  « Procédures / <titre> » couvre maintenant le cas par défaut, réutilisant la clé `nav.procedures`
+  déjà traduite plutôt que d'en ajouter une nouvelle.
+
+  **Fait :**
+  - **Impact Analysis (§2.1)** : `lib/mindmap-layout.ts` gagne deux champs optionnels
+    (`tooltip`, `awaitingBackendField`) sur `MindmapInput`/`MindmapNode`, purement additifs. Dans
+    `regulation-mindmap.tsx` : le nœud Exigence affiche désormais `normalized_requirement` en
+    sous-libellé (au lieu de `source_reference`, qui passe en tooltip natif — pas de 3e ligne
+    disponible dans la largeur d'un nœud) ; le nœud Procédure porte une version compacte
+    d'`AwaitingBackendBadge` (icône clé à molette + tooltip natif citant
+    `RegulationMapProcedure.procedure_title`, uniquement quand une procédure existe réellement —
+    le badge complet, avec son `Tooltip` Radix, aurait débordé la largeur étroite d'un nœud).
+  - **Dashboard (§2)** : chaque ligne de « Détail par régulation »
+    (`portfolio-dashboard-view.tsx`) affiche désormais un résumé court avec
+    `AwaitingBackendBadge field="DocumentMeta.summary"`, même libellé que sur
+    `regulations-view.tsx` (réutilisé via `useTranslations("regulations")`, pas dupliqué).
+    Vérifié : le filtre Classification demandé était déjà en place sur `regulations-view.tsx`
+    (fait dans une session antérieure) — le Dashboard n'a pas de barre de filtre équivalente
+    (table d'agrégats par régulation, pas une liste filtrable), donc rien à y ajouter.
+  - Vérification visuelle faite (backend local, Thomas Rousseau) : breadcrumb « Procedures /
+    <titre> » visible en accès direct, résumé + badge sur chaque ligne du Dashboard, mindmap
+    affichant le texte humain des exigences et l'icône « en attente » sur les procédures. Zéro
+    erreur console.
+  - `pnpm tsc --noEmit`, `pnpm lint`, `pnpm test` (126/126) tous verts. `backend/` non touché.
+
+  **Reste à faire** : Dates création/mise à jour (§4, 3 dates distinctes — clarification Thư
+  d'abord), Copilot filtre Bank/EU (D9bis), Phase 7 D2–D10.
+
+- **2026-09-11 (Claude Code — pull backend, mapping des nouveautés de Thư)** : Giang a pull le
+  dépôt, 2 nouveaux commits côté `backend/` depuis la dernière revue (`ea02f49`) :
+  - `be74658` (« Add requirement and title in French ») : `RegulatoryRequirement.title_lang_fr` /
+    `.requirement_text_lang_fr`, même famille que `explanation_lang_fr`/`recommended_action_lang_fr`
+    (v1.6) déjà branché, appliqué cette fois à l'exigence plutôt qu'au constat.
+  - `462fd58` (« extend signin time ») : durée du jeton JWT 60 → 1440 minutes — atténue (sans
+    corriger) le point 12 de `docs/known-limitations.md`.
+
+  **Fait** (lecture seule sur `backend/`, comme toujours) :
+  - `docs/api-contract.md` v1.9 : nouveau changelog confirmant `title_lang_fr`/
+    `requirement_text_lang_fr` (capacité réelle déjà livrée par Thư, pas une proposition).
+  - `types/api.ts` : `Requirement.normalized_requirement_fr` / `.source_text_fr` (optionnels).
+  - `lib/api/backend/schemas.ts` + `adapt.ts::adaptRequirement` : mapping des deux nouveaux champs,
+    testé (`adapt.test.ts`, nouveau cas « reprend les variantes françaises »).
+  - Affichage : `requirements-tab.tsx`, `finding-action-row.tsx`, `finding-detail-dialog.tsx`
+    utilisent maintenant `pickLocalizedText` pour le texte d'exigence (même mécanique que pour
+    `explanation`/`recommended_action`, réutilisé tel quel) — recherche plein texte de l'onglet
+    Exigences étendue aux deux variantes.
+  - `docs/backend-integration.md` (point 16) et `docs/known-limitations.md` (point 12) mis à jour.
+  - `pnpm tsc --noEmit`, `pnpm lint`, `pnpm test` (127/127, +1 nouveau test) tous verts.
+
+  **⚠️ Action requise côté Giang, pas faite ici (script hors `backend/`, mais touche sa base SQLite
+  locale — je ne le lance pas sans confirmation)** : comme pour `explanation_lang_fr` en v1.6, ces
+  2 colonnes n'ont **aucune migration** (`alembic/versions/` gitignoré côté backend) — sur une base
+  locale antérieure au 2026-09-10, `GET /api/requirements/*` répondra `no such column:
+  regulatory_requirement.title_lang_fr` (HTTP 500) tant que `./scripts/local-dev/setup-backend.sh`
+  n'a pas été relancé (il rappelle `seed_dev_db.py::sync_missing_columns`, générique, idempotent —
+  sans risque de perte de données, mais à lancer par Giang lui-même).

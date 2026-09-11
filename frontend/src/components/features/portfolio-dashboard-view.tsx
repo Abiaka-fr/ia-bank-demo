@@ -14,6 +14,7 @@ import { useState } from "react";
 
 import { AssessmentChart } from "@/components/features/assessment-chart";
 import { AssigneeName } from "@/components/features/assignee-select";
+import { AwaitingBackendBadge } from "@/components/features/awaiting-backend-badge";
 import { DocumentStatusBadge } from "@/components/features/document-status-badge";
 import { DomainChart } from "@/components/features/domain-chart";
 import { KpiCard } from "@/components/features/kpi-card";
@@ -49,6 +50,9 @@ const REGULATIONS_PER_PAGE = 5;
 export function PortfolioDashboardView() {
   const t = useTranslations("dashboard");
   const mindmapT = useTranslations("mindmap");
+  // Réutilise le libellé déjà traduit de l'écran « Analyse réglementaire » plutôt que
+  // de dupliquer la clé (Phase 6 § 2, résumé document).
+  const regulationsT = useTranslations("regulations");
   const router = useRouter();
   const [page, setPage] = useState(1);
 
@@ -168,6 +172,14 @@ export function PortfolioDashboardView() {
                           {row.regulation_id}
                         </span>
                         <p className="text-sm font-medium">{row.title}</p>
+                        {/* Résumé court demandé par Francis (§2, phase-6) — même
+                            emplacement/donnée en attente que sur `regulations-view.tsx`,
+                            `RegulationSummary` n'a pas plus de champ résumé que
+                            `DocumentMeta`. */}
+                        <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <span>{regulationsT("summaryLabel")} :</span>
+                          <AwaitingBackendBadge field="DocumentMeta.summary" />
+                        </div>
                       </TableCell>
                       <TableCell className="whitespace-normal">
                         {row.actions_total === 0 ? (

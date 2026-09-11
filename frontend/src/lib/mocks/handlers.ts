@@ -5,20 +5,23 @@
 import { HttpResponse, http } from "msw";
 
 import { toMeta } from "./data/documents";
-import { ACPR_REGULATION_ID, procedures } from "./data/documents";
+import { ACPR_REGULATION_ID } from "./data/documents";
 import { requirements } from "./data/requirements";
 import { DEMO_PASSWORD } from "./data/users";
 import {
+  addProcedure,
   addRegulation,
   addUser,
   appendHistoryEntry,
   applyValidation,
   findFinding,
+  findProcedureDoc,
   findRegulation,
   findUserByEmail,
   getPassword,
   listFindings,
   listHistory,
+  listProcedures,
   listRegulations,
   listUsers,
   setPassword,
@@ -31,6 +34,7 @@ import {
   buildRegulationMap,
 } from "./summary";
 import {
+  analyzeProcedureBodySchema,
   signupBodySchema,
   updateUserRoleBodySchema,
   validateFindingBodySchema,
@@ -332,14 +336,96 @@ export const handlers = [
 
   http.get("/api/procedures", async () => {
     await delay();
-    return HttpResponse.json(procedures.map(toMeta));
+    return HttpResponse.json(listProcedures().map(toMeta));
+  }),
+
+  http.post("/api/procedures", async ({ request }) => {
+    await delay();
+    const form = await request.formData();
+    const file = form.get("file");
+    const declaredName = form.get("file_name");
+    const assigneeId = form.get("assignee_id");
+    const uploadedById = form.get("uploaded_by_id");
+
+    if (file === null || typeof file === "string") {
+      return errorResponse(400, "FILE_REQUIRED", "Aucun fichier reçu.");
+    }
+
+    const fileName =
+      typeof declaredName === "string" && declaredName ? declaredName : file.name;
+
+    if (!fileName.toLowerCase().endsWith(".docx")) {
+      return errorResponse(
+        415,
+        "UNSUPPORTED_FILE_TYPE",
+        "Seuls les fichiers Word (.docx) sont acceptés.",
+      );
+    }
+
+    // Comme pour les régulations : aucune exigence/analyse n'est inventée à l'upload,
+    // la procédure démarre en NOT_ANALYZED (v1.8).
+    const uploaded: DocumentDetail = {
+      document_id: `PROC-UP-${Date.now()}`,
+      title: fileName.replace(/\.docx$/i, ""),
+      document_type: "INTERNAL_PROCEDURE",
+      authority_or_owner: "—",
+      domain: [],
+      language: "FR",
+      version: "1.0",
+      status: "NOT_ANALYZED",
+      uploaded_by_id: typeof uploadedById === "string" ? uploadedById : undefined,
+      uploaded_at: new Date().toISOString(),
+      assignee_id: typeof assigneeId === "string" && assigneeId ? assigneeId : undefined,
+      extracted_text: "",
+    };
+
+    return HttpResponse.json(toMeta(addProcedure(uploaded)), { status: 201 });
   }),
 
   http.get("/api/procedures/:id", async ({ params }) => {
     await delay();
-    const procedure = procedures.find((p) => p.document_id === params.id);
+    const procedure = findProcedureDoc(String(params.id));
     if (!procedure) return notFound(`Procédure ${String(params.id)} inconnue`);
     return HttpResponse.json(procedure);
+  }),
+
+  http.post("/api/procedures/:id/analyze", async ({ params, request }) => {
+    await delay();
+    const procedureId = String(params.id);
+    // Pas de `notFound` ici, volontairement : en mode backend réel
+    // (`NEXT_PUBLIC_BACKEND_URL` renseigné), l'identifiant vient du backend de Thư et
+    // n'existe jamais dans le corpus mock — un 404 romprait l'analyse pour toute
+    // procédure réelle. On répond avec ce que le corpus de démo connaît (souvent rien),
+    // jamais avec une erreur : `bank_requirements_identified: 0` est une réponse
+    // honnête, pas un échec.
+
+    // `scope` n'affecte jamais l'analyse Bank : aucune recherche européenne réelle
+    // n'est branchée ici (v1.7/v1.8), donc `BANK_PLUS_EU` ne fait qu'accepter la
+    // requête sans échouer — les compteurs Europe restent `undefined`, affichés
+    // par l'écran avec `AwaitingBackendBadge` plutôt qu'un chiffre inventé.
+    const parsedBody = analyzeProcedureBodySchema.safeParse(
+      await request.json().catch(() => ({})),
+    );
+    if (!parsedBody.success) {
+      return errorResponse(400, "INVALID_BODY", "Corps de requête invalide pour l'analyse.");
+    }
+
+    // Seuls les constats déjà rattachés à cette procédure dans le corpus de démo sont
+    // renvoyés (ex. CASE-09 / PROC-ICT-017, docs/use-cases.md) — jamais un constat
+    // fabriqué pour une procédure qui n'en a pas.
+    const procedureFindings = listFindings().filter(
+      (finding) => finding.procedure_id === procedureId,
+    );
+    const requirementIds = new Set(procedureFindings.map((finding) => finding.requirement_id));
+    const procedureRequirements = requirements.filter((requirement) =>
+      requirementIds.has(requirement.requirement_id),
+    );
+
+    return HttpResponse.json({
+      bank_requirements_identified: requirementIds.size,
+      findings: procedureFindings,
+      requirements: procedureRequirements,
+    });
   }),
 
   // Copilot (P2) — répond explicitement qu'aucune preuve n'est disponible plutôt

@@ -11,6 +11,12 @@ export type MindmapInput = {
   id: string;
   label: string;
   sublabel?: string;
+  /** Texte complet affiché au survol quand `sublabel` est tronqué à l'écran (Phase 6 § 2.1). */
+  tooltip?: string;
+  /** Nom du champ manquant côté contrat (ex. `RegulationMapProcedure.procedure_title`) — signale
+   * le nœud avec la même convention que `AwaitingBackendBadge`, en version compacte adaptée à la
+   * largeur d'un nœud de carte mentale (Phase 6 § 2.1). */
+  awaitingBackendField?: string;
   href?: string;
   /** Index de la palette catégorielle, hérité par la branche. */
   colorIndex?: number;
@@ -21,6 +27,8 @@ export type MindmapNode = {
   id: string;
   label: string;
   sublabel?: string;
+  tooltip?: string;
+  awaitingBackendField?: string;
   href?: string;
   depth: number;
   colorIndex: number;
@@ -105,6 +113,8 @@ export function layoutMindmap(roots: readonly MindmapInput[]): MindmapLayout {
       id: input.id,
       label: input.label,
       sublabel: input.sublabel,
+      tooltip: input.tooltip,
+      awaitingBackendField: input.awaitingBackendField,
       href: input.href,
       depth,
       colorIndex,

@@ -34,11 +34,18 @@ export function FindingDetailDialog({
   requirement,
   isOpen,
   onOpenChange,
+  regulationId,
 }: {
   finding: Finding;
   requirement: Requirement | undefined;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * Optionnel : sert uniquement à construire le lien « Retour au constat » depuis la
+   * page `/procedures/[id]` ouverte en nouvel onglet (Phase 6 § 10). Sans lui, la
+   * preuve interne reste cliquable comme avant, simplement sans ce lien de retour.
+   */
+  regulationId?: string;
 }) {
   const t = useTranslations("actions");
   const evidenceT = useTranslations("evidence");
@@ -67,7 +74,15 @@ export function FindingDetailDialog({
               </Badge>
             ) : null}
           </DialogTitle>
-          <DialogDescription>{requirement?.normalized_requirement}</DialogDescription>
+          <DialogDescription>
+            {requirement
+              ? pickLocalizedText(
+                  locale,
+                  requirement.normalized_requirement,
+                  requirement.normalized_requirement_fr,
+                )
+              : null}
+          </DialogDescription>
         </DialogHeader>
 
         {/* `overflow-y-auto` natif plutôt que `ScrollArea` (Radix) : dans ce dialogue,
@@ -101,6 +116,8 @@ export function FindingDetailDialog({
                     key={`${evidence.document_id}-${evidence.section_reference}`}
                     evidence={evidence}
                     openable
+                    regulationId={regulationId}
+                    requirementId={finding.requirement_id}
                   />
                 ))
               ) : (

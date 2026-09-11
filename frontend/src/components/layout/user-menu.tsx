@@ -15,10 +15,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "@/i18n/navigation";
+import { roleLabel } from "@/lib/access-profile";
 import { logout } from "@/lib/api/auth";
 
 export function UserMenu() {
   const t = useTranslations("topBar");
+  const rolesT = useTranslations("roles");
   const { user, signOut } = useSession();
   const router = useRouter();
 
@@ -47,7 +49,7 @@ export function UserMenu() {
       <DropdownMenuContent align="end" className="w-60">
         <DropdownMenuLabel className="font-normal">
           <p className="text-sm font-medium">{user.full_name}</p>
-          <p className="text-xs text-muted-foreground">{user.role}</p>
+          <p className="text-xs text-muted-foreground">{roleLabel(user.role, rolesT)}</p>
           <p className="text-xs text-muted-foreground">{user.email}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

@@ -10,6 +10,7 @@
     "retry": "Réessayer",
     "cancel": "Annuler",
     "back": "Retour",
+    "print": "Imprimer",
     "close": "Fermer",
     "all": "Tous",
     "source": "Source",
@@ -33,8 +34,10 @@
     "sectionAdmin": "Administration",
     "dashboard": "Tableau de bord",
     "regulations": "Analyse réglementaire",
+    "procedures": "Procédures",
     "copilot": "Copilot",
     "users": "Utilisateurs",
+    "knowledgeBase": "Base de connaissances",
     "toggleSidebar": "Afficher ou masquer la navigation"
   },
   "topBar": {
@@ -93,7 +96,8 @@
     "columnRegulation": "Régulation",
     "columnAssignee": "Personne en charge",
     "columnProgress": "Constats traités",
-    "byRegulationAllHandled": "Toutes les régulations suivies ont été entièrement traitées."
+    "byRegulationAllHandled": "Toutes les régulations suivies ont été entièrement traitées.",
+    "newAnalysisCta": "Lancer une nouvelle analyse d'impact"
   },
   "regulations": {
     "title": "Analyse réglementaire",
@@ -114,7 +118,20 @@
     "filterDomain": "Domaine",
     "filterAllDomains": "Tous",
     "searchResultsCount": "{count, plural, =0 {Aucun résultat} one {# résultat} other {# résultats}}",
-    "searchNoResults": "Aucune exigence ne correspond à cette recherche."
+    "searchNoResults": "Aucune exigence ne correspond à cette recherche.",
+    "filterAuthority": "Autorité",
+    "filterAllAuthorities": "Toutes",
+    "sortLabel": "Trier par",
+    "sortNewest": "Import le plus récent",
+    "sortOldest": "Import le plus ancien",
+    "sortTitle": "Titre (A→Z)",
+    "filterNoResults": "Aucune régulation ne correspond à ce filtre.",
+    "searchByTitlePlaceholder": "Rechercher une régulation (titre, identifiant)…",
+    "summaryLabel": "Résumé",
+    "createdDateLabel": "Date de création",
+    "lastUpdatedLabel": "Dernière mise à jour",
+    "filterClassification": "Classification",
+    "filterClassificationPlaceholder": "Bientôt disponible"
   },
   "impact": {
     "filterAssessment": "Statut d'évaluation",
@@ -187,6 +204,30 @@
     "updateFailed": "L'assignation n'a pas pu être enregistrée.",
     "escalatedTo": "Confié par escalade à"
   },
+  "awaitingBackend": {
+    "badge": "Backend requis",
+    "tooltip": "En attente : champ {field}, à confirmer avec Thư."
+  },
+  "knowledgeBase": {
+    "title": "Base de connaissances",
+    "subtitle": "Vue d'ensemble du corpus indexé et des sources réglementaires.",
+    "bankSectionTitle": "Bank Compliance Knowledge Base",
+    "regulationsCount": "Régulations",
+    "proceduresCount": "Procédures internes",
+    "requirementsCount": "Exigences identifiées",
+    "sourcesLabel": "Sources",
+    "lastUpdatedLabel": "Dernière mise à jour",
+    "europeanSectionTitle": "European Regulatory Sources",
+    "notConnectedStatus": "Non connecté",
+    "notConnectedDescription": "Aucune source réglementaire européenne (CELLAR/EUR-Lex) n'est connectée pour l'instant — fonctionnalité en évaluation, voir docs/phases/phase-7-european-search.md."
+  },
+  "roles": {
+    "headOfCompliance": "Responsable Conformité",
+    "complianceOfficer": "Analyste Conformité",
+    "regulatoryCounsel": "Juriste Réglementaire",
+    "auditor": "Auditeur Interne",
+    "knowledgeBaseAdmin": "Admin Base de Connaissances"
+  },
   "users": {
     "title": "Utilisateurs",
     "subtitle": "Gestion des rôles des comptes de l'espace.",
@@ -215,6 +256,53 @@
     "failed": "L'import a échoué.",
     "wrongFormat": "Seuls les fichiers Word (.docx) sont acceptés."
   },
+  "procedures": {
+    "title": "Procédures",
+    "subtitle": "Procédures internes chargées dans le corpus de démonstration",
+    "empty": "Aucune procédure dans le corpus indexé.",
+    "owner": "Propriétaire",
+    "uploadedBy": "Importée par",
+    "uploadedAtLabel": "Importée le",
+    "openCardHint": "Cliquer sur la carte pour ouvrir le détail",
+    "searchByTitlePlaceholder": "Rechercher une procédure (titre, ID)…",
+    "sortLabel": "Trier par",
+    "sortNewest": "Import le plus récent",
+    "sortOldest": "Import le plus ancien",
+    "sortTitle": "Titre (A→Z)",
+    "filterNoResults": "Aucune procédure ne correspond à cette recherche."
+  },
+  "uploadProcedure": {
+    "trigger": "Importer une procédure",
+    "title": "Importer une procédure",
+    "description": "Le document est ajouté au corpus ; il peut ensuite être analysé contre la base de conformité.",
+    "fileLabel": "Fichier de la procédure",
+    "fileHelp": "Format accepté : Word (.docx) uniquement.",
+    "assigneeLabel": "Personne en charge",
+    "cancel": "Annuler",
+    "submit": "Importer",
+    "uploading": "Import en cours…",
+    "succeeded": "Procédure importée",
+    "failed": "L'import a échoué.",
+    "wrongFormat": "Seuls les fichiers Word (.docx) sont acceptés."
+  },
+  "regulatoryScope": {
+    "label": "Périmètre réglementaire",
+    "bankOnly": "Base de connaissances conformité de la Banque",
+    "bankPlusEu": "Banque + sources réglementaires européennes",
+    "bankOnlyHelp": "Recherche uniquement dans le corpus de conformité interne de la Banque.",
+    "bankPlusEuHelp": "Ajoute une recherche dans les sources réglementaires européennes — n'empêche jamais l'affichage des résultats Bank en cas d'échec."
+  },
+  "procedureAnalysis": {
+    "title": "Analyser contre la base de conformité",
+    "analyzeButton": "Analyser",
+    "analyzing": "Analyse en cours…",
+    "succeeded": "Analyse terminée",
+    "failed": "L'analyse a échoué.",
+    "bankRequirementsIdentified": "Exigences Bank identifiées",
+    "euCandidateRequirements": "Exigences candidates UE",
+    "additionalEuCandidates": "Candidats UE additionnels",
+    "noFindings": "Aucun constat pour cette procédure dans le corpus indexé pour l'instant."
+  },
   "actions": {
     "tabLabel": "Analyse d'impact",
     "columnRequirement": "Exigence",
@@ -232,7 +320,8 @@
     "saved": "Décision enregistrée",
     "saveFailed": "La décision n'a pas pu être enregistrée.",
     "expandHint": "Cliquer sur une ligne pour ouvrir le détail du constat",
-    "goToRequirement": "Traiter"
+    "goToRequirement": "Traiter",
+    "readOnlyNotice": "Lecture seule — votre profil ne permet pas de valider un constat."
   },
   "procedureDialog": {
     "openHint": "cliquer pour lire la procédure complète",
@@ -240,7 +329,9 @@
     "citedSection": "Passage cité : {section} — surligné ci-dessous.",
     "citedBadge": "Cité",
     "noHighlight": "Le passage cité n'a pas pu être localisé automatiquement dans le document ; le texte intégral est affiché ci-dessous.",
-    "sourceNote": "Texte interne affiché dans sa langue d'origine, sans traduction."
+    "sourceNote": "Texte interne affiché dans sa langue d'origine, sans traduction.",
+    "openInNewTab": "Ouvrir dans un nouvel onglet",
+    "backToFinding": "Retour au constat {requirement}"
   },
   "progress": {
     "label": "Progression de la revue",

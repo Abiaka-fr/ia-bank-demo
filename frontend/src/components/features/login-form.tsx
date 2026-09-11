@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useRouter } from "@/i18n/navigation";
+import { landingRouteForUser } from "@/lib/access-profile";
 import { login } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 
@@ -32,14 +33,14 @@ export function LoginForm() {
 
   // Déjà connecté (retour arrière depuis l'app) : on ne réaffiche pas le formulaire.
   useEffect(() => {
-    if (user) router.replace("/dashboard");
+    if (user) router.replace(landingRouteForUser(user));
   }, [user, router]);
 
   const mutation = useMutation({
     mutationFn: () => login({ email, password }),
     onSuccess: (result) => {
       signIn(result.user, result.token);
-      router.replace("/dashboard");
+      router.replace(landingRouteForUser(result.user));
     },
   });
 

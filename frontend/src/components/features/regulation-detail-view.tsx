@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 
 import { AssigneeName } from "@/components/features/assignee-select";
+import { AwaitingBackendBadge } from "@/components/features/awaiting-backend-badge";
 import { DocumentStatusBadge } from "@/components/features/document-status-badge";
 import { FindingsActionsTable } from "@/components/features/findings-actions-table";
 import { MarkdownLine } from "@/components/features/markdown-line";
@@ -15,6 +16,7 @@ import {
 } from "@/components/features/query-state";
 import { RegulationOverviewTab } from "@/components/features/regulation-overview-tab";
 import { RequirementsTab } from "@/components/features/requirements-tab";
+import { BreadcrumbTrail } from "@/components/layout/breadcrumb-trail";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -80,6 +82,12 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
 
   return (
     <div className="space-y-6">
+      <BreadcrumbTrail
+        items={[
+          { label: t("title"), href: "/regulations" },
+          { label: regulation.title },
+        ]}
+      />
       <PageHeader
         title={regulation.title}
         subtitle={`${regulation.authority_or_owner} · ${common("version")} ${regulation.version}`}
@@ -101,6 +109,24 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
         <span className="text-muted-foreground">
           {common("effectiveDate")} :{" "}
           {regulation.effective_date ?? common("notAvailable")}
+        </span>
+        <span className="text-muted-foreground">
+          {t("uploadedAtLabel")} :{" "}
+          {regulation.uploaded_at?.slice(0, 10) ?? common("notAvailable")}
+        </span>
+        {/* 3 dates distinctes demandées par Francis (Phase 6 § 4) : Uploaded (réel,
+            ci-dessus) / Created / Last updated. `publication_date` existe déjà au
+            contrat et dans le corpus mock — badge seulement quand il manque vraiment
+            (mode backend réel aujourd'hui), jamais en réutilisant `uploaded_at`. */}
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          {t("createdDateLabel")} :{" "}
+          {regulation.publication_date ?? (
+            <AwaitingBackendBadge field="DocumentMeta.publication_date" />
+          )}
+        </span>
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          {t("lastUpdatedLabel")} :{" "}
+          <AwaitingBackendBadge field="DocumentMeta.updated_at" />
         </span>
         <span className="text-muted-foreground">
           {assigneeT("label")} : <AssigneeName userId={regulation.assignee_id} />

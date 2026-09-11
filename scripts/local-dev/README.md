@@ -32,6 +32,26 @@ Connexion (identique aux comptes du corpus MSW du frontend) :
 Prérequis : Python **>= 3.10** (`brew install python@3.12` si la machine n'a que le
 Python 3.9 livré avec macOS — vérifié le cas sur cette machine).
 
+**Piège vécu (2026-09-11) : un autre projet peut déjà occuper le port 8000.** Si un
+autre dépôt sur la machine lance aussi un service Python sur 8000 (ex. un
+`uvicorn main:app --port 8000` d'un tout autre projet), `curl localhost:8000/health`
+peut répondre `200` par coïncidence (si cet autre service a lui aussi une route
+`/health`) alors que ce n'est pas du tout le backend de Thư — la connexion échoue
+ensuite avec une erreur générique. Vérifier avant de conclure que le backend est
+« cassé » :
+```bash
+lsof -i :8000 -sTCP:LISTEN        # quel process écoute réellement sur ce port ?
+curl -s localhost:8000/openapi.json | python3 -c "import json,sys; print(list(json.load(sys.stdin)['paths']))"
+# doit lister /api/auth/signin, /api/documents, /api/mappings/*… — pas autre chose.
+```
+Si le port est pris par un autre projet, démarrer celui-ci sur un port différent
+plutôt que d'arrêter l'autre service (qui ne nous appartient pas) :
+```bash
+PORT=8010 ./scripts/local-dev/run-backend.sh
+# puis dans frontend/.env.local : NEXT_PUBLIC_BACKEND_URL=http://localhost:8010
+# et relancer `pnpm dev` (Next.js ne relit .env.local qu'au démarrage).
+```
+
 ## Brancher le frontend sur ce backend
 
 Par défaut, le frontend reste à 100 % sur MSW (`NEXT_PUBLIC_BACKEND_URL` vide). Pour

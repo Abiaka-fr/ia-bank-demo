@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "cn";
+import { Wrench } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -90,7 +91,12 @@ export function RegulationMindmap({
       children: regulation.requirements.map((requirement) => ({
         id: requirement.requirement_id,
         label: requirement.requirement_id,
-        sublabel: requirement.source_reference,
+        // Phase 6 § 2.1 (retour Francis : « I have just the ID number ») —
+        // `normalized_requirement` existe déjà dans la réponse API mais n'était
+        // jamais affiché ; `source_reference` passe en tooltip plutôt que de
+        // disparaître (pas de 3e ligne disponible dans la largeur de colonne).
+        sublabel: requirement.normalized_requirement,
+        tooltip: requirement.source_reference,
         href: `/regulations/${regulation.regulation_id}?tab=actions&focus=${requirement.requirement_id}`,
         children: requirement.procedures.map((procedure) => {
           assessmentOf.set(procedure.finding_id, procedure.assessment);
@@ -99,6 +105,13 @@ export function RegulationMindmap({
             label:
               procedure.procedure_id ?? assessmentLabels("NO_RELEVANT_PROCEDURE"),
             sublabel: statusLabels(procedure.human_status),
+            // Phase 6 § 2.1 : `RegulationMapProcedure` n'a vraiment aucun titre côté
+            // contrat (contrairement à l'exigence ci-dessus) — signalé au lieu d'être
+            // caché. Seulement quand une procédure existe : `NO_RELEVANT_PROCEDURE`
+            // n'a pas de titre à attendre, ce n'est pas une donnée manquante.
+            awaitingBackendField: procedure.procedure_id
+              ? "RegulationMapProcedure.procedure_title"
+              : undefined,
             href: `/regulations/${regulation.regulation_id}?tab=actions&focus=${procedure.finding_id}`,
           };
         }),
@@ -159,6 +172,7 @@ function MindmapNodeBox({
   node: MindmapNode;
   assessment: Assessment | undefined;
 }) {
+  const awaitingT = useTranslations("awaitingBackend");
   const branchColor = categoricalColor(node.colorIndex);
   const isRoot = node.depth === 0;
 
@@ -170,6 +184,9 @@ function MindmapNodeBox({
         isRoot && "font-medium",
       )}
       style={{ borderLeft: `3px solid ${branchColor}` }}
+      // Texte complet du `sublabel` tronqué à l'écran (Phase 6 § 2.1) — la carte
+      // mentale n'a pas la place pour une 3e ligne (source_reference, ex.).
+      title={node.tooltip}
     >
       {/* Pastille de statut : seul endroit où la couleur d'`assessment` est
           reprise, avec le libellé porté par `title` pour ne pas dépendre d'elle. */}
@@ -191,6 +208,19 @@ function MindmapNodeBox({
           </span>
         ) : null}
       </span>
+
+      {/* Version compacte d'`AwaitingBackendBadge` (Phase 6 § 2.1) : le badge complet
+          (icône + texte + `Tooltip` Radix) déborderait la largeur étroite d'un nœud —
+          même icône, même texte de tooltip (`awaitingBackend.tooltip`), juste posé en
+          `title` natif plutôt qu'un `Tooltip` complet. */}
+      {node.awaitingBackendField ? (
+        <span title={awaitingT("tooltip", { field: node.awaitingBackendField })}>
+          <Wrench
+            className="size-3 shrink-0 text-muted-foreground"
+            aria-label={awaitingT("badge")}
+          />
+        </span>
+      ) : null}
     </span>
   );
 

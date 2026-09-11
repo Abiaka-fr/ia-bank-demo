@@ -1,13 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { cn } from "cn";
-import { useTranslations } from "next-intl";
-import { useEffect, useRef } from "react";
+import { ExternalLink } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 
-import { MarkdownLine } from "@/components/features/markdown-line";
+import { ProcedureBody } from "@/components/features/procedure-body";
 import { ErrorState, LoadingState } from "@/components/features/query-state";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -15,9 +14,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { openInNewTabWithSession } from "@/lib/open-in-new-tab";
 import { queryKeys } from "@/lib/api/query-keys";
 import { fetchProcedure } from "@/lib/api/procedures";
-import { findQuotedLineIndexes } from "@/lib/evidence-match";
 import type { EvidenceRef } from "@/types/api";
 
 /**
@@ -28,12 +27,18 @@ export function ProcedureEvidenceDialog({
   evidence,
   isOpen,
   onOpenChange,
+  regulationId,
+  requirementId,
 }: {
   evidence: EvidenceRef;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Optionnels : construisent le lien « Retour au constat » sur `/procedures/[id]`. */
+  regulationId?: string;
+  requirementId?: string;
 }) {
   const t = useTranslations("procedureDialog");
+  const locale = useLocale();
 
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.procedure(evidence.document_id),
@@ -41,6 +46,20 @@ export function ProcedureEvidenceDialog({
     // Inutile de charger le document tant que la fenêtre n'est pas ouverte.
     enabled: isOpen,
   });
+
+  // Le passage cité vient du constat consulté, pas du document lui-même : porté par
+  // l'URL pour que la page dédiée (`/procedures/[id]`, Phase 6 § 5 — « ouvrir dans un
+  // nouvel onglet ») puisse surligner le même extrait sans dépendre de ce dialogue.
+  // Lien natif avec le préfixe de langue explicite (pas `i18n/navigation`) : cette
+  // page doit s'ouvrir dans un vrai nouvel onglet (`target="_blank"`), ce que le
+  // composant `Link` interne n'a pas besoin de gérer ailleurs dans l'app.
+  const newTabParams = new URLSearchParams({
+    excerpt: evidence.excerpt,
+    section: evidence.section_reference,
+  });
+  if (regulationId) newTabParams.set("regulationId", regulationId);
+  if (requirementId) newTabParams.set("requirementId", requirementId);
+  const newTabHref = `/${locale}/procedures/${evidence.document_id}?${newTabParams.toString()}`;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -54,10 +73,20 @@ export function ProcedureEvidenceDialog({
         className="flex max-h-[90vh] w-[60vw] max-w-none flex-col overflow-hidden sm:max-w-none"
       >
         <DialogHeader className="shrink-0">
-          <DialogTitle className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-sm">{evidence.document_id}</span>
-            <span>{data?.title ?? evidence.document_title}</span>
-          </DialogTitle>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <DialogTitle className="flex flex-wrap items-center gap-2">
+              <span className="font-mono text-sm">{evidence.document_id}</span>
+              <span>{data?.title ?? evidence.document_title}</span>
+            </DialogTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => openInNewTabWithSession(newTabHref)}
+            >
+              <ExternalLink aria-hidden />
+              {t("openInNewTab")}
+            </Button>
+          </div>
           <DialogDescription>
             {t("citedSection", { section: evidence.section_reference })}
           </DialogDescription>
@@ -72,82 +101,5 @@ export function ProcedureEvidenceDialog({
         )}
       </DialogContent>
     </Dialog>
-  );
-}
-
-function ProcedureBody({
-  text,
-  excerpt,
-  language,
-}: {
-  text: string;
-  excerpt: string;
-  language: EvidenceRef["language"];
-}) {
-  const t = useTranslations("procedureDialog");
-  const quotedIndexes = findQuotedLineIndexes(text, excerpt);
-  const firstQuotedRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    firstQuotedRef.current?.scrollIntoView({ block: "center" });
-  }, [text, excerpt]);
-
-  const lines = text.split("\n");
-  // Calculé avant le rendu : muter un compteur pendant `map` rend le résultat
-  // dépendant de l'ordre de rendu.
-  const firstQuotedIndex = quotedIndexes.size ? Math.min(...quotedIndexes) : -1;
-
-  return (
-    // `min-h-0` : sans ça, un enfant flex refuse de rétrécir sous sa taille de
-    // contenu et le `div` à défilement ci-dessous ignorerait `flex-1`, débordant la fenêtre.
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
-      {quotedIndexes.size === 0 ? (
-        <p className="text-xs text-muted-foreground">{t("noHighlight")}</p>
-      ) : null}
-
-      {/* `overflow-y-auto` natif plutôt que `ScrollArea` (Radix) : dans ce dialogue
-          comme dans `FindingDetailDialog`, le viewport interne de `ScrollArea` ne se
-          limitait jamais à la hauteur donnée par flexbox (`height:100%` refusait de se
-          résoudre ici, cause non identifiée avec certitude) et le contenu débordait
-          sans défiler — un document plus long que la fenêtre restait coupé après sa
-          première section, sans indication qu'il continuait. Un `div` à défilement
-          natif n'a pas ce problème. */}
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-lg border p-4" lang={language.toLowerCase()}>
-        {lines.map((line, index) => {
-          const isQuoted = quotedIndexes.has(index);
-
-          if (!line.trim()) return <div key={index} className="h-2" />;
-
-          return (
-            <div
-              // Les lignes du document n'ont pas d'identifiant stable : leur
-              // position dans le texte est la seule clé disponible.
-              key={index}
-              ref={index === firstQuotedIndex ? firstQuotedRef : undefined}
-              className={cn(
-                "scroll-mt-4 text-sm leading-relaxed",
-                // Teinte neutre : les couleurs de statut restent réservées à
-                // `assessment` (docs/ui-guidelines.md).
-                isQuoted &&
-                  "rounded-md bg-foreground/8 px-3 py-2 font-medium ring-1 ring-foreground/20",
-              )}
-            >
-              <MarkdownLine
-                text={line}
-                leading={
-                  isQuoted ? (
-                    <Badge variant="secondary" className="mr-2 align-middle text-[10px]">
-                      {t("citedBadge")}
-                    </Badge>
-                  ) : null
-                }
-              />
-            </div>
-          );
-        })}
-      </div>
-
-      <p className="text-[11px] text-muted-foreground">{t("sourceNote")}</p>
-    </div>
   );
 }

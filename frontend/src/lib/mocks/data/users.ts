@@ -40,4 +40,10 @@ export const users: readonly User[] = [
     email: "karim.benali@iabank.fr",
     role: "Juriste Réglementaire",
   },
+  {
+    user_id: "USR-005",
+    full_name: "Sophie Nguyen",
+    email: "sophie.nguyen@iabank.fr",
+    role: "Admin Base de Connaissances",
+  },
 ];

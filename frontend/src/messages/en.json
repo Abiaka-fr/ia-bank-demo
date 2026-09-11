@@ -10,6 +10,7 @@
     "retry": "Retry",
     "cancel": "Cancel",
     "back": "Back",
+    "print": "Print",
     "close": "Close",
     "all": "All",
     "source": "Source",
@@ -33,8 +34,10 @@
     "sectionAdmin": "Administration",
     "dashboard": "Dashboard",
     "regulations": "Regulatory analysis",
+    "procedures": "Procedures",
     "copilot": "Copilot",
     "users": "Users",
+    "knowledgeBase": "Knowledge Base",
     "toggleSidebar": "Show or hide navigation"
   },
   "topBar": {
@@ -93,7 +96,8 @@
     "columnRegulation": "Regulation",
     "columnAssignee": "Assigned to",
     "columnProgress": "Findings handled",
-    "byRegulationAllHandled": "All tracked regulations have been fully handled."
+    "byRegulationAllHandled": "All tracked regulations have been fully handled.",
+    "newAnalysisCta": "Start a new impact analysis"
   },
   "regulations": {
     "title": "Regulatory analysis",
@@ -114,7 +118,20 @@
     "filterDomain": "Domain",
     "filterAllDomains": "All",
     "searchResultsCount": "{count, plural, =0 {No results} one {# result} other {# results}}",
-    "searchNoResults": "No requirement matches this search."
+    "searchNoResults": "No requirement matches this search.",
+    "filterAuthority": "Authority",
+    "filterAllAuthorities": "All",
+    "sortLabel": "Sort by",
+    "sortNewest": "Most recently imported",
+    "sortOldest": "Oldest import",
+    "sortTitle": "Title (A→Z)",
+    "filterNoResults": "No regulation matches this filter.",
+    "searchByTitlePlaceholder": "Search a regulation (title, ID)…",
+    "summaryLabel": "Summary",
+    "createdDateLabel": "Created date",
+    "lastUpdatedLabel": "Last updated",
+    "filterClassification": "Classification",
+    "filterClassificationPlaceholder": "Coming soon"
   },
   "impact": {
     "filterAssessment": "Assessment status",
@@ -187,6 +204,30 @@
     "updateFailed": "The assignment could not be saved.",
     "escalatedTo": "Escalated to"
   },
+  "awaitingBackend": {
+    "badge": "Backend pending",
+    "tooltip": "Pending: field {field}, to confirm with Thư."
+  },
+  "knowledgeBase": {
+    "title": "Knowledge Base",
+    "subtitle": "Overview of the indexed corpus and regulatory sources.",
+    "bankSectionTitle": "Bank Compliance Knowledge Base",
+    "regulationsCount": "Regulations",
+    "proceduresCount": "Internal procedures",
+    "requirementsCount": "Requirements identified",
+    "sourcesLabel": "Sources",
+    "lastUpdatedLabel": "Last updated",
+    "europeanSectionTitle": "European Regulatory Sources",
+    "notConnectedStatus": "Not connected",
+    "notConnectedDescription": "No European regulatory source (CELLAR/EUR-Lex) is connected yet — feature under evaluation, see docs/phases/phase-7-european-search.md."
+  },
+  "roles": {
+    "headOfCompliance": "Head of Compliance",
+    "complianceOfficer": "Compliance Officer",
+    "regulatoryCounsel": "Regulatory Counsel",
+    "auditor": "Internal Auditor",
+    "knowledgeBaseAdmin": "Knowledge Base Admin"
+  },
   "users": {
     "title": "Users",
     "subtitle": "Manage account roles for this workspace.",
@@ -215,6 +256,53 @@
     "failed": "The upload failed.",
     "wrongFormat": "Only Word (.docx) files are accepted."
   },
+  "procedures": {
+    "title": "Procedures",
+    "subtitle": "Internal procedures loaded in the demonstration corpus",
+    "empty": "No procedure in the indexed corpus.",
+    "owner": "Owner",
+    "uploadedBy": "Uploaded by",
+    "uploadedAtLabel": "Uploaded on",
+    "openCardHint": "Click the card to open the detail",
+    "searchByTitlePlaceholder": "Search a procedure (title, ID)…",
+    "sortLabel": "Sort by",
+    "sortNewest": "Most recently imported",
+    "sortOldest": "Oldest import",
+    "sortTitle": "Title (A→Z)",
+    "filterNoResults": "No procedure matches this search."
+  },
+  "uploadProcedure": {
+    "trigger": "Upload a procedure",
+    "title": "Upload a procedure",
+    "description": "The document is added to the corpus; it can then be analyzed against the compliance base.",
+    "fileLabel": "Procedure file",
+    "fileHelp": "Accepted format: Word (.docx) only.",
+    "assigneeLabel": "Assigned to",
+    "cancel": "Cancel",
+    "submit": "Upload",
+    "uploading": "Uploading…",
+    "succeeded": "Procedure uploaded",
+    "failed": "The upload failed.",
+    "wrongFormat": "Only Word (.docx) files are accepted."
+  },
+  "regulatoryScope": {
+    "label": "Regulatory scope",
+    "bankOnly": "Bank Compliance Knowledge Base",
+    "bankPlusEu": "Bank + European Regulatory Sources",
+    "bankOnlyHelp": "Searches only the bank's internal compliance corpus.",
+    "bankPlusEuHelp": "Also searches European regulatory sources — never blocks the Bank results if it fails."
+  },
+  "procedureAnalysis": {
+    "title": "Analyze against the compliance base",
+    "analyzeButton": "Analyze",
+    "analyzing": "Analyzing…",
+    "succeeded": "Analysis complete",
+    "failed": "The analysis failed.",
+    "bankRequirementsIdentified": "Bank requirements identified",
+    "euCandidateRequirements": "EU candidate requirements",
+    "additionalEuCandidates": "Additional EU candidates",
+    "noFindings": "No finding for this procedure in the indexed corpus yet."
+  },
   "actions": {
     "tabLabel": "Impact analysis",
     "columnRequirement": "Requirement",
@@ -232,7 +320,8 @@
     "saved": "Decision saved",
     "saveFailed": "The decision could not be saved.",
     "expandHint": "Click a row to open the finding's details",
-    "goToRequirement": "Handle"
+    "goToRequirement": "Handle",
+    "readOnlyNotice": "Read-only — your profile cannot validate a finding."
   },
   "procedureDialog": {
     "openHint": "click to read the full procedure",
@@ -240,7 +329,9 @@
     "citedSection": "Cited passage: {section} — highlighted below.",
     "citedBadge": "Cited",
     "noHighlight": "The cited passage could not be located automatically in the document; the full text is shown below.",
-    "sourceNote": "Internal text shown in its original language, untranslated."
+    "sourceNote": "Internal text shown in its original language, untranslated.",
+    "openInNewTab": "Open in a new tab",
+    "backToFinding": "Back to finding {requirement}"
   },
   "progress": {
     "label": "Review progress",
