@@ -192,7 +192,7 @@ interface DocumentMeta {
   domain: string[];            // ex: ["KYC", "AML/CFT"]
   language: Language;
   version: string;
-  publication_date?: string;
+  published_at?: string;       // v1.10 — ISO 8601, publication/release date
   effective_date?: string;
   status: "NOT_ANALYZED" | "ANALYZING" | "ANALYZED";
   uploaded_by_id?: string;   // v1.1 — User.user_id, absent pour le corpus préchargé

@@ -30,6 +30,7 @@ import {
   fetchRegulation,
   fetchRegulationRequirements,
 } from "@/lib/api/regulations";
+import { formatDateDDMMYYYY } from "@/lib/format-date";
 
 export function RegulationDetailView({ regulationId }: { regulationId: string }) {
   const t = useTranslations("regulations");
@@ -108,11 +109,11 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
         ))}
         <span className="text-muted-foreground">
           {common("effectiveDate")} :{" "}
-          {regulation.effective_date ?? common("notAvailable")}
+          {formatDateDDMMYYYY(regulation.effective_date) ?? common("notAvailable")}
         </span>
         <span className="text-muted-foreground">
           {t("uploadedAtLabel")} :{" "}
-          {regulation.uploaded_at?.slice(0, 10) ?? common("notAvailable")}
+          {formatDateDDMMYYYY(regulation.uploaded_at) ?? common("notAvailable")}
         </span>
         {/* 3 dates distinctes demandées par Francis (Phase 6 § 4) : Uploaded (réel,
             ci-dessus) / Created / Last updated. `published_at` existe déjà au

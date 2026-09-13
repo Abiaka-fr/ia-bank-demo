@@ -343,8 +343,11 @@ const seeds: readonly Seed[] = [
   },
 ];
 
-export const seedFindings: readonly Finding[] = seeds.map((seed) => ({
-  ...seed,
-  human_status: "PENDING",
-  updated_at: UPDATED_AT,
-}));
+export const seedFindings: readonly Finding[] = seeds.map(
+  (seed) =>
+    ({
+      ...seed,
+      human_status: "PENDING",
+      updated_at: UPDATED_AT,
+    }) as Finding,
+);

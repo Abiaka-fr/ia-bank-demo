@@ -298,6 +298,9 @@ export const procedures: readonly DocumentDetail[] = procedureSeeds.map(
       .toISOString(),
     updated_at: new Date(2024, 8 + Math.floor(index / 4), 15 + (index % 4) * 5)
       .toISOString(),
+    published_at: new Date(2023, 5 + Math.floor(index / 3), 1 + (index % 3) * 10)
+      .toISOString()
+      .split("T")[0],
     summary: seed.text.split("\n")[1]?.substring(0, 120) || seed.title,
     extracted_text: seed.text,
   }),

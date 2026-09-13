@@ -88,13 +88,13 @@ export function adaptDocument(document: BackendDocument): DocumentMeta {
     language: adaptLanguage(document.language),
     // Vu en base : parfois un nombre plutôt qu'une chaîne — voir `schemas.ts`.
     version: String(document.current_version ?? ""),
+    // Backend returns published_at, frontend contract uses it directly (v1.10)
+    published_at: document.published_at ?? undefined,
     status: adaptDocumentStatus(),
-    created_at: document.created_at,
-    updated_at: document.updated_at,
     // v1.10 — convert null to undefined for frontend contract compatibility
+    created_at: document.created_at ?? undefined,
+    updated_at: document.updated_at ?? undefined,
     summary: document.summary ?? undefined,
-    // v1.10 — convert null to undefined for frontend contract compatibility
-    published_at: document.published_at ?? undefined
   };
 }
 

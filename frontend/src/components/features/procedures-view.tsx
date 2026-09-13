@@ -24,6 +24,7 @@ import {
 import { Link } from "@/i18n/navigation";
 import { queryKeys } from "@/lib/api/query-keys";
 import { fetchProcedures } from "@/lib/api/procedures";
+import { formatDateDDMMYYYY } from "@/lib/format-date";
 
 type SortOrder = "newest" | "oldest" | "title";
 
@@ -140,7 +141,7 @@ export function ProceduresView() {
                   <dt className="text-xs text-muted-foreground">
                     {common("effectiveDate")}
                   </dt>
-                  <dd>{procedure.effective_date ?? common("notAvailable")}</dd>
+                  <dd>{formatDateDDMMYYYY(procedure.effective_date) ?? common("notAvailable")}</dd>
                 </div>
                 {procedure.uploaded_by_id ? (
                   <div>
@@ -156,7 +157,7 @@ export function ProceduresView() {
                   <dt className="text-xs text-muted-foreground">
                     {t("uploadedAtLabel")}
                   </dt>
-                  <dd>{procedure.uploaded_at?.slice(0, 10) ?? common("notAvailable")}</dd>
+                  <dd>{formatDateDDMMYYYY(procedure.uploaded_at) ?? common("notAvailable")}</dd>
                 </div>
               </dl>
 
