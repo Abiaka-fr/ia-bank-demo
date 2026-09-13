@@ -294,6 +294,8 @@ interface RegulationSummary {
   // Personnes à qui un constat a été confié lors d'une escalade, lorsqu'elles
   // diffèrent de `assignee_id`. Affiché sur la carte de la régulation.
   escalated_assignee_ids: string[];
+  // v1.10 — résumé ou description courte du document
+  summary?: string;
 }
 
 // v1.2 — arborescence Régulation → Exigence → Procédure, pour la carte mentale

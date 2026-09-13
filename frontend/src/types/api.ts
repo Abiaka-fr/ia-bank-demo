@@ -173,6 +173,8 @@ export const regulationSummarySchema = z.object({
   ),
   /** Assignés par escalade, quand ils diffèrent de `assignee_id`. */
   escalated_assignee_ids: z.array(z.string()),
+  /** v1.10 — résumé ou description courte du document. */
+  summary: z.string().optional(),
 });
 
 /** v1.2 — arborescence Régulation → Exigence → Procédure (carte mentale). */
