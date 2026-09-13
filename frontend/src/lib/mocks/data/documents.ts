@@ -86,6 +86,10 @@ export const regulations: readonly DocumentDetail[] = [
     uploaded_by_id: "USR-001",
     uploaded_at: "2026-01-20T08:15:00.000Z",
     assignee_id: "USR-002",
+    created_at: "2026-01-14T10:00:00.000Z",
+    updated_at: "2026-01-14T10:00:00.000Z",
+    summary:
+      "Instruction ACPR définissant les mesures de vigilance en matière de connaissance client (KYC) et lutte contre le blanchiment de capitaux et le financement du terrorisme (LCB-FT).",
     extracted_text: acprExtractedText,
   },
   {
@@ -103,6 +107,10 @@ export const regulations: readonly DocumentDetail[] = [
     uploaded_by_id: "USR-001",
     uploaded_at: "2026-01-26T14:40:00.000Z",
     assignee_id: "USR-004",
+    created_at: "2026-01-22T12:30:00.000Z",
+    updated_at: "2026-01-22T12:30:00.000Z",
+    summary:
+      "EBA Guidelines on customer risk classification methodology, enhanced due diligence procedures for high-risk relationships, and wire transfer information requirements.",
     extracted_text: ebaExtractedText,
   },
 ];
@@ -274,7 +282,7 @@ const procedureSeeds: readonly ProcedureSeed[] = [
 ];
 
 export const procedures: readonly DocumentDetail[] = procedureSeeds.map(
-  (seed) => ({
+  (seed, index) => ({
     document_id: seed.id,
     // Le titre ne répète pas l'identifiant : l'UI affiche déjà `document_id` à côté.
     title: seed.title,
@@ -285,6 +293,12 @@ export const procedures: readonly DocumentDetail[] = procedureSeeds.map(
     version: seed.version,
     effective_date: seed.effective_date,
     status: "ANALYZED",
+    // v1.10 — timestamps staggered for demo realism
+    created_at: new Date(2023, 5 + Math.floor(index / 3), 1 + (index % 3) * 10)
+      .toISOString(),
+    updated_at: new Date(2024, 8 + Math.floor(index / 4), 15 + (index % 4) * 5)
+      .toISOString(),
+    summary: seed.text.split("\n")[1]?.substring(0, 120) || seed.title,
     extracted_text: seed.text,
   }),
 );

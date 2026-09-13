@@ -69,6 +69,12 @@ export const documentMetaSchema = z.object({
   uploaded_by_id: z.string().optional(),
   uploaded_at: z.string().optional(),
   assignee_id: z.string().optional(),
+  /** v1.10 — ISO 8601 timestamp de création du document. */
+  created_at: z.string().optional(),
+  /** v1.10 — ISO 8601 timestamp de dernière modification. */
+  updated_at: z.string().optional(),
+  /** v1.10 — résumé ou description courte du document. */
+  summary: z.string().optional(),
 });
 
 export const documentDetailSchema = documentMetaSchema.extend({
@@ -96,6 +102,10 @@ export const requirementSchema = z.object({
    */
   normalized_requirement_fr: z.string().optional(),
   source_text_fr: z.string().optional(),
+  /** v1.10 — ISO 8601 timestamp de création de l'exigence. */
+  created_at: z.string().optional(),
+  /** v1.10 — ISO 8601 timestamp de dernière modification. */
+  updated_at: z.string().optional(),
 });
 
 export const findingSchema = z.object({
