@@ -76,7 +76,8 @@ GET /api/documents?domain=MIFID&document_type=GUIDELINE&limit=20
       "current_file_path": "documents/external/EXT-EU-AML-001__v2_0__EN.md",
       "data_classification": "SYNTHETIC_DEMO",
       "created_at": "2024-03-25T09:00:00",
-      "updated_at": "2024-03-25T09:00:00"
+      "updated_at": "2024-03-25T09:00:00",
+      "published_at": "2024-03-25T10:00:00"
     }
   ],
   "limit": 50,
@@ -124,7 +125,8 @@ GET /api/documents/EXT-EU-AML-001
   "current_file_path": "documents/external/EXT-EU-AML-001__v2_0__EN.md",
   "data_classification": "SYNTHETIC_DEMO",
   "created_at": "2024-03-25T09:00:00",
-  "updated_at": "2024-03-25T09:00:00"
+  "updated_at": "2024-03-25T09:00:00",
+  "published_at": "2024-03-25T10:00:00"
 }
 ```
 
@@ -553,7 +555,8 @@ GET /api/procedures?domain=KYC&limit=50
         "current_file_path": "documents/internal/INT-PROC-AML__v2_0__EN.md",
         "data_classification": "CONCERNING_CUSTOMER",
         "created_at": "2026-09-10T09:00:00",
-        "updated_at": "2026-09-10T09:00:00"
+        "updated_at": "2026-09-10T09:00:00",
+        "published_at": "2026-09-10T09:30:00"
       }
     }
   ],

@@ -63,6 +63,7 @@ class DocumentRead(BaseModel):
     data_classification: str | None = None
     created_at: datetime
     updated_at: datetime | None = None
+    published_at: datetime | None = None
 
     @field_validator("current_version", mode="before")
     @classmethod

@@ -27,6 +27,7 @@ class Document(Base):
     data_classification = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    published_at = Column(DateTime, nullable=True)
 
     # Relationships
     versions = relationship("DocumentVersion", back_populates="document", cascade="all, delete-orphan")
