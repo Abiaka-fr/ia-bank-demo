@@ -21,10 +21,12 @@ class Document(Base):
     origin_name = Column(String)
     domain = Column(String)  # e.g., AML/CFT, KYC
     language = Column(String)  # EN, FR
+    summary = Column(Text, nullable=True)  # Document summary
     current_version = Column(String)
     current_file_path = Column(String)
     data_classification = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     versions = relationship("DocumentVersion", back_populates="document", cascade="all, delete-orphan")

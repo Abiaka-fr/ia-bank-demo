@@ -71,10 +71,12 @@ GET /api/documents?domain=MIFID&document_type=GUIDELINE&limit=20
       "origin_name": "European Union",
       "domain": "AML/CFT",
       "language": "EN",
+      "summary": "This standard provides guidance on customer due diligence procedures for AML/CFT compliance.",
       "current_version": "2.0",
       "current_file_path": "documents/external/EXT-EU-AML-001__v2_0__EN.md",
       "data_classification": "SYNTHETIC_DEMO",
-      "created_at": "2024-03-25T09:00:00"
+      "created_at": "2024-03-25T09:00:00",
+      "updated_at": "2024-03-25T09:00:00"
     }
   ],
   "limit": 50,
@@ -117,10 +119,12 @@ GET /api/documents/EXT-EU-AML-001
   "origin_name": "European Union",
   "domain": "AML/CFT",
   "language": "EN",
+  "summary": "This standard provides guidance on customer due diligence procedures for AML/CFT compliance.",
   "current_version": "2.0",
   "current_file_path": "documents/external/EXT-EU-AML-001__v2_0__EN.md",
   "data_classification": "SYNTHETIC_DEMO",
-  "created_at": "2024-03-25T09:00:00"
+  "created_at": "2024-03-25T09:00:00",
+  "updated_at": "2024-03-25T09:00:00"
 }
 ```
 
@@ -544,10 +548,12 @@ GET /api/procedures?domain=KYC&limit=50
         "origin_name": null,
         "domain": "AML/CFT",
         "language": "EN",
+        "summary": "Internal procedures for AML/CFT compliance including customer classification and monitoring.",
         "current_version": "2.0",
         "current_file_path": "documents/internal/INT-PROC-AML__v2_0__EN.md",
         "data_classification": "CONCERNING_CUSTOMER",
-        "created_at": "2026-09-10T09:00:00"
+        "created_at": "2026-09-10T09:00:00",
+        "updated_at": "2026-09-10T09:00:00"
       }
     }
   ],
