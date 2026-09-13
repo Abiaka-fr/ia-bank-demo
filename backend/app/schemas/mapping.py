@@ -1,5 +1,7 @@
 """Pydantic schemas for requirement-procedure mappings."""
 
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -32,6 +34,8 @@ class ProcedureRead(BaseModel):
     owner: str | None = None
     status: str | None = None
     current_version: str | float | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
