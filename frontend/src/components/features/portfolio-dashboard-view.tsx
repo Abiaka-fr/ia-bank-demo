@@ -14,7 +14,6 @@ import { useState } from "react";
 
 import { AssessmentChart } from "@/components/features/assessment-chart";
 import { AssigneeName } from "@/components/features/assignee-select";
-import { AwaitingBackendBadge } from "@/components/features/awaiting-backend-badge";
 import { DocumentStatusBadge } from "@/components/features/document-status-badge";
 import { DomainChart } from "@/components/features/domain-chart";
 import { KpiCard } from "@/components/features/kpi-card";

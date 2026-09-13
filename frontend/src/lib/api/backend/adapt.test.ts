@@ -27,6 +27,7 @@ function backendDocument(overrides: Partial<BackendDocument> = {}): BackendDocum
     current_file_path: null,
     data_classification: "SYNTHETIC_DEMO",
     created_at: "2024-03-25T09:00:00",
+    summary: "Standard for customer due diligence in AML/CFT compliance",
     ...overrides,
   };
 }
