@@ -317,6 +317,65 @@ GET /api/documents/content/VER-EXT-EU-AML-001-01
 
 ## 3. Regulatory Requirements
 
+### List All Requirements
+
+#### `GET /api/requirements`
+Get all regulatory requirements with optional filtering.
+
+**Query Parameters (all optional)**
+- `domain` (optional): Filter by domain (e.g., AML/CFT, KYC, DATA_PROTECTION)
+- `risk_level` (optional): Filter by risk level (LOW, MEDIUM, HIGH)
+- `language` (optional): Filter by language (EN, FR)
+- `status` (optional): Filter by status (ACTIVE, SUPERSEDED)
+- `limit` (integer): Max results per page (default: 50, max: 200)
+- `offset` (integer): Number of results to skip for pagination (default: 0)
+
+**Authentication** Required (Bearer token)
+
+**Request Examples**
+```
+GET /api/requirements
+GET /api/requirements?risk_level=HIGH&limit=100
+GET /api/requirements?domain=AML/CFT&language=FR
+GET /api/requirements?status=ACTIVE&limit=50
+```
+
+**Response (200 OK)**
+```json
+{
+  "total": 25,
+  "items": [
+    {
+      "requirement_id": "REQ-0001",
+      "source_document_id": "EXT-EU-AML-001",
+      "title": "Risk classification",
+      "title_lang_fr": "Classification des risques",
+      "domain": "AML/CFT",
+      "language": "EN",
+      "requirement_text": "Customers must be classified using documented money-laundering and terrorist-financing risk factors.",
+      "requirement_text_lang_fr": "Les clients doivent être classés selon les facteurs documentés de risque de blanchiment de capitaux et de financement du terrorisme.",
+      "risk_level": "MEDIUM",
+      "source_reference": "Section 3",
+      "status": "ACTIVE",
+      "created_at": "2026-09-10T10:00:00",
+      "updated_at": "2026-09-10T10:00:00"
+    }
+  ],
+  "limit": 50,
+  "offset": 0,
+  "document_ids_queried": []
+}
+```
+
+**Response (401 Unauthorized)**
+```json
+{
+  "detail": "Not authenticated"
+}
+```
+
+---
+
 ### List Requirements by Source Document IDs
 
 #### `GET /api/requirements/by-documents`
@@ -434,6 +493,112 @@ GET /api/requirements/REQ-0001
 ```json
 {
   "detail": "Requirement not found"
+}
+```
+
+---
+
+## 3.5. Procedures
+
+### List All Procedures
+
+#### `GET /api/procedures`
+Get all procedures with optional filtering.
+
+**Query Parameters (all optional)**
+- `domain` (optional): Filter by domain (e.g., AML/CFT, KYC, DATA_PROTECTION)
+- `status` (optional): Filter by status (ACTIVE, SUPERSEDED)
+- `limit` (integer): Max results per page (default: 50, max: 200)
+- `offset` (integer): Number of results to skip for pagination (default: 0)
+
+**Authentication** Required (Bearer token)
+
+**Request Examples**
+```
+GET /api/procedures
+GET /api/procedures?domain=AML/CFT&limit=100
+GET /api/procedures?status=ACTIVE
+GET /api/procedures?domain=KYC&limit=50
+```
+
+**Response (200 OK)**
+```json
+{
+  "total": 15,
+  "items": [
+    {
+      "procedure_id": "PRC-AML-007",
+      "name": "Risk Classification Process",
+      "domain": "AML/CFT",
+      "owner": "AML Team",
+      "status": "ACTIVE",
+      "current_version": "2.0",
+      "created_at": "2026-09-10T10:00:00",
+      "updated_at": "2026-09-10T10:00:00",
+      "document": {
+        "document_id": "INT-PROC-AML",
+        "title": "Internal AML Procedures",
+        "category": "INTERNAL",
+        "document_type": "PROCEDURE",
+        "origin_code": null,
+        "origin_name": null,
+        "domain": "AML/CFT",
+        "language": "EN",
+        "current_version": "2.0",
+        "current_file_path": "documents/internal/INT-PROC-AML__v2_0__EN.md",
+        "data_classification": "CONCERNING_CUSTOMER",
+        "created_at": "2026-09-10T09:00:00"
+      }
+    }
+  ],
+  "limit": 50,
+  "offset": 0
+}
+```
+
+**Response (401 Unauthorized)**
+```json
+{
+  "detail": "Not authenticated"
+}
+```
+
+---
+
+### Get Procedure by ID
+
+#### `GET /api/procedures/{procedure_id}`
+Retrieve a single procedure by its ID.
+
+**Path Parameters**
+- `procedure_id` (required): The ID of the procedure (e.g., PRC-AML-007)
+
+**Authentication** Required (Bearer token)
+
+**Request Example**
+```
+GET /api/procedures/PRC-AML-007
+```
+
+**Response (200 OK)**
+```json
+{
+  "procedure_id": "PRC-AML-007",
+  "document_id": "INT-PROC-AML",
+  "name": "Risk Classification Process",
+  "domain": "AML/CFT",
+  "owner": "AML Team",
+  "status": "ACTIVE",
+  "current_version": "2.0",
+  "created_at": "2026-09-10T10:00:00",
+  "updated_at": "2026-09-10T10:00:00"
+}
+```
+
+**Response (404 Not Found)**
+```json
+{
+  "detail": "Procedure not found"
 }
 ```
 
