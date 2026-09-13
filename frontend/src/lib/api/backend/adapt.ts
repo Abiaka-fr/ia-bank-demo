@@ -90,6 +90,7 @@ export function adaptDocument(document: BackendDocument): DocumentMeta {
     version: String(document.current_version ?? ""),
     status: adaptDocumentStatus(),
     uploaded_at: document.created_at,
+    summary: document.summary
   };
 }
 

@@ -178,9 +178,7 @@ export function PortfolioDashboardView() {
                             {regulationsT("summaryLabel")}:
                           </span>
                           <span className="line-clamp-2">
-                            {row.summary || (
-                              <AwaitingBackendBadge field="DocumentMeta.summary" />
-                            )}
+                            {row.summary}
                           </span>
                         </div>
                       </TableCell>

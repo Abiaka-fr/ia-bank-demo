@@ -130,6 +130,7 @@ export function buildPortfolioSummary(
 
     return {
       regulation_id: regulation.document_id,
+      summary: regulation.summary,
       title: regulation.title,
       status: regulation.status,
       assignee_id: regulation.assignee_id,
@@ -203,11 +204,11 @@ export function buildRegulationMap(
 ): RegulationMapNode[] {
   return regulations.map((regulation) => {
     const findings = findingsOf(regulation.document_id);
-
     return {
       regulation_id: regulation.document_id,
       title: regulation.title,
       status: regulation.status,
+      summary: regulation.summary,
       requirements: requirementsOf(regulation.document_id).map((requirement) => ({
         requirement_id: requirement.requirement_id,
         source_reference: requirement.source_reference,

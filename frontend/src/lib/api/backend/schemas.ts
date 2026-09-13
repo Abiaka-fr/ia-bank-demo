@@ -12,6 +12,7 @@
  *
  * Source : `backend/API.md` et `backend/app/schemas/`, relus le 2026-09-07.
  */
+import { Summary } from "lucide-react";
 import { z } from "zod";
 
 /** Enveloppe de pagination commune à toutes les listes du backend. */
@@ -59,6 +60,7 @@ export const backendDocumentSchema = z.object({
   current_file_path: z.string().nullable().optional(),
   data_classification: z.string().nullable().optional(),
   created_at: z.string(),
+  summary: z.string()
 });
 
 export const backendDocumentListSchema = paginated(backendDocumentSchema);
