@@ -81,6 +81,7 @@ export function RegulationsView() {
   const visibleRegulations = useMemo(() => {
     const query = search.trim().toLowerCase();
     const filtered = (regulationsQuery.data ?? []).filter((reg) => {
+      console.log("reg", reg)
       const matchesSearch =
         query === "" ||
         reg.title.toLowerCase().includes(query) ||
@@ -233,7 +234,7 @@ export function RegulationsView() {
                   <dt className="text-xs text-muted-foreground">
                     {common("effectiveDate")}
                   </dt>
-                  <dd>{regulation.effective_date ?? common("notAvailable")}</dd>
+                  <dd>{regulation.published_at ?? common("notAvailable")}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">
@@ -245,31 +246,20 @@ export function RegulationsView() {
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">
-                    {t("uploadedAtLabel")}
-                  </dt>
-                  <dd>{regulation.uploaded_at?.slice(0, 10) ?? common("notAvailable")}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">
                     {t("createdDateLabel")}
                   </dt>
-                  {/* `publication_date` existe déjà au contrat et dans le corpus mock —
+                  {/* `published_at` existe déjà au contrat et dans le corpus mock —
                       réel dès que disponible, badge seulement s'il manque vraiment
                       (mode backend réel aujourd'hui). Jamais réutiliser `uploaded_at`
                       sous ce libellé : ce sont deux dates distinctes pour Francis. */}
-                  <dd>
-                    {regulation.publication_date ?? (
-                      <AwaitingBackendBadge field="DocumentMeta.publication_date" />
-                    )}
-                  </dd>
+                    <dd>{regulation.created_at ?? common("notAvailable")}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">
                     {t("lastUpdatedLabel")}
                   </dt>
-                  <dd>
-                    <AwaitingBackendBadge field="DocumentMeta.updated_at" />
-                  </dd>
+                  {/* v1.10 — `updated_at` timestamp now available from backend */}
+                  <dd>{regulation.updated_at?.slice(0, 10) ?? common("notAvailable")}</dd>
                 </div>
               </dl>
 

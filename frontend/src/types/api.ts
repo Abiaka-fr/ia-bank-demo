@@ -63,7 +63,7 @@ export const documentMetaSchema = z.object({
   domain: z.array(z.string()),
   language: languageSchema,
   version: z.string(),
-  publication_date: z.string().optional(),
+  published_at: z.string().optional(),
   effective_date: z.string().optional(),
   status: documentStatusSchema,
   uploaded_by_id: z.string().optional(),

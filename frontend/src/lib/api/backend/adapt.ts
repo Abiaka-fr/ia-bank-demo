@@ -89,8 +89,12 @@ export function adaptDocument(document: BackendDocument): DocumentMeta {
     // Vu en base : parfois un nombre plutôt qu'une chaîne — voir `schemas.ts`.
     version: String(document.current_version ?? ""),
     status: adaptDocumentStatus(),
-    uploaded_at: document.created_at,
-    summary: document.summary
+    created_at: document.created_at,
+    updated_at: document.updated_at,
+    // v1.10 — convert null to undefined for frontend contract compatibility
+    summary: document.summary ?? undefined,
+    // v1.10 — convert null to undefined for frontend contract compatibility
+    published_at: document.published_at ?? undefined
   };
 }
 

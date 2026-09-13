@@ -115,13 +115,13 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
           {regulation.uploaded_at?.slice(0, 10) ?? common("notAvailable")}
         </span>
         {/* 3 dates distinctes demandées par Francis (Phase 6 § 4) : Uploaded (réel,
-            ci-dessus) / Created / Last updated. `publication_date` existe déjà au
+            ci-dessus) / Created / Last updated. `published_at` existe déjà au
             contrat et dans le corpus mock — badge seulement quand il manque vraiment
             (mode backend réel aujourd'hui), jamais en réutilisant `uploaded_at`. */}
         <span className="flex items-center gap-1.5 text-muted-foreground">
           {t("createdDateLabel")} :{" "}
-          {regulation.publication_date ?? (
-            <AwaitingBackendBadge field="DocumentMeta.publication_date" />
+          {regulation.published_at ?? (
+            <AwaitingBackendBadge field="DocumentMeta.published_at" />
           )}
         </span>
         <span className="flex items-center gap-1.5 text-muted-foreground">

@@ -59,8 +59,14 @@ export const backendDocumentSchema = z.object({
   current_version: z.union([z.string(), z.number()]).nullable().optional(),
   current_file_path: z.string().nullable().optional(),
   data_classification: z.string().nullable().optional(),
-  created_at: z.string(),
-  summary: z.string()
+  /** v1.10 — ISO 8601 timestamp of creation */
+  created_at: z.string().optional(),
+  /** v1.10 — ISO 8601 timestamp of last modification */
+  updated_at: z.string().optional(),
+  /** v1.10 — document summary/description */
+  summary: z.string().nullable().optional(),
+  /** Publication/release date of the document */
+  published_at: z.string().nullable().optional()
 });
 
 export const backendDocumentListSchema = paginated(backendDocumentSchema);
