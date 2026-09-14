@@ -391,6 +391,33 @@ sont toujours `undefined` → « N/A » à l'écran, cohérent avec le blocage d
 (démo côté Abiaka avant branchement du vrai backend), la date de publication est déjà affichable
 dès aujourd'hui — à garder en tête si la démo à Francis tourne encore en mock au moment voulu.
 
+**✅ Débloqué le 2026-09-13/14 — Thư a livré les 3 dates + le résumé.** Vérifié dans
+`backend/app/models/document.py` (`created_at`, `updated_at` avec `onupdate`, `published_at`,
+`summary` — tous réels côté `Document`) et `procedure.py`/`requirement.py` (`created_at`/
+`updated_at` ajoutés aussi). Le frontend a déjà été adapté en parallèle (contrat v1.10, commit
+`1a88b12` — `documentMetaSchema`/`adapt.ts` mappent les trois champs, `AwaitingBackendBadge` retiré
+de la carte régulation `regulations-view.tsx` et du dashboard).
+
+**✅ Corrigé le 2026-09-14** : `regulation-detail-view.tsx` (l'en-tête de la vue détail) suivait
+`published_at` pour « Created date » et affichait `AwaitingBackendBadge` inconditionnellement pour
+« Last updated ». Corrigé :
+- « Created date » lit maintenant `regulation.created_at` (formaté `formatDateDDMMYYYY`, badge
+  seulement si absent) ;
+- « Last updated » lit `regulation.updated_at ?? <AwaitingBackendBadge .../>` au lieu du badge
+  fixe ;
+- Nouvelle ligne « Publication date » séparée pour `published_at`, plutôt que de la perdre.
+
+**Bug d'environnement trouvé en vérifiant** (sans rapport avec ce fichier, pur outillage local) :
+la base SQLite locale (`.local/backend-dev.sqlite`) n'avait toujours pas les colonnes
+`documents.summary`/`.updated_at`/`.published_at` et `procedures`/`regulatory_requirements`
+`.created_at`/`.updated_at` du modèle backend — `GET /api/documents/:id` cassait avec `no such
+column: documents.summary` (même famille que le point 14 de `docs/backend-integration.md`).
+Corrigé en relançant `./scripts/local-dev/setup-backend.sh` (générique, idempotent, aucun code
+touché). Un `pnpm test` a aussi révélé un test obsolète (`client.test.ts`, sans rapport avec cette
+tâche) qui attendait encore l'ancien comportement `apiFetch` (throw sur non-conformité) — corrigé
+pour refléter la dégradation gracieuse introduite par `1a88b12` (log + retour des champs
+disponibles), sur confirmation de Giang.
+
 ---
 
 ## 5. Ouvrir un document dans un onglet séparé + impression
@@ -553,9 +580,10 @@ explication, validation humaine), déjà proche de la description de Francis. Re
      `regulations-view.tsx` (qui l'avait déjà). Filtre classification : déjà présent uniquement sur
      l'écran « Analyse réglementaire » (pas de barre de filtre équivalente sur le Dashboard,
      structurellement différent — table d'agrégats, pas une liste filtrable).
-   - [ ] Dates création/mise à jour (§4, « 3 dates distinctes ») — Thư a confirmé le 2026-09-14
-     qu'elle va les ajouter (`docs/api-requests.md` #4), pas encore livré : reste sur
-     `AwaitingBackendBadge` en attendant.
+   - [x] Dates création/mise à jour (§4, « 3 dates distinctes ») — livré par Thư (v1.10, commit
+     `1a88b12`) puis rattrapage frontend sur `regulation-detail-view.tsx` fait le 2026-09-14
+     (voir § 4 ci-dessus) : Created/Uploaded/Last updated/Publication affichent maintenant les
+     vraies valeurs, badge uniquement pour `updated_at` quand il manque encore réellement.
    - [ ] Copilot : filtre Bank/EU sur les questions (D9bis, Phase 7) — pas avant que le Copilot
      sorte lui-même du statut placeholder (`docs/known-limitations.md` #11)
 

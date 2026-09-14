@@ -38,16 +38,24 @@ banner at its top) and is no longer the thing to check before calling an endpoin
    "concerning head office"). **Needs an answer from Giang/Francis before Thư builds it** — listed
    here as blocked-on-us, not blocked-on-Thư.
 
-## Confirmed — Thư will add (no criteria needed, just needs building)
+## Shipped by Thư (2026-09-13/14) — verified in `backend/API.md` and the models
 
-4. **Three distinct dates** on documents/procedures: created / uploaded / updated. Today
-   `backend/app/models/document.py` only has `created_at`; `procedure.py` has none at all besides
-   `ProcedureVersion.version_timestamp`. Thư: "để tạo thêm".
-5. **Real publication date** (regulation's official publication date, distinct from the dates
-   above). Thư: "để tạo thêm".
-6. **Summary / excerpt field** per document (short human-readable summary for the Dashboard and
-   document lists — today `GET /api/documents/{id}` has no such field, confirmed against
-   `backend/API.md` and `document.py`). Thư: "để tạo thêm".
+4. **Three distinct dates** — ✅ shipped. `Document` now has `created_at`, `updated_at`
+   (`onupdate`), `published_at`; `Procedure` now has `created_at`/`updated_at`;
+   `RegulatoryRequirement` too. Frontend (`documentMetaSchema`, `adapt.ts`) already maps all three
+   (contract v1.10, commit `1a88b12`).
+5. **Real publication date** — ✅ shipped as `Document.published_at`. Mapped frontend-side.
+6. **Summary / excerpt field** — ✅ shipped as `Document.summary` (`Text`, nullable). Wired into
+   the Dashboard row and `/regulations` cards frontend-side (commits `a540be4`, `4b3e7ea`,
+   `0ccb9af`, `1a88b12`).
+
+   **⚠️ Follow-up bug found while verifying (2026-09-14), not a backend gap — pure frontend
+   staleness**: `regulation-detail-view.tsx` was written before these fields existed and never got
+   updated. Today it labels `published_at` as "Created date" (semantically wrong — that's the
+   regulation's publication date, not when the record was created) and hardcodes
+   `AwaitingBackendBadge` for "Last updated" unconditionally, even though `regulation.updated_at`
+   is now real and populated. Needs a small frontend fix (not a Thư/backend item) — see
+   `docs/phases/phase-6-francis-feedback.md` §4 follow-up.
 
 ## Resolved — already available, no backend change needed
 
