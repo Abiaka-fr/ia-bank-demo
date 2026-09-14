@@ -30,6 +30,7 @@ import {
   fetchRegulation,
   fetchRegulationRequirements,
 } from "@/lib/api/regulations";
+import { formatDateDDMMYYYY } from "@/lib/format-date";
 
 export function RegulationDetailView({ regulationId }: { regulationId: string }) {
   const t = useTranslations("regulations");
@@ -108,20 +109,20 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
         ))}
         <span className="text-muted-foreground">
           {common("effectiveDate")} :{" "}
-          {regulation.effective_date ?? common("notAvailable")}
+          {formatDateDDMMYYYY(regulation.effective_date) ?? common("notAvailable")}
         </span>
         <span className="text-muted-foreground">
           {t("uploadedAtLabel")} :{" "}
-          {regulation.uploaded_at?.slice(0, 10) ?? common("notAvailable")}
+          {formatDateDDMMYYYY(regulation.uploaded_at) ?? common("notAvailable")}
         </span>
         {/* 3 dates distinctes demandées par Francis (Phase 6 § 4) : Uploaded (réel,
-            ci-dessus) / Created / Last updated. `publication_date` existe déjà au
+            ci-dessus) / Created / Last updated. `published_at` existe déjà au
             contrat et dans le corpus mock — badge seulement quand il manque vraiment
             (mode backend réel aujourd'hui), jamais en réutilisant `uploaded_at`. */}
         <span className="flex items-center gap-1.5 text-muted-foreground">
           {t("createdDateLabel")} :{" "}
-          {regulation.publication_date ?? (
-            <AwaitingBackendBadge field="DocumentMeta.publication_date" />
+          {regulation.published_at ?? (
+            <AwaitingBackendBadge field="DocumentMeta.published_at" />
           )}
         </span>
         <span className="flex items-center gap-1.5 text-muted-foreground">

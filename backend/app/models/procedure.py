@@ -20,6 +20,8 @@ class Procedure(Base):
     owner = Column(String)
     status = Column(String)  # ACTIVE, SUPERSEDED, etc.
     current_version = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Indexes
     __table_args__ = (

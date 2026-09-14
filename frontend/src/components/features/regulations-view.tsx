@@ -28,6 +28,7 @@ import {
 import { Link } from "@/i18n/navigation";
 import { fetchPortfolioSummary } from "@/lib/api/dashboard";
 import { queryKeys } from "@/lib/api/query-keys";
+import { formatDateDDMMYYYY } from "@/lib/format-date";
 import {
   fetchRegulations,
   updateRegulationAssignee,
@@ -81,6 +82,7 @@ export function RegulationsView() {
   const visibleRegulations = useMemo(() => {
     const query = search.trim().toLowerCase();
     const filtered = (regulationsQuery.data ?? []).filter((reg) => {
+      console.log("reg", reg)
       const matchesSearch =
         query === "" ||
         reg.title.toLowerCase().includes(query) ||
@@ -221,7 +223,7 @@ export function RegulationsView() {
                   « en attente » plutôt qu'un texte inventé ou un silence total. */}
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span>{t("summaryLabel")} :</span>
-                <AwaitingBackendBadge field="DocumentMeta.summary" />
+                <dd>{regulation.summary}</dd>
               </div>
 
               <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -233,7 +235,7 @@ export function RegulationsView() {
                   <dt className="text-xs text-muted-foreground">
                     {common("effectiveDate")}
                   </dt>
-                  <dd>{regulation.effective_date ?? common("notAvailable")}</dd>
+                  <dd>{formatDateDDMMYYYY(regulation.published_at) ?? common("notAvailable")}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">
@@ -245,31 +247,20 @@ export function RegulationsView() {
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">
-                    {t("uploadedAtLabel")}
-                  </dt>
-                  <dd>{regulation.uploaded_at?.slice(0, 10) ?? common("notAvailable")}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">
                     {t("createdDateLabel")}
                   </dt>
-                  {/* `publication_date` existe déjà au contrat et dans le corpus mock —
+                  {/* `published_at` existe déjà au contrat et dans le corpus mock —
                       réel dès que disponible, badge seulement s'il manque vraiment
                       (mode backend réel aujourd'hui). Jamais réutiliser `uploaded_at`
                       sous ce libellé : ce sont deux dates distinctes pour Francis. */}
-                  <dd>
-                    {regulation.publication_date ?? (
-                      <AwaitingBackendBadge field="DocumentMeta.publication_date" />
-                    )}
-                  </dd>
+                    <dd>{formatDateDDMMYYYY(regulation.created_at) ?? common("notAvailable")}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">
                     {t("lastUpdatedLabel")}
                   </dt>
-                  <dd>
-                    <AwaitingBackendBadge field="DocumentMeta.updated_at" />
-                  </dd>
+                  {/* v1.10 — `updated_at` timestamp now available from backend */}
+                  <dd>{formatDateDDMMYYYY(regulation.updated_at) ?? common("notAvailable")}</dd>
                 </div>
               </dl>
 

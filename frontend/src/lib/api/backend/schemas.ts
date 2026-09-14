@@ -42,24 +42,34 @@ export const backendTokenSchema = z.object({
   user: backendUserSchema,
 });
 
-export const backendDocumentSchema = z.object({
-  document_id: z.string(),
-  title: z.string(),
-  category: z.string().nullable().optional(),
-  document_type: z.string().nullable().optional(),
-  origin_code: z.string().nullable().optional(),
-  origin_name: z.string().nullable().optional(),
-  /** Chaîne unique côté backend, tableau côté contrat — voir `adapt.ts`. */
-  domain: z.string().nullable().optional(),
-  language: z.string().nullable().optional(),
-  // Vu en base : parfois un nombre (`3.0`) plutôt qu'une chaîne — Thư a élargi son
-  // propre schéma Pydantic le 2026-09-09 (`Fix API get documents`) après l'avoir
-  // rencontré. Même élargissement ici, pas un assouplissement de notre cru.
-  current_version: z.union([z.string(), z.number()]).nullable().optional(),
-  current_file_path: z.string().nullable().optional(),
-  data_classification: z.string().nullable().optional(),
-  created_at: z.string(),
-});
+export const backendDocumentSchema = z
+  .object({
+    document_id: z.string(),
+    title: z.string(),
+    category: z.string().nullable().optional(),
+    document_type: z.string().nullable().optional(),
+    origin_code: z.string().nullable().optional(),
+    origin_name: z.string().nullable().optional(),
+    /** Chaîne unique côté backend, tableau côté contrat — voir `adapt.ts`. */
+    domain: z.string().nullable().optional(),
+    language: z.string().nullable().optional(),
+    // Vu en base : parfois un nombre (`3.0`) plutôt qu'une chaîne — Thư a élargi son
+    // propre schéma Pydantic le 2026-09-09 (`Fix API get documents`) après l'avoir
+    // rencontré. Même élargissement ici, pas un assouplissement de notre cru.
+    current_version: z.union([z.string(), z.number()]).nullable().optional(),
+    current_file_path: z.string().nullable().optional(),
+    data_classification: z.string().nullable().optional(),
+    /** v1.10 — ISO 8601 timestamp of creation */
+    created_at: z.string().nullable().optional(),
+    /** v1.10 — ISO 8601 timestamp of last modification */
+    updated_at: z.string().nullable().optional(),
+    /** v1.10 — document summary/description */
+    summary: z.string().nullable().optional(),
+    /** Publication/release date of the document */
+    published_at: z.string().nullable().optional(),
+  })
+  // Allow extra fields from backend (graceful degradation for API evolution)
+  .passthrough();
 
 export const backendDocumentListSchema = paginated(backendDocumentSchema);
 
@@ -92,21 +102,24 @@ export const backendDocumentContentSchema = z.object({
   total_chunks: z.number(),
 });
 
-export const backendRequirementSchema = z.object({
-  requirement_id: z.string(),
-  source_document_id: z.string(),
-  title: z.string().nullable().optional(),
-  // Ajoutés par Thư le 2026-09-10 (`be74658`, « Add requirement and title in French »),
-  // absents sur les exigences plus anciennes — voir `docs/api-contract.md` v1.9.
-  title_lang_fr: z.string().nullable().optional(),
-  domain: z.string().nullable().optional(),
-  language: z.string().nullable().optional(),
-  requirement_text: z.string().nullable().optional(),
-  requirement_text_lang_fr: z.string().nullable().optional(),
-  risk_level: z.string().nullable().optional(),
-  source_reference: z.string().nullable().optional(),
-  status: z.string().nullable().optional(),
-});
+export const backendRequirementSchema = z
+  .object({
+    requirement_id: z.string(),
+    source_document_id: z.string(),
+    title: z.string().nullable().optional(),
+    // Ajoutés par Thư le 2026-09-10 (`be74658`, « Add requirement and title in French »),
+    // absents sur les exigences plus anciennes — voir `docs/api-contract.md` v1.9.
+    title_lang_fr: z.string().nullable().optional(),
+    domain: z.string().nullable().optional(),
+    language: z.string().nullable().optional(),
+    requirement_text: z.string().nullable().optional(),
+    requirement_text_lang_fr: z.string().nullable().optional(),
+    risk_level: z.string().nullable().optional(),
+    source_reference: z.string().nullable().optional(),
+    status: z.string().nullable().optional(),
+  })
+  // Allow extra fields from backend (graceful degradation for API evolution)
+  .passthrough();
 
 export const backendRequirementListSchema = paginated(
   backendRequirementSchema,

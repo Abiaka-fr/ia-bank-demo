@@ -7,6 +7,8 @@ const base = {
   source_document_id: ACPR_REGULATION_ID,
   effective_date: "2026-04-01",
   language: "FR",
+  created_at: "2026-01-14T10:00:00.000Z",
+  updated_at: "2026-01-14T10:00:00.000Z",
 } as const;
 
 export const requirements: readonly Requirement[] = [

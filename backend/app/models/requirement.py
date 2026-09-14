@@ -1,6 +1,8 @@
 """Regulatory requirement models."""
 
-from sqlalchemy import Column, String, Text, ForeignKey, Index
+from datetime import datetime
+
+from sqlalchemy import Column, String, Text, ForeignKey, Index, DateTime
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -22,6 +24,8 @@ class RegulatoryRequirement(Base):
     risk_level = Column(String)  # LOW, MEDIUM, HIGH
     source_reference = Column(String)  # e.g., Article 5, Section 2.1
     status = Column(String)  # ACTIVE, SUPERSEDED, etc.
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Indexes
     __table_args__ = (

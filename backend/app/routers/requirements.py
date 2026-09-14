@@ -12,6 +12,57 @@ from app.schemas.requirement import RegulatoryRequirementRead, RequirementsListR
 router = APIRouter(prefix="/api/requirements", tags=["requirements"])
 
 
+@router.get("", response_model=RequirementsListResponse)
+def list_all_requirements(
+    domain: str | None = Query(None, description="Filter by domain (e.g., AML/CFT, KYC)"),
+    risk_level: str | None = Query(None, description="Filter by risk level (LOW, MEDIUM, HIGH)"),
+    language: str | None = Query(None, description="Filter by language (EN, FR)"),
+    status: str | None = Query(None, description="Filter by status (ACTIVE, SUPERSEDED)"),
+    limit: int = Query(50, ge=1, le=200, description="Max results per page"),
+    offset: int = Query(0, ge=0, description="Number of results to skip"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> RequirementsListResponse:
+    """
+    Get all regulatory requirements with optional filtering.
+
+    **Query Parameters:**
+    - `domain` (optional): Filter by domain (e.g., AML/CFT, KYC, DATA_PROTECTION)
+    - `risk_level` (optional): Filter by risk level (LOW, MEDIUM, HIGH)
+    - `language` (optional): Filter by language (EN, FR)
+    - `status` (optional): Filter by status (ACTIVE, SUPERSEDED)
+    - `limit`: Max results to return (default 50, max 200)
+    - `offset`: Number of results to skip for pagination (default 0)
+
+    **Example URLs:**
+    - `/api/requirements`
+    - `/api/requirements?risk_level=HIGH&limit=100`
+    - `/api/requirements?domain=AML/CFT&language=FR`
+    - `/api/requirements?status=ACTIVE&limit=50`
+    """
+    query = db.query(RegulatoryRequirement)
+
+    if domain:
+        query = query.filter(RegulatoryRequirement.domain == domain)
+    if risk_level:
+        query = query.filter(RegulatoryRequirement.risk_level == risk_level)
+    if language:
+        query = query.filter(RegulatoryRequirement.language == language)
+    if status:
+        query = query.filter(RegulatoryRequirement.status == status)
+
+    total = query.count()
+    items = query.offset(offset).limit(limit).all()
+
+    return RequirementsListResponse(
+        total=total,
+        items=[RegulatoryRequirementRead.model_validate(req) for req in items],
+        limit=limit,
+        offset=offset,
+        document_ids_queried=[],
+    )
+
+
 @router.get("/by-documents", response_model=RequirementsListResponse)
 def list_requirements_by_documents(
     document_ids: list[str] = Query(..., description="List of source document IDs to filter by"),

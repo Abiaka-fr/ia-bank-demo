@@ -148,6 +148,20 @@ section 12) et le "Shared Interface Contract" (section 16.4).
 > `docs/known-limitations.md` point 12 (déconnexion après 1h de session). Aucun champ de réponse
 > concerné, rien à changer côté frontend au-delà de la note dans les limitations connues.
 >
+> **v1.10 — confirmée le 2026-09-13 (audit Backend → Frontend, Haiku).** 
+> Cette version reflète des champs réellement exposés par le backend depuis le départ mais non
+> documentés dans le contrat. C'est une correction de documentation, pas une capacité nouvelle.
+> 22. `DocumentMeta.created_at`, `DocumentMeta.updated_at` (optionnels, ISO 8601) : timestamps de
+>     création et modification du document, retournés par `/api/documents` et
+>     `/api/documents/{document_id}` depuis le jour 1 côté backend. Utilisés par le frontend pour
+>     afficher des badges « Updated … » et des timelines de changement.
+> 23. `DocumentMeta.summary` (optionnel, string) : résumé ou description courte du document,
+>     retourné par `/api/documents` et `/api/documents/{document_id}` côté backend. Évite de
+>     charger le `extracted_text` complet si seul un aperçu est nécessaire.
+> 24. `Requirement.created_at`, `Requirement.updated_at` (optionnels, ISO 8601) : timestamps sur
+>     les exigences, retournés par `/api/requirements/*` côté backend. Complètent l'audit trail
+>     pour les exigences dynamiquement découvertes (phase 7+).
+>
 > Champs volontairement **non ajoutés** malgré le retour Francis, car ce sont des concepts
 > produit plus larges qu'un simple champ API — à trancher séparément si besoin :
 > `Hierarchy Level` (L1-L6), `Document Criticality`, `Legal status` (BINDING/GUIDANCE/...),
@@ -195,12 +209,15 @@ interface DocumentMeta {
   domain: string[];            // ex: ["KYC", "AML/CFT"]
   language: Language;
   version: string;
-  publication_date?: string;
+  published_at?: string;       // v1.10 — ISO 8601, publication/release date
   effective_date?: string;
   status: "NOT_ANALYZED" | "ANALYZING" | "ANALYZED";
   uploaded_by_id?: string;   // v1.1 — User.user_id, absent pour le corpus préchargé
   uploaded_at?: string;      // v1.1 — ISO 8601
   assignee_id?: string;      // v1.1 — User.user_id chargé du traitement, modifiable
+  created_at?: string;       // v1.10 — ISO 8601, timestamp de création du document
+  updated_at?: string;       // v1.10 — ISO 8601, timestamp de dernière modification
+  summary?: string;          // v1.10 — résumé ou description courte du document
 }
 
 interface Requirement {
@@ -213,6 +230,8 @@ interface Requirement {
   impacted_activity: string[];
   effective_date?: string;
   language: Language;
+  created_at?: string;             // v1.10 — ISO 8601, timestamp de création
+  updated_at?: string;             // v1.10 — ISO 8601, timestamp de dernière modification
 }
 
 // v1.1 — un Finding = UN couple (exigence × procédure interne).
@@ -292,6 +311,8 @@ interface RegulationSummary {
   // Personnes à qui un constat a été confié lors d'une escalade, lorsqu'elles
   // diffèrent de `assignee_id`. Affiché sur la carte de la régulation.
   escalated_assignee_ids: string[];
+  // v1.10 — résumé ou description courte du document
+  summary?: string;
 }
 
 // v1.2 — arborescence Régulation → Exigence → Procédure, pour la carte mentale

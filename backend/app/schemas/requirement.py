@@ -1,5 +1,7 @@
 """Pydantic schemas for regulatory requirements."""
 
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -17,6 +19,8 @@ class RegulatoryRequirementRead(BaseModel):
     risk_level: str | None = None
     source_reference: str | None = None
     status: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     class Config:
         from_attributes = True

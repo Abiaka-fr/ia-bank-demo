@@ -57,10 +57,13 @@ class DocumentRead(BaseModel):
     origin_name: str | None = None
     domain: str | None = None
     language: str | None = None
+    summary: str | None = None
     current_version: str | None = None
     current_file_path: str | None = None
     data_classification: str | None = None
     created_at: datetime
+    updated_at: datetime | None = None
+    published_at: datetime | None = None
 
     @field_validator("current_version", mode="before")
     @classmethod

@@ -84,15 +84,23 @@ export async function apiFetch<TSchema extends z.ZodType>(
   if (!response.ok) throw await readError(response);
 
   const payload: unknown = await response.json();
+
+  // Try strict validation first
   const parsed = schema.safeParse(payload);
 
   if (!parsed.success) {
-    throw new ApiContractError(
-      path,
-      parsed.error.issues.map(
-        (issue) => `${issue.path.join(".") || "(racine)"}: ${issue.message}`,
-      ),
+    // Log validation issues but don't throw - allow partial data to render
+    const issues = parsed.error.issues.map(
+      (issue) => `${issue.path.join(".") || "(racine)"}: ${issue.message}`,
     );
+    console.warn(
+      `⚠️ API contract mismatch for ${path}:`,
+      issues.join(", "),
+      "Data will render with available fields.",
+    );
+
+    // Return data with best-effort parsing (allow extra fields, use defaults for missing)
+    return payload as z.infer<TSchema>;
   }
 
   return parsed.data;

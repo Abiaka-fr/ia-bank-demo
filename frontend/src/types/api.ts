@@ -55,79 +55,98 @@ export const evidenceRefSchema = z.object({
   language: languageSchema,
 });
 
-export const documentMetaSchema = z.object({
-  document_id: z.string(),
-  title: z.string(),
-  document_type: documentTypeSchema,
-  authority_or_owner: z.string(),
-  domain: z.array(z.string()),
-  language: languageSchema,
-  version: z.string(),
-  publication_date: z.string().optional(),
-  effective_date: z.string().optional(),
-  status: documentStatusSchema,
-  uploaded_by_id: z.string().optional(),
-  uploaded_at: z.string().optional(),
-  assignee_id: z.string().optional(),
-});
+export const documentMetaSchema = z
+  .object({
+    document_id: z.string(),
+    title: z.string(),
+    document_type: documentTypeSchema,
+    authority_or_owner: z.string(),
+    domain: z.array(z.string()),
+    language: languageSchema,
+    version: z.string(),
+    published_at: z.string().optional(),
+    effective_date: z.string().optional(),
+    status: documentStatusSchema,
+    uploaded_by_id: z.string().optional(),
+    uploaded_at: z.string().optional(),
+    assignee_id: z.string().optional(),
+    /** v1.10 — ISO 8601 timestamp de création du document. */
+    created_at: z.string().optional(),
+    /** v1.10 — ISO 8601 timestamp de dernière modification. */
+    updated_at: z.string().optional(),
+    /** v1.10 — résumé ou description courte du document. */
+    summary: z.string().optional(),
+  })
+  // Allow extra fields from backend (graceful degradation for API evolution)
+  .passthrough();
 
 export const documentDetailSchema = documentMetaSchema.extend({
   extracted_text: z.string(),
 });
 
-export const requirementSchema = z.object({
-  requirement_id: z.string(),
-  source_document_id: z.string(),
-  source_reference: z.string(),
-  source_text: z.string(),
-  normalized_requirement: z.string(),
-  domain: z.array(z.string()),
-  impacted_activity: z.array(z.string()),
-  effective_date: z.string().optional(),
-  language: languageSchema,
-  /**
-   * v1.9 — variantes françaises, quand le backend les fournit (`title_lang_fr`/
-   * `requirement_text_lang_fr`, ajoutés par Thư le 2026-09-10, commit `be74658`).
-   * Même convention que `Finding.explanation_fr`/`recommended_action_fr` (v1.6) :
-   * `normalized_requirement`/`source_text` restent la langue d'origine du corpus,
-   * l'écran choisit la variante à afficher selon la langue de l'interface (voir
-   * `lib/localized-text.ts`). Absentes en mode mock, où le corpus de démo est déjà
-   * rédigé en français.
-   */
-  normalized_requirement_fr: z.string().optional(),
-  source_text_fr: z.string().optional(),
-});
+export const requirementSchema = z
+  .object({
+    requirement_id: z.string(),
+    source_document_id: z.string(),
+    source_reference: z.string(),
+    source_text: z.string(),
+    normalized_requirement: z.string(),
+    domain: z.array(z.string()),
+    impacted_activity: z.array(z.string()),
+    effective_date: z.string().optional(),
+    language: languageSchema,
+    /**
+     * v1.9 — variantes françaises, quand le backend les fournit (`title_lang_fr`/
+     * `requirement_text_lang_fr`, ajoutés par Thư le 2026-09-10, commit `be74658`).
+     * Même convention que `Finding.explanation_fr`/`recommended_action_fr` (v1.6) :
+     * `normalized_requirement`/`source_text` restent la langue d'origine du corpus,
+     * l'écran choisit la variante à afficher selon la langue de l'interface (voir
+     * `lib/localized-text.ts`). Absentes en mode mock, où le corpus de démo est déjà
+     * rédigé en français.
+     */
+    normalized_requirement_fr: z.string().optional(),
+    source_text_fr: z.string().optional(),
+    /** v1.10 — ISO 8601 timestamp de création de l'exigence. */
+    created_at: z.string().optional(),
+    /** v1.10 — ISO 8601 timestamp de dernière modification. */
+    updated_at: z.string().optional(),
+  })
+  // Allow extra fields from backend (graceful degradation for API evolution)
+  .passthrough();
 
-export const findingSchema = z.object({
-  finding_id: z.string(),
-  requirement_id: z.string(),
-  // v1.1 : un constat porte UNE procédure (ou aucune), pas une liste.
-  procedure_id: z.string().nullable(),
-  assessment: assessmentSchema,
-  regulatory_evidence: z.array(evidenceRefSchema),
-  internal_evidence: z.array(evidenceRefSchema),
-  explanation: z.string(),
-  missing_or_ambiguous_elements: z.array(z.string()),
-  recommended_action: z.string(),
-  /**
-   * v1.6 — variantes françaises, quand le backend les fournit (`explanation_lang_fr`/
-   * `recommended_action_lang_fr`, ajoutés le 2026-09-09). `explanation`/
-   * `recommended_action` restent la langue d'origine du corpus (souvent l'anglais en
-   * mode backend réel) ; l'écran choisit laquelle afficher selon la langue de
-   * l'interface — voir `lib/localized-text.ts`. Absentes en mode mock, où le corpus de
-   * démo est déjà rédigé en français.
-   */
-  explanation_fr: z.string().optional(),
-  recommended_action_fr: z.string().optional(),
-  /** Action retenue par le relecteur ; vide = `recommended_action` fait foi. */
-  custom_action: z.string().optional(),
-  priority: prioritySchema,
-  confidence_or_evidence_strength: z.number().min(0).max(1).optional(),
-  human_status: humanStatusSchema,
-  assignee_id: z.string().optional(),
-  reviewer_comment: z.string().optional(),
-  updated_at: z.string(),
-});
+export const findingSchema = z
+  .object({
+    finding_id: z.string(),
+    requirement_id: z.string(),
+    // v1.1 : un constat porte UNE procédure (ou aucune), pas une liste.
+    procedure_id: z.string().nullable(),
+    assessment: assessmentSchema,
+    regulatory_evidence: z.array(evidenceRefSchema),
+    internal_evidence: z.array(evidenceRefSchema),
+    explanation: z.string(),
+    missing_or_ambiguous_elements: z.array(z.string()),
+    recommended_action: z.string(),
+    /**
+     * v1.6 — variantes françaises, quand le backend les fournit (`explanation_lang_fr`/
+     * `recommended_action_lang_fr`, ajoutés le 2026-09-09). `explanation`/
+     * `recommended_action` restent la langue d'origine du corpus (souvent l'anglais en
+     * mode backend réel) ; l'écran choisit laquelle afficher selon la langue de
+     * l'interface — voir `lib/localized-text.ts`. Absentes en mode mock, où le corpus de
+     * démo est déjà rédigé en français.
+     */
+    explanation_fr: z.string().optional(),
+    recommended_action_fr: z.string().optional(),
+    /** Action retenue par le relecteur ; vide = `recommended_action` fait foi. */
+    custom_action: z.string().optional(),
+    priority: prioritySchema,
+    confidence_or_evidence_strength: z.number().min(0).max(1).optional(),
+    human_status: humanStatusSchema,
+    assignee_id: z.string().optional(),
+    reviewer_comment: z.string().optional(),
+    updated_at: z.string(),
+  })
+  // Allow extra fields from backend (graceful degradation for API evolution)
+  .passthrough();
 
 export const dashboardSummarySchema = z.object({
   requirements_identified: z.number(),
@@ -147,23 +166,28 @@ export const dashboardSummarySchema = z.object({
 });
 
 /** v1.1 — agrégats d'une régulation, utilisés aussi par les cartes de la liste. */
-export const regulationSummarySchema = z.object({
-  regulation_id: z.string(),
-  title: z.string(),
-  status: documentStatusSchema,
-  assignee_id: z.string().optional(),
-  requirements_identified: z.number(),
-  potential_gaps: z.number(),
-  expert_reviews_required: z.number(),
-  actions_pending: z.number(),
-  actions_total: z.number(),
-  /** Répartition des constats par décision humaine (progression du traitement). */
-  by_human_status: z.array(
-    z.object({ human_status: humanStatusSchema, count: z.number() }),
-  ),
-  /** Assignés par escalade, quand ils diffèrent de `assignee_id`. */
-  escalated_assignee_ids: z.array(z.string()),
-});
+export const regulationSummarySchema = z
+  .object({
+    regulation_id: z.string(),
+    title: z.string(),
+    status: documentStatusSchema,
+    assignee_id: z.string().optional(),
+    requirements_identified: z.number(),
+    potential_gaps: z.number(),
+    expert_reviews_required: z.number(),
+    actions_pending: z.number(),
+    actions_total: z.number(),
+    /** Répartition des constats par décision humaine (progression du traitement). */
+    by_human_status: z.array(
+      z.object({ human_status: humanStatusSchema, count: z.number() }),
+    ),
+    /** Assignés par escalade, quand ils diffèrent de `assignee_id`. */
+    escalated_assignee_ids: z.array(z.string()),
+    /** v1.10 — résumé ou description courte du document. */
+    summary: z.string().optional(),
+  })
+  // Allow extra fields from backend (graceful degradation for API evolution)
+  .passthrough();
 
 /** v1.2 — arborescence Régulation → Exigence → Procédure (carte mentale). */
 export const regulationMapProcedureSchema = z.object({
