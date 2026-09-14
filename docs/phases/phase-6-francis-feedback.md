@@ -202,6 +202,21 @@ suite avec le badge « en attente »**, Thư verra directement dans l'app quel c
 plutôt que d'attendre une liste séparée — il complètera à son rythme, sans que ça bloque le
 frontend.
 
+**Réponse de Thư (2026-09-14)** — confirmée point par point (voir `docs/api-requests.md` pour le
+détail complet et le suivi) :
+- Résumé, dates (3 distinctes) et classification : **elle va les ajouter** (« để tạo thêm ») —
+  aucune n'existe encore aujourd'hui, vérifié dans `backend/app/models/document.py` /
+  `procedure.py` (seul `created_at` existe sur `Document`, rien sur `Procedure`). Le badge
+  `AwaitingBackendBadge` reste donc en place jusqu'à ce qu'elle livre.
+- **Sauf classification : elle demande sur quel critère classer** (« phân loại dựa trên tiêu chuẩn
+  gì? ») — question ouverte qui remonte à Giang/Francis, pas quelque chose que le frontend peut
+  trancher seul (aucune taxonomie n'a jamais été donnée, juste les exemples oraux de Francis
+  « concerning customer » / « concerning head office »). Voir `docs/api-requests.md` #3.
+- Elle a aussi tranché la convention de contrat d'API : `backend/API.md` (ce qu'elle expose
+  réellement) devient la seule référence pour appeler un endpoint, et `docs/api-requests.md`
+  (nouveau, en anglais) la liste de ce qui manque — `docs/api-contract.md` est gelé (historique
+  uniquement). Voir `CLAUDE.md` § 0.3/§2 et le bandeau en tête de `docs/api-contract.md`.
+
 ---
 
 ### 2.1 Carte des impacts (mindmap) — Francis l'a mentionné, pas encore traité
@@ -504,7 +519,17 @@ plusieurs items précédemment traités séparément** (voir détail complet en 
      ici plutôt que sur la seule modale.
    - Sélecteur de scope Bank KB / Bank + European Regulatory Sources (= D1 de
      `docs/phases/phase-7-european-search.md`, **ne pas le refaire séparément dans la Phase 7**).
-   - Bouton d'analyse appelant `POST /api/procedures/:id/analyze` (contrat v1.7).
+   - Bouton d'analyse appelant `POST /api/procedures/:id/analyze` (contrat v1.7) — **⚠️ mis à jour
+     2026-09-14 : cet endpoint n'existe pas côté backend réel** (recherche exhaustive dans
+     `backend/API.md`, zéro résultat pour « analyz »). Reste sur MSW/mock pour l'instant, badge ou
+     mention explicite dans l'UI que l'analyse est simulée. Voir `docs/api-requests.md` #2 pour la
+     question ouverte posée à Thư (analyse toujours précalculée en batch, lisible seulement via
+     `GET /api/mappings/all?procedure_id=...`, ou vrai endpoint à venir sous un autre nom ?).
+   - Liste/détail/contenu d'une procédure : utiliser les **vrais** endpoints confirmés
+     (2026-09-14) — `GET /api/documents?document_type=PROCEDURE`, `GET /api/documents/{id}`,
+     `GET /api/documents/content/{version_id}` — à la place de `GET /api/procedures`,
+     `GET /api/procedures/:id` (contrat v1.6/v1.8, jamais implémentés côté backend). Voir
+     `docs/api-requests.md` #8.
    - **C'est aussi exactement le « Jour 0 » de la Phase 7** — construire ceci une seule fois sert
      les deux besoins (le screen que Francis demande + le prérequis technique déjà identifié).
 
@@ -528,7 +553,9 @@ explication, validation humaine), déjà proche de la description de Francis. Re
      `regulations-view.tsx` (qui l'avait déjà). Filtre classification : déjà présent uniquement sur
      l'écran « Analyse réglementaire » (pas de barre de filtre équivalente sur le Dashboard,
      structurellement différent — table d'agrégats, pas une liste filtrable).
-   - [ ] Dates création/mise à jour (§4, « 3 dates distinctes ») — clarification Thư d'abord
+   - [ ] Dates création/mise à jour (§4, « 3 dates distinctes ») — Thư a confirmé le 2026-09-14
+     qu'elle va les ajouter (`docs/api-requests.md` #4), pas encore livré : reste sur
+     `AwaitingBackendBadge` en attendant.
    - [ ] Copilot : filtre Bank/EU sur les questions (D9bis, Phase 7) — pas avant que le Copilot
      sorte lui-même du statut placeholder (`docs/known-limitations.md` #11)
 

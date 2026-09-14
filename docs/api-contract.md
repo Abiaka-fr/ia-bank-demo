@@ -1,9 +1,26 @@
 # Contrat d'API — Frontend ↔ Backend
 
-**Source de vérité partagée entre `frontend/` (Giang) et `backend/` (Thư).** Toute modification doit
-être décidée d'un commun accord et reportée dans `PROGRESS.md`. Le frontend construit son client
-API et ses données mockées à partir de ce fichier — ne jamais halluciner un champ ou un endpoint qui
-n'y figure pas.
+> ## ⚠️ GELÉ — 2026-09-14, remplacé par le duo `backend/API.md` + `docs/api-requests.md`
+>
+> **Ce fichier n'est plus la source de vérité.** Retour de Thư après lecture (2026-09-14) :
+> écrit en français (elle veut de l'anglais), et les structures de réponse (notamment
+> `AnalyzeProcedureResponse`) n'y sont pas assez précises pour coder dessus. Nouvelle convention,
+> décidée d'un commun accord :
+>
+> 1. **`backend/API.md`** (maintenu par Thư, lecture seule pour le frontend) — ce que le backend
+>    expose réellement, avec la vraie forme de requête/réponse. C'est la seule chose à vérifier
+>    avant d'appeler un endpoint.
+> 2. **`docs/api-requests.md`** (en anglais, tenu par le frontend) — tout ce dont le frontend a
+>    besoin et qui manque dans `backend/API.md`. Thư y pioche à son rythme.
+>
+> Ce fichier reste en place pour **l'historique** des versions v1.1 → v1.8 (ce qui a été demandé et
+> pourquoi) — ne plus y ajouter de nouvelle proposition, ni s'y fier pour la forme exacte d'un
+> endpoint réel. Voir aussi `CLAUDE.md` § 0.3 et § 2.
+
+
+*Ancienne description (historique, ne s'applique plus depuis le 2026-09-14 — voir le bandeau
+ci-dessus) : "Source de vérité partagée entre frontend et backend, contrat figé d'un commun
+accord."*
 
 Basé sur le data model de la brief projet (`Abiaka_Regulatory_AI_POC_Full_Project_Guide_EN.docx`,
 section 12) et le "Shared Interface Contract" (section 16.4).

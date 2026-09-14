@@ -2,6 +2,31 @@
 
 > Toute session doit lire ce fichier en premier et le mettre à jour avant de terminer.
 
+## Mise à jour 2026-09-14 — réponse de Thư, nouvelle convention de contrat d'API
+
+Thư a répondu au point complet des besoins remonté par Giang (voir `docs/api-requests.md`, nouveau
+fichier). Décisions actées :
+- **Nouvelle source de vérité** : `backend/API.md` (ce qui existe réellement, tenu par Thư) +
+  `docs/api-requests.md` (ce qui manque, en anglais, tenu par le frontend). `docs/api-contract.md`
+  est **gelé** (historique v1.1→v1.8 uniquement) — voir bandeau en tête de ce fichier et
+  `CLAUDE.md` § 0.3/§2.
+- Confirmé réel : `GET /api/documents?document_type=PROCEDURE`, `GET /api/documents/{id}`,
+  `GET /api/documents/content/{version_id}` → à utiliser pour les procédures à la place des routes
+  inventées `/api/procedures/*` (`lib/api/procedures.ts` à corriger).
+- Confirmé réel : `GET /api/mappings/all` renvoie déjà `explanation`/`recommended_action` — pas
+  besoin d'un nouveau champ pour le "pourquoi obligatoire".
+- **⚠️ Gap découvert (pas encore signalé à Thư avant ce round) : aucun endpoint réel pour déclencher
+  une analyse** (`POST /api/procedures/:id/analyze`, contrat v1.7/v1.8) — recherche exhaustive dans
+  `backend/API.md`, zéro résultat. Reste sur MSW/mock. Question ouverte posée à Thư dans
+  `docs/api-requests.md` #2.
+- Thư va ajouter : 3 dates distinctes, date de publication réelle, résumé — pas encore livré,
+  `AwaitingBackendBadge` reste en place.
+- **Question ouverte pour Giang/Francis** (pas pour Thư) : sur quel critère classer les documents ?
+  Aucune taxonomie n'a jamais été donnée (`docs/api-requests.md` #3).
+- Docs mis à jour en conséquence : `docs/api-contract.md` (bandeau gel), `docs/api-requests.md`
+  (nouveau), `CLAUDE.md` (§0.3, §2, §3 règle 2, §4), `docs/phases/phase-6-francis-feedback.md` §2,
+  `docs/phases/phase-7-european-search.md` (nouvelle section après Jour 0).
+
 ## Phase actuelle
 
 **Phase 1 — Fondations** : terminée le 2026-09-04.
