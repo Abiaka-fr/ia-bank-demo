@@ -1,0 +1,115 @@
+import {
+  euDocumentTypeSchema,
+  type EuDocumentType,
+  type EuSearchParams,
+  type EuSearchResponse,
+  type EuSearchResult,
+  type EuSubject,
+} from "@/types/api";
+
+/**
+ * Construction de la requête SPARQL CELLAR et lecture de sa réponse — fonctions pures,
+ * testées sans réseau. Aucune valeur saisie n'est interpolée brute : types, thèmes et
+ * langues passent par des listes blanches, le mot-clé est réduit à des lettres/chiffres.
+ */
+
+export const EU_PAGE_SIZE = 20;
+
+const RESOURCE_TYPE_PREFIX = "http://publications.europa.eu/resource/authority/resource-type/";
+const LANGUAGE_PREFIX = "http://publications.europa.eu/resource/authority/language/";
+const MAX_KEYWORD_WORDS = 8;
+
+const TYPES_BY_FILTER: Record<EuSearchParams["type"], EuDocumentType[]> = {
+  REG_DIR: ["REG", "DIR"],
+  REG: ["REG"],
+  DIR: ["DIR"],
+  DEC: ["DEC"],
+  RECO: ["RECO"],
+};
+
+const LANGUAGE_CODES: Record<EuSearchParams["lang"], string> = { fr: "FRA", en: "ENG" };
+
+/** IRI EuroVoc vérifiées dans CELLAR le 2026-09-15 (voir le spec, § 3). */
+export const EUROVOC_SUBJECT_IRIS: Record<EuSubject, string> = {
+  "money-laundering": "http://eurovoc.europa.eu/5465",
+  "banking-supervision": "http://eurovoc.europa.eu/3251",
+  "financial-services": "http://eurovoc.europa.eu/8469",
+  "risk-management": "http://eurovoc.europa.eu/c_406ad4cc",
+  outsourcing: "http://eurovoc.europa.eu/6913",
+  "consumer-protection": "http://eurovoc.europa.eu/2836",
+  "information-security": "http://eurovoc.europa.eu/c_04ae3ba8",
+  payment: "http://eurovoc.europa.eu/2216",
+};
+
+/** Mot-clé → expression `bif:contains` (`'w1' AND 'w2'`), ou `null` s'il ne reste aucun mot. */
+export function toBifContainsExpression(q: string | undefined): string | null {
+  const words = (q ?? "").match(/[\p{L}\p{N}]+/gu)?.slice(0, MAX_KEYWORD_WORDS) ?? [];
+  return words.length ? words.map((word) => `'${word}'`).join(" AND ") : null;
+}
+
+export function buildEuSearchQuery(params: EuSearchParams): string {
+  const types = TYPES_BY_FILTER[params.type]
+    .map((type) => `<${RESOURCE_TYPE_PREFIX}${type}>`)
+    .join(", ");
+  const language = `<${LANGUAGE_PREFIX}${LANGUAGE_CODES[params.lang]}>`;
+  const keyword = toBifContainsExpression(params.q);
+  const selectedTitle = `?eSel cdm:expression_belongs_to_work ?work ; cdm:expression_uses_language ${language} ; cdm:expression_title ?tSel .`;
+
+  const lines = [
+    "PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>",
+    "SELECT DISTINCT ?celex ?date ?type ?inForce (COALESCE(?tSel, ?tEng) AS ?title) WHERE {",
+    "  ?work cdm:resource_legal_id_celex ?celex ; cdm:work_date_document ?date ; cdm:work_has_resource-type ?type .",
+    `  FILTER(?type IN (${types}))`,
+    params.inForce === "true"
+      ? '  ?work cdm:resource_legal_in-force ?inForce . FILTER(?inForce = "true"^^xsd:boolean)'
+      : "  OPTIONAL { ?work cdm:resource_legal_in-force ?inForce }",
+    params.subject
+      ? `  ?work cdm:work_is_about_concept_eurovoc <${EUROVOC_SUBJECT_IRIS[params.subject]}> .`
+      : null,
+    params.from !== undefined ? `  FILTER(?date >= "${params.from}-01-01"^^xsd:date)` : null,
+    params.to !== undefined ? `  FILTER(?date < "${params.to + 1}-01-01"^^xsd:date)` : null,
+    keyword
+      ? `  ${selectedTitle}\n  ?tSel bif:contains "${keyword}" .`
+      : `  OPTIONAL { ${selectedTitle} }`,
+    `  OPTIONAL { ?eEng cdm:expression_belongs_to_work ?work ; cdm:expression_uses_language <${LANGUAGE_PREFIX}ENG> ; cdm:expression_title ?tEng }`,
+    "  FILTER(BOUND(?tSel) || BOUND(?tEng))",
+    `} ORDER BY ${params.sort === "newest" ? "DESC" : "ASC"}(?date)`,
+    `LIMIT ${EU_PAGE_SIZE + 1} OFFSET ${(params.page - 1) * EU_PAGE_SIZE}`,
+  ];
+
+  return lines.filter((line): line is string => line !== null).join("\n");
+}
+
+export type SparqlJson = {
+  results: { bindings: Array<Record<string, { value: string } | undefined>> };
+};
+
+export function mapEuSearchBindings(json: SparqlJson, params: EuSearchParams): EuSearchResponse {
+  const seen = new Set<string>();
+  const rows: EuSearchResult[] = [];
+
+  for (const row of json.results.bindings) {
+    const celex = row.celex?.value;
+    const title = row.title?.value;
+    const date = row.date?.value;
+    const type = euDocumentTypeSchema.safeParse(row.type?.value.replace(RESOURCE_TYPE_PREFIX, ""));
+    // ponytail: un acte peut avoir plusieurs titres dans une langue → lignes en double
+    // dédoublonnées ici ; une page peut alors compter < 20 résultats, sans perte de données.
+    if (!celex || !title || !date || !type.success || seen.has(celex)) continue;
+    seen.add(celex);
+    rows.push({
+      celex,
+      title,
+      date,
+      type: type.data,
+      inForce: row.inForce?.value === "1" || row.inForce?.value === "true",
+      eurlexUrl: `https://eur-lex.europa.eu/legal-content/${params.lang.toUpperCase()}/TXT/?uri=CELEX:${celex}`,
+    });
+  }
+
+  return {
+    results: rows.slice(0, EU_PAGE_SIZE),
+    page: params.page,
+    hasMore: rows.length > EU_PAGE_SIZE,
+  };
+}

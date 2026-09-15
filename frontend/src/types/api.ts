@@ -269,6 +269,60 @@ export const apiErrorSchema = z.object({
   error: z.object({ code: z.string(), message: z.string() }),
 });
 
+/**
+ * Recherche de textes UE (CELLAR) — route `GET /api/eu-search` portée par le frontend
+ * (route handler Next.js), pas une API de Thư : voir
+ * `docs/superpowers/specs/2026-09-15-eu-search-design.md`.
+ */
+export const euDocumentTypeSchema = z.enum(["REG", "DIR", "DEC", "RECO"]);
+
+export const euSearchTypeSchema = z.enum(["REG_DIR", "REG", "DIR", "DEC", "RECO"]);
+
+export const euSubjectSchema = z.enum([
+  "money-laundering",
+  "banking-supervision",
+  "financial-services",
+  "risk-management",
+  "outsourcing",
+  "consumer-protection",
+  "information-security",
+  "payment",
+]);
+
+const euYearSchema = z.coerce.number().int().min(1950).max(new Date().getFullYear());
+
+export const euSearchParamsSchema = z
+  .object({
+    q: z.string().max(100).optional(),
+    type: euSearchTypeSchema.default("REG_DIR"),
+    subject: euSubjectSchema.optional(),
+    inForce: z.enum(["true", "all"]).default("true"),
+    from: euYearSchema.optional(),
+    to: euYearSchema.optional(),
+    sort: z.enum(["newest", "oldest"]).default("newest"),
+    page: z.coerce.number().int().min(1).max(50).default(1),
+    lang: z.enum(["fr", "en"]).default("fr"),
+  })
+  .refine(
+    (params) => params.from === undefined || params.to === undefined || params.from <= params.to,
+    { message: "from must be less than or equal to to", path: ["from"] },
+  );
+
+export const euSearchResultSchema = z.object({
+  celex: z.string(),
+  title: z.string(),
+  date: z.string(),
+  type: euDocumentTypeSchema,
+  inForce: z.boolean(),
+  eurlexUrl: z.string(),
+});
+
+export const euSearchResponseSchema = z.object({
+  results: z.array(euSearchResultSchema),
+  page: z.number(),
+  hasMore: z.boolean(),
+});
+
 export type Language = z.infer<typeof languageSchema>;
 export type Assessment = z.infer<typeof assessmentSchema>;
 export type Priority = z.infer<typeof prioritySchema>;
@@ -293,6 +347,11 @@ export type RegulationMapRequirement = z.infer<
 >;
 export type LoginResponse = z.infer<typeof loginResponseSchema>;
 export type CopilotAnswer = z.infer<typeof copilotAnswerSchema>;
+export type EuDocumentType = z.infer<typeof euDocumentTypeSchema>;
+export type EuSubject = z.infer<typeof euSubjectSchema>;
+export type EuSearchParams = z.infer<typeof euSearchParamsSchema>;
+export type EuSearchResult = z.infer<typeof euSearchResultSchema>;
+export type EuSearchResponse = z.infer<typeof euSearchResponseSchema>;
 
 /** Body attendu par `POST /api/findings/:id/validate`. */
 export const validateFindingBodySchema = z.object({
