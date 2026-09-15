@@ -125,9 +125,12 @@ export function canPrint(profile: AccessProfile): boolean {
   return profile !== "AUDITOR";
 }
 
-/** Knowledge Base (§ 3) : admin en écriture, Head of Compliance en lecture. */
+/**
+ * Knowledge Base (§ 3) : admin, Head of Compliance et Compliance Officer (recherche de
+ * textes UE, décision du 2026-09-15). L'auditeur n'y a pas accès.
+ */
 export function canSeeKnowledgeBase(profile: AccessProfile): boolean {
-  return profile === "COMPLIANCE_ADMIN" || profile === "HEAD_OF_COMPLIANCE";
+  return profile !== "AUDITOR";
 }
 
 /** Écran « Utilisateurs » (gestion des rôles) — réservé à l'admin. */
