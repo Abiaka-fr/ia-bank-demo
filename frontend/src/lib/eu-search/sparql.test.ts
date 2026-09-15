@@ -136,7 +136,7 @@ describe("buildEuSearchQuery", () => {
     );
     expect(query).not.toContain("bif:contains");
     expect(query).not.toContain("eurovoc");
-    expect(query).toContain("ORDER BY DESC(?date)");
+    expect(query).toContain("ORDER BY DESC(?date) ?celex");
     expect(query).toContain("LIMIT 21 OFFSET 0");
   });
 
@@ -158,7 +158,7 @@ describe("buildEuSearchQuery", () => {
     expect(all).toContain("OPTIONAL { ?work cdm:resource_legal_in-force ?inForce }");
     expect(all).not.toContain('"true"^^xsd:boolean');
 
-    expect(buildEuSearchQuery(params({ sort: "oldest" }))).toContain("ORDER BY ASC(?date)");
+    expect(buildEuSearchQuery(params({ sort: "oldest" }))).toContain("ORDER BY ASC(?date) ?celex");
     expect(buildEuSearchQuery(params({ page: 3 }))).toContain("LIMIT 21 OFFSET 40");
     expect(buildEuSearchQuery(params({ lang: "en" }))).toContain(
       "?eSel cdm:expression_belongs_to_work ?work ; cdm:expression_uses_language <http://publications.europa.eu/resource/authority/language/ENG>",

@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { cn } from "cn";
 import { ExternalLink, Search } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { type FormEvent, useState } from "react";
@@ -99,7 +100,13 @@ export function EuSearchPanel() {
 
     return (
       <div className="space-y-3">
-        <div className="overflow-x-auto rounded-lg border">
+        <div
+          className={cn(
+            "overflow-x-auto rounded-lg border transition-opacity",
+            searchQuery.isPlaceholderData && "opacity-60",
+          )}
+          aria-busy={searchQuery.isPlaceholderData}
+        >
           <Table>
             <TableHeader>
               <TableRow>

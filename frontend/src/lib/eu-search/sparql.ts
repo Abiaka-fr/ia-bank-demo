@@ -73,7 +73,7 @@ export function buildEuSearchQuery(params: EuSearchParams): string {
       : `  OPTIONAL { ${selectedTitle} }`,
     `  OPTIONAL { ?eEng cdm:expression_belongs_to_work ?work ; cdm:expression_uses_language <${LANGUAGE_PREFIX}ENG> ; cdm:expression_title ?tEng }`,
     "  FILTER(BOUND(?tSel) || BOUND(?tEng))",
-    `} ORDER BY ${params.sort === "newest" ? "DESC" : "ASC"}(?date)`,
+    `} ORDER BY ${params.sort === "newest" ? "DESC" : "ASC"}(?date) ?celex`,
     `LIMIT ${EU_PAGE_SIZE + 1} OFFSET ${(params.page - 1) * EU_PAGE_SIZE}`,
   ];
 

@@ -39,8 +39,9 @@ export async function GET(request: NextRequest) {
     }
     const json = (await response.json()) as SparqlJson;
     return NextResponse.json(mapEuSearchBindings(json, parsed.data));
-  } catch {
+  } catch (error) {
     // Timeout, réseau, ou réponse illisible (json.results absent → TypeError dans le mapping).
+    console.error("eu-search: CELLAR call failed", error);
     return errorResponse(502, "EU_SOURCE_UNAVAILABLE", "CELLAR unreachable or invalid response");
   }
 }

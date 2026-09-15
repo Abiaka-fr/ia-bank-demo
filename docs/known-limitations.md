@@ -130,6 +130,9 @@ anglais ↔ procédures internes en français) est couvert par le corpus de dém
     tourne dans la région par défaut `iad1` : latence vers Luxembourg non mesurée en production.
     C'est une consultation : aucun lien n'est fait avec les procédures, et l'applicabilité reste à
     confirmer par la Conformité (mention affichée sous le tableau).
+    La route `/api/eu-search` n'est pas authentifiée : quiconque connaît l'URL peut déclencher des
+    requêtes CELLAR (chaque mot-clé différent contourne le cache) — acceptable pour une démo,
+    prévoir une règle de limitation de débit (Vercel Firewall) si l'URL est diffusée largement.
 
 ## Garde-fou produit, rappel
 

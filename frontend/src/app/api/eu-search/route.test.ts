@@ -97,4 +97,19 @@ describe("GET /api/eu-search", () => {
     expect(response.status).toBe(502);
     expect((await response.json()).error.code).toBe("EU_SOURCE_UNAVAILABLE");
   });
+
+  it("renvoie 502 EU_SOURCE_UNAVAILABLE quand CELLAR renvoie un corps illisible", async () => {
+    // Arrange
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("<html>maintenance</html>", { status: 200 })),
+    );
+
+    // Act
+    const response = await GET(request(""));
+
+    // Assert
+    expect(response.status).toBe(502);
+    expect((await response.json()).error.code).toBe("EU_SOURCE_UNAVAILABLE");
+  });
 });
