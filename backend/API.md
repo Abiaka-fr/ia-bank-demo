@@ -656,8 +656,7 @@ PUT /api/mappings/MAP-0001/human-status
   "recommended_action": "No immediate update proposed...",
   "explanation_lang_fr": "La procédure interne contient des contrôles explicites...",
   "recommended_action_lang_fr": "Aucune mise à jour immédiate proposée...",
-  "human_status": "ACCEPT",
-  "assignee": null
+  "human_status": "ACCEPT"
 }
 ```
 
@@ -665,57 +664,6 @@ PUT /api/mappings/MAP-0001/human-status
 ```json
 {
   "detail": "Invalid human_status. Allowed values: PENDING_REVIEW, ESCALATE, ACCEPT, REJECT"
-}
-```
-
-**Response (404 Not Found)**
-```json
-{
-  "detail": "Mapping not found"
-}
-```
-
----
-
-### Update Mapping Assignee
-
-#### `PUT /api/mappings/{mapping_id}/assignee`
-Update the assignee of a requirement-procedure mapping to assign compliance work to a specific team member.
-
-**Path Parameters**
-- `mapping_id` (required): The ID of the mapping (e.g., MAP-0001)
-
-**Request Body**
-- `assignee` (optional): User ID or email to assign (can be null to clear assignment)
-
-**Authentication** Required (Bearer token)
-
-**Request Examples**
-```json
-PUT /api/mappings/MAP-0001/assignee
-{"assignee": "compliance.officer@bank.com"}
-
-PUT /api/mappings/MAP-0001/assignee
-{"assignee": "junior.analyst@bank.com"}
-
-PUT /api/mappings/MAP-0001/assignee
-{"assignee": null}
-```
-
-**Response (200 OK)**
-```json
-{
-  "mapping_id": "MAP-0001",
-  "requirement_id": "REQ-0001",
-  "procedure_id": "PRC-AML-007",
-  "assessment": "COVERED",
-  "confidence": 0.93,
-  "explanation": "The internal procedure contains explicit controls...",
-  "recommended_action": "No immediate update proposed...",
-  "explanation_lang_fr": "La procédure interne contient des contrôles explicites...",
-  "recommended_action_lang_fr": "Aucune mise à jour immédiate proposée...",
-  "human_status": "ACCEPT",
-  "assignee": "compliance.officer@bank.com"
 }
 ```
 
@@ -831,8 +779,7 @@ GET /api/mappings/requirements-to-procedures?requirement_ids=REQ-0001&assessment
             "recommended_action": "...",
             "explanation_lang_fr": "...",
             "recommended_action_lang_fr": "...",
-            "human_status": "PENDING_REVIEW",
-            "assignee": null
+            "human_status": "PENDING_REVIEW"
           }
         }
       ],
@@ -895,8 +842,7 @@ GET /api/mappings/procedures-to-requirements?procedure_ids=PRC-KYC-002&domain=KY
             "recommended_action": "...",
             "explanation_lang_fr": "...",
             "recommended_action_lang_fr": "...",
-            "human_status": "PENDING_REVIEW",
-            "assignee": "compliance.officer@bank.com"
+            "human_status": "PENDING_REVIEW"
           }
         }
       ],

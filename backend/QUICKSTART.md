@@ -50,39 +50,3 @@ The server starts at **http://localhost:8000**
 8. **requirement_procedure_map** — gap analysis (requirements ↔ procedures)
 9. **audit_history** — audit events
 10. **official_public_sources** — regulatory authority references
-
-## 🔧 Database Administration
-
-### Connect to the Database
-
-```bash
-set PGPASSWORD=ia_bank_secure_2026
-psql -h localhost -p 5432 -U ia_bank_app -d ia_bank_compliance
-```
-
-Then in psql:
-```sql
-\dt               -- List tables
-\d+ documents     -- Show table structure + indexes + FKs
-SELECT COUNT(*) FROM documents;  -- Count rows
-```
-
-### Run a Migration
-
-```bash
-# Auto-generate from model changes
-alembic revision --autogenerate -m "Add new_field to xyz"
-
-# Review the file in alembic/versions/
-
-# Apply it
-alembic upgrade head
-```
-
-## 📁 Project Structure
-
-See `CLAUDE.md` (in this directory) for complete development guide, including:
-- Stack decision & rationale
-- "Search before creating" rule
-- Checklist before ending a task
-- Common workflows (adding endpoints, migrations, debugging)
