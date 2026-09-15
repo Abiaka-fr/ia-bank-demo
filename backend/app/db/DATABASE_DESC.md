@@ -263,6 +263,24 @@ Gap analysis: maps requirements to procedures (CRITICAL for compliance assessmen
 | explanation_lang_fr | String (Text) | ✓ | NULL | French explanation |
 | recommended_action_lang_fr | String (Text) | ✓ | NULL | French recommended action |
 | human_status | String | ✓ | NULL | PENDING_REVIEW, ACCEPTED, REJECTED, ESCALATED |
+| suggested_modifications | JSON | ✓ | NULL | Array of suggested text modifications (see structure below) |
+
+**Suggested Modifications Schema:**
+Each modification in the array has this structure:
+```json
+{
+  "location": {
+    "chunk_no": number,
+    "start_offset": number,
+    "end_offset": number
+  },
+  "original_text": string,
+  "new_text": string
+}
+```
+- `location`: Position of the text in the document (chunk number and byte offsets)
+- `original_text`: Current text that needs modification
+- `new_text`: Proposed replacement text
 
 **Indexes:**
 - idx_requirement_procedure_map_requirement_id (requirement_id)

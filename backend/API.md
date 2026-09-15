@@ -713,7 +713,8 @@ PUT /api/mappings/MAP-0001/human-status
   "recommended_action": "No immediate update proposed...",
   "explanation_lang_fr": "La procédure interne contient des contrôles explicites...",
   "recommended_action_lang_fr": "Aucune mise à jour immédiate proposée...",
-  "human_status": "ACCEPT"
+  "human_status": "ACCEPT",
+  "suggested_modifications": null
 }
 ```
 
@@ -774,7 +775,17 @@ GET /api/mappings/all?human_status=PENDING_REVIEW
       "explanation_lang_fr": "La procédure interne contient des contrôles explicites...",
       "recommended_action_lang_fr": "Aucune mise à jour immédiate proposée...",
       "human_status": "PENDING_REVIEW",
-      "assignee": null
+      "suggested_modifications": [
+        {
+          "location": {
+            "chunk_no": 1,
+            "start_offset": 245,
+            "end_offset": 310
+          },
+          "original_text": "daily monitoring",
+          "new_text": "continuous real-time monitoring with automated alerts"
+        }
+      ]
     }
   ],
   "limit": 50,
@@ -836,7 +847,8 @@ GET /api/mappings/requirements-to-procedures?requirement_ids=REQ-0001&assessment
             "recommended_action": "...",
             "explanation_lang_fr": "...",
             "recommended_action_lang_fr": "...",
-            "human_status": "PENDING_REVIEW"
+            "human_status": "PENDING_REVIEW",
+            "suggested_modifications": null
           }
         }
       ],
@@ -899,7 +911,8 @@ GET /api/mappings/procedures-to-requirements?procedure_ids=PRC-KYC-002&domain=KY
             "recommended_action": "...",
             "explanation_lang_fr": "...",
             "recommended_action_lang_fr": "...",
-            "human_status": "PENDING_REVIEW"
+            "human_status": "PENDING_REVIEW",
+            "suggested_modifications": null
           }
         }
       ],

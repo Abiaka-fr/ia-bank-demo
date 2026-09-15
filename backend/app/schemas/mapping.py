@@ -5,6 +5,22 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
+class ModificationLocation(BaseModel):
+    """Location of a text modification within a document chunk."""
+
+    chunk_no: int
+    start_offset: int
+    end_offset: int
+
+
+class SuggestedModification(BaseModel):
+    """A suggested text modification for a procedure."""
+
+    location: ModificationLocation
+    original_text: str
+    new_text: str
+
+
 class MappingRead(BaseModel):
     """A single requirement-procedure mapping."""
 
@@ -18,6 +34,7 @@ class MappingRead(BaseModel):
     explanation_lang_fr: str | None = None
     recommended_action_lang_fr: str | None = None
     human_status: str | None = None
+    suggested_modifications: list[SuggestedModification] | None = None
 
     class Config:
         from_attributes = True

@@ -1,6 +1,6 @@
 """Requirement to procedure mapping model."""
 
-from sqlalchemy import Column, String, Float, Text, ForeignKey, Index
+from sqlalchemy import Column, String, Float, Text, ForeignKey, Index, JSON
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -21,6 +21,7 @@ class RequirementProcedureMap(Base):
     explanation_lang_fr = Column(Text, nullable=True)  # French explanation
     recommended_action_lang_fr = Column(Text, nullable=True)  # French recommended action
     human_status = Column(String)  # PENDING_REVIEW, ACCEPTED, REJECTED, ESCALATED
+    suggested_modifications = Column(JSON, nullable=True)  # Array of suggested text modifications
 
     # Indexes
     __table_args__ = (
