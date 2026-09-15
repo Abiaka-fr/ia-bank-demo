@@ -218,8 +218,51 @@
     "sourcesLabel": "Sources",
     "lastUpdatedLabel": "Dernière mise à jour",
     "europeanSectionTitle": "European Regulatory Sources",
-    "notConnectedStatus": "Non connecté",
-    "notConnectedDescription": "Aucune source réglementaire européenne (CELLAR/EUR-Lex) n'est connectée pour l'instant — fonctionnalité en évaluation, voir docs/phases/phase-7-european-search.md."
+    "euSearch": {
+      "keywordPlaceholder": "Mot-clé dans le titre (ex. blanchiment)",
+      "yearFrom": "De (année)",
+      "yearTo": "À (année)",
+      "searchButton": "Rechercher",
+      "invalidYears": "Années invalides : entre 1950 et l'année en cours, « de » inférieure ou égale à « à ».",
+      "filterType": "Type",
+      "filterSubject": "Thème EuroVoc",
+      "filterStatus": "Statut",
+      "sortLabel": "Tri",
+      "sortNewest": "Plus récent",
+      "sortOldest": "Plus ancien",
+      "statusInForce": "En vigueur",
+      "statusNotInForce": "Non en vigueur",
+      "statusAll": "Tous",
+      "types": {
+        "REG_DIR": "Règlements et directives",
+        "REG": "Règlement",
+        "DIR": "Directive",
+        "DEC": "Décision",
+        "RECO": "Recommandation"
+      },
+      "subjects": {
+        "money-laundering": "Blanchiment d'argent",
+        "banking-supervision": "Contrôle bancaire",
+        "financial-services": "Services financiers",
+        "risk-management": "Gestion du risque",
+        "outsourcing": "Externalisation",
+        "consumer-protection": "Protection du consommateur",
+        "information-security": "Sécurité des systèmes d'information",
+        "payment": "Paiement"
+      },
+      "columnCelex": "CELEX",
+      "columnTitle": "Titre",
+      "columnType": "Type",
+      "columnDate": "Date",
+      "columnStatus": "Statut",
+      "columnSource": "Source",
+      "openOnEurLex": "Voir sur EUR-Lex",
+      "noResults": "Aucun texte européen ne correspond à ces critères.",
+      "pageLabel": "Page {page}",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "sourceNote": "Source : CELLAR — Office des publications de l'UE. Pertinence et applicabilité à confirmer par la Conformité."
+    }
   },
   "roles": {
     "headOfCompliance": "Responsable Conformité",
