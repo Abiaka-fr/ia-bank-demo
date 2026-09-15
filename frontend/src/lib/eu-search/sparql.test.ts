@@ -254,4 +254,22 @@ describe("mapEuSearchBindings", () => {
     // Assert
     expect(response.results.map((result) => result.celex)).toEqual(["A"]);
   });
+
+  it("garde hasMore quand la fenêtre de 21 lignes contient un doublon", () => {
+    // Arrange: 21 raw bindings, but two share the same CELEX → 20 unique after dedup
+    const rows = Array.from({ length: EU_PAGE_SIZE + 1 }, (_, index) => {
+      if (index === 10) {
+        // Duplicate the first one's CELEX
+        return binding(`32024R0000`);
+      }
+      return binding(`32024R${String(index).padStart(4, "0")}`);
+    });
+
+    // Act
+    const response = mapEuSearchBindings(json(rows), params());
+
+    // Assert
+    expect(response.results).toHaveLength(EU_PAGE_SIZE);
+    expect(response.hasMore).toBe(true);
+  });
 });

@@ -93,8 +93,8 @@ export function mapEuSearchBindings(json: SparqlJson, params: EuSearchParams): E
     const title = row.title?.value;
     const date = row.date?.value;
     const type = euDocumentTypeSchema.safeParse(row.type?.value.replace(RESOURCE_TYPE_PREFIX, ""));
-    // ponytail: un acte peut avoir plusieurs titres dans une langue → lignes en double
-    // dédoublonnées ici ; une page peut alors compter < 20 résultats, sans perte de données.
+    // ponytail: CELEX dedupe et type/completeness filtering → page peut compter < 20
+    // résultats (pas de perte), mais hasMore est toujours basé sur la fenêtre brute LIMIT 21.
     if (!celex || !title || !date || !type.success || seen.has(celex)) continue;
     seen.add(celex);
     rows.push({
@@ -110,6 +110,6 @@ export function mapEuSearchBindings(json: SparqlJson, params: EuSearchParams): E
   return {
     results: rows.slice(0, EU_PAGE_SIZE),
     page: params.page,
-    hasMore: rows.length > EU_PAGE_SIZE,
+    hasMore: json.results.bindings.length > EU_PAGE_SIZE,
   };
 }
