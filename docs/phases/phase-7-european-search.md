@@ -78,6 +78,40 @@ Avant de commencer D1, construire (c'est aussi UC02, « mandatory / P0 » chez F
 
 ---
 
+## ⚠️ Mise à jour 2026-09-14 — réponse de Thư, deux corrections au Jour 0 ci-dessus
+
+**1. `/api/procedures/*` n'existe pas côté backend réel — à corriger dans `lib/api/procedures.ts`.**
+Le Jour 0 ci-dessus dit que `fetchProcedures()`/`fetchProcedure()` sont « déjà branchés en mode
+mock et backend réel » (§ intro) — c'est vrai pour le *branchement* (`isBackendLive`), mais la
+branche backend réel appelait `GET /api/procedures`, `GET /api/procedures/:id`, qui n'ont jamais
+existé côté Thư (contrat v1.6/v1.8 jamais implémenté). Thư confirme (2026-09-14) les vrais
+endpoints à utiliser à la place :
+- `GET /api/documents?document_type=PROCEDURE` (liste, filtre confirmé réel dans
+  `backend/app/routers/documents.py`)
+- `GET /api/documents/{document_id}` (détail)
+- `GET /api/documents/content/{version_id}` (contenu)
+
+À prompter : corriger `lib/api/procedures.ts` pour que la branche `isBackendLive` de
+`fetchProcedures`/`fetchProcedure` appelle ces routes réelles au lieu de `/api/procedures`. Détail
+dans `docs/api-requests.md` #8.
+
+**2. `POST /api/procedures/:id/analyze` n'existe pas non plus côté backend réel — confirmé, pas
+juste « pas encore fait ».** Recherche exhaustive (2026-09-14) dans `backend/API.md` (1272 lignes,
+tenu à jour par Thư) : zéro résultat pour « analyz ». Le seul moyen réel de lire un résultat
+d'analyse aujourd'hui est `GET /api/mappings/all?procedure_id=...` — qui ne renvoie que des
+mappings **déjà calculés en base**, rien pour une procédure tout juste uploadée. Le fallback MSW
+honnête (item ci-dessus, `bank_requirements_identified: 0`) reste donc la seule voie pour toute
+nouvelle procédure tant que la question ouverte suivante n'est pas tranchée avec Thư : l'analyse
+est-elle **toujours précalculée en batch côté backend** (donc jamais déclenchable à la demande
+depuis le frontend), ou un endpoint de déclenchement est-il prévu sous un autre nom ? Voir
+`docs/api-requests.md` #2 — c'est la question à lui reposer directement.
+
+**Conséquence pratique** : tant que #2 n'est pas répondu, la case D2/D3 ci-dessous
+(`analyzeProcedure`) reste sur mock par construction, pas par retard — ne pas le prompter comme un
+bug à corriger.
+
+---
+
 ## Plan jour par jour (Giang, colonne frontend)
 
 | Jour | Livrable frontend | Dépendance backend (Thư) attendue ce jour-là | Fichiers concernés |

@@ -1,11 +1,11 @@
 import { http, HttpResponse } from "msw";
 import { z } from "zod";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { server } from "@/lib/mocks/server";
 import { documentMetaSchema, findingSchema } from "@/types/api";
 
-import { ApiContractError, ApiError, apiFetch } from "./client";
+import { ApiError, apiFetch } from "./client";
 import { fetchFindingsByRegulation, validateFinding } from "./findings";
 import { fetchRegulations } from "./regulations";
 
@@ -21,16 +21,31 @@ describe("apiFetch", () => {
     ).not.toThrow();
   });
 
-  it("lève une ApiContractError si la réponse ne suit pas le contrat", async () => {
-    // Arrange : le backend renvoie un champ manquant / mal typé.
+  it("dégrade gracieusement (log + renvoie les champs disponibles) si la réponse ne suit pas le contrat", async () => {
+    // Arrange : le backend renvoie un champ manquant / mal typé. Depuis `1a88b12`,
+    // `apiFetch` ne lève plus `ApiContractError` sur une non-conformité — un écran ne
+    // doit pas casser en entier pour un champ que le backend n'a pas encore livré
+    // (ex. les nouvelles dates v1.10 le temps que Thư finisse le déploiement) ; la
+    // non-conformité reste tracée en console plutôt que masquée en silence.
     server.use(
       http.get("/api/regulations", () =>
         HttpResponse.json([{ document_id: 42 }]),
       ),
     );
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    // Act + Assert
-    await expect(fetchRegulations()).rejects.toBeInstanceOf(ApiContractError);
+    // Act
+    const result = await fetchRegulations();
+
+    // Assert
+    expect(result).toEqual([{ document_id: 42 }]);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("API contract mismatch"),
+      expect.any(String),
+      expect.any(String),
+    );
+
+    warnSpy.mockRestore();
   });
 
   it("transforme une erreur HTTP du contrat en ApiError", async () => {

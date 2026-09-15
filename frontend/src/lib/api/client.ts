@@ -65,8 +65,12 @@ async function readError(response: Response): Promise<ApiError> {
 
 /**
  * Effectue un appel API et valide la réponse contre le schéma Zod fourni.
- * Toute réponse non conforme lève une `ApiContractError` plutôt que d'être
- * propagée silencieusement dans l'UI.
+ *
+ * Depuis `1a88b12` : une réponse non conforme ne lève plus `ApiContractError` — elle
+ * est tracée en `console.warn` puis renvoyée telle quelle (dégradation gracieuse),
+ * pour qu'un champ manquant côté backend (ex. une date v1.10 pas encore déployée
+ * partout) n'empêche pas le reste de l'écran de s'afficher. La classe
+ * `ApiContractError` reste exportée mais n'est plus levée par cette fonction.
  */
 export async function apiFetch<TSchema extends z.ZodType>(
   path: string,

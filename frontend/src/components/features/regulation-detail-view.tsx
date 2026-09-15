@@ -116,18 +116,35 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
           {formatDateDDMMYYYY(regulation.uploaded_at) ?? common("notAvailable")}
         </span>
         {/* 3 dates distinctes demandées par Francis (Phase 6 § 4) : Uploaded (réel,
-            ci-dessus) / Created / Last updated. `published_at` existe déjà au
-            contrat et dans le corpus mock — badge seulement quand il manque vraiment
-            (mode backend réel aujourd'hui), jamais en réutilisant `uploaded_at`. */}
+            ci-dessus) / Created / Last updated. `created_at`/`updated_at` livrés par
+            Thư (v1.10, commit `1a88b12`, 2026-09-13/14) — badge seulement quand le
+            champ manque vraiment, jamais en réutilisant `uploaded_at` à sa place
+            (rattrapage du 2026-09-14 : cet en-tête étiquetait encore `published_at`
+            comme « Created date », confusion de nommage historique — voir
+            `docs/phases/phase-6-francis-feedback.md` § 4). */}
         <span className="flex items-center gap-1.5 text-muted-foreground">
           {t("createdDateLabel")} :{" "}
-          {regulation.published_at ?? (
-            <AwaitingBackendBadge field="DocumentMeta.published_at" />
+          {regulation.created_at ? (
+            formatDateDDMMYYYY(regulation.created_at)
+          ) : (
+            <AwaitingBackendBadge field="DocumentMeta.created_at" />
           )}
         </span>
         <span className="flex items-center gap-1.5 text-muted-foreground">
           {t("lastUpdatedLabel")} :{" "}
-          <AwaitingBackendBadge field="DocumentMeta.updated_at" />
+          {regulation.updated_at ? (
+            formatDateDDMMYYYY(regulation.updated_at)
+          ) : (
+            <AwaitingBackendBadge field="DocumentMeta.updated_at" />
+          )}
+        </span>
+        {/* `published_at` (date de publication du texte source, distincte de
+            `created_at` = date d'enregistrement) — conservée séparément, pas
+            fusionnée avec « Created date » (deux informations différentes pour
+            Francis, voir la note ci-dessus). */}
+        <span className="text-muted-foreground">
+          {common("publicationDate")} :{" "}
+          {formatDateDDMMYYYY(regulation.published_at) ?? common("notAvailable")}
         </span>
         <span className="text-muted-foreground">
           {assigneeT("label")} : <AssigneeName userId={regulation.assignee_id} />

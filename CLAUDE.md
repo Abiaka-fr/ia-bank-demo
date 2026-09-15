@@ -10,9 +10,14 @@ puis suivre les règles ci-dessous avant d'écrire la moindre ligne de code.
    dernière session. Ne jamais commencer à coder sans l'avoir lu.
 2. **`docs/phases/phase-N-*.md`** — le fichier de la phase en cours (indiquée dans `PROGRESS.md`).
    Chaque phase correspond à ~1 semaine du planning. Objectif, portée, definition of done.
-3. **`docs/api-contract.md`** — le contrat d'API entre le frontend et le backend (source de vérité
-   partagée avec Thư / le backend). Le frontend ne doit JAMAIS supposer un comportement backend qui
-   n'est pas documenté ici.
+3. **`backend/API.md`** (lecture seule) — ce que le backend expose **réellement** : endpoints,
+   requêtes, réponses. C'est la source de vérité pour appeler une route. Le frontend ne doit
+   JAMAIS supposer/inventer un comportement backend qui n'y est pas documenté.
+   **`docs/api-requests.md`** — ce qui manque côté backend pour les besoins du frontend (en
+   anglais, tenu par le frontend, Thư y pioche à son rythme).
+   `docs/api-contract.md` est **gelé** depuis le 2026-09-14 (historique des versions v1.1→v1.8
+   uniquement, voir le bandeau en tête de ce fichier) — ne plus s'y fier pour la forme d'un
+   endpoint réel.
 4. **`docs/ui-guardrails.md`** et **`docs/glossary.md`** — vocabulaire métier et formulations
    autorisées/interdites (critique : ce produit ne doit jamais affirmer une conclusion de conformité
    autonome, voir section "Garde-fous" ci-dessous).
@@ -42,8 +47,9 @@ RÉGLEMENTATION → EXIGENCES → PROCÉDURES INTERNES → IMPACT → ÉCARTS PO
 | Zone | Propriétaire | Stack |
 |---|---|---|
 | `frontend/` | **Giang (Dev A, temps plein)** | Next.js + TypeScript — voir `frontend/CLAUDE.md` |
-| `backend/` (API + pipeline IA) | **Thư (Dev B, temps partiel)** | Choix libre de Thư |
-| `docs/api-contract.md` | **Partagé** | Contrat figé d'un commun accord avant modification |
+| `backend/` (API + pipeline IA), y compris `backend/API.md` | **Thư (Dev B, temps partiel)** | Choix libre de Thư |
+| `docs/api-requests.md` | **Frontend** | Liste (en anglais) de ce qui manque côté backend — Thư y pioche |
+| `docs/api-contract.md` | **Gelé (historique)** | Ne plus modifier — voir bandeau en tête de fichier, 2026-09-14 |
 
 ### 🚫 `backend/` est en lecture seule pour toute session frontend — règle absolue
 
@@ -58,10 +64,11 @@ RÉGLEMENTATION → EXIGENCES → PROCÉDURES INTERNES → IMPACT → ÉCARTS PO
 - Si quelque chose semble faux côté backend, on l'**écrit** dans `PROGRESS.md` (section Blocages)
   pour la prochaine revue commune — on ne le corrige pas soi-même.
 
-Le seul point de contact autorisé est `docs/api-contract.md`, partagé, et modifiable uniquement
-d'un commun accord. Symétriquement pour une session backend vis-à-vis de `frontend/`.
+Le point de contact autorisé est **`docs/api-requests.md`** (le frontend y écrit ce dont il a
+besoin ; Thư met à jour `backend/API.md` quand elle l'implémente — jamais l'inverse). Symétriquement
+pour une session backend vis-à-vis de `frontend/`.
 
-Toute évolution du contrat d'API doit être répercutée dans `docs/api-contract.md` ET signalée dans
+Tout besoin d'API nouveau ou manquant doit être ajouté à `docs/api-requests.md` ET signalé dans
 `PROGRESS.md`.
 
 **Fichiers d'environnement** : `backend/env` contient des identifiants. Il est ignoré par le
@@ -75,8 +82,9 @@ pas un fichier nommé `env`). Ne jamais le committer, ne jamais en recopier le c
    un composant, un type ou une route similaire n'existe pas déjà avant d'en écrire un nouveau.
    Réutiliser/étendre plutôt que dupliquer. En cas de doute, lister les fichiers du dossier concerné
    avant d'ajouter un fichier de plus.
-2. Vérifier `docs/api-contract.md` avant d'appeler ou de créer un endpoint — ne jamais inventer une
-   forme de réponse qui n'y est pas documentée.
+2. Vérifier `backend/API.md` avant d'appeler un endpoint — ne jamais inventer une forme de
+   réponse qui n'y est pas documentée. Si ce dont on a besoin n'y figure pas, l'ajouter à
+   `docs/api-requests.md` plutôt que de deviner, et continuer sur le mock (MSW) en attendant.
 3. Vérifier `docs/ui-guardrails.md` avant d'écrire un texte affiché à l'utilisateur (labels,
    messages, tooltips) — respecter strictement les formulations autorisées.
 
@@ -104,8 +112,9 @@ ia-bank-demo/
 ├── README.md                 # vue d'ensemble humaine
 ├── PROGRESS.md                # état du projet, à lire/mettre à jour à chaque session
 ├── docs/
-│   ├── api-contract.md        # contrat FE <-> BE (source de vérité)
-│   ├── backend-integration.md # écart entre le contrat et le backend réel de Thư
+│   ├── api-contract.md        # GELÉ (historique v1.1-v1.8) — ne plus s'y fier
+│   ├── api-requests.md        # besoins FE manquants côté backend (EN, tenu par le FE)
+│   ├── backend-integration.md # écart entre l'historique du contrat et le backend réel de Thư
 │   ├── glossary.md            # vocabulaire métier KYC/AML condensé
 │   ├── ui-guardrails.md       # formulations autorisées/interdites + code couleur des statuts
 │   ├── ui-guidelines.md       # design system frontend

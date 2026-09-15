@@ -2,6 +2,47 @@
 
 > Toute session doit lire ce fichier en premier et le mettre à jour avant de terminer.
 
+## Mise à jour 2026-09-14 — réponse de Thư, nouvelle convention de contrat d'API
+
+Thư a répondu au point complet des besoins remonté par Giang (voir `docs/api-requests.md`, nouveau
+fichier). Décisions actées :
+- **Nouvelle source de vérité** : `backend/API.md` (ce qui existe réellement, tenu par Thư) +
+  `docs/api-requests.md` (ce qui manque, en anglais, tenu par le frontend). `docs/api-contract.md`
+  est **gelé** (historique v1.1→v1.8 uniquement) — voir bandeau en tête de ce fichier et
+  `CLAUDE.md` § 0.3/§2.
+- Confirmé réel : `GET /api/documents?document_type=PROCEDURE`, `GET /api/documents/{id}`,
+  `GET /api/documents/content/{version_id}` → à utiliser pour les procédures à la place des routes
+  inventées `/api/procedures/*` (`lib/api/procedures.ts` à corriger).
+- Confirmé réel : `GET /api/mappings/all` renvoie déjà `explanation`/`recommended_action` — pas
+  besoin d'un nouveau champ pour le "pourquoi obligatoire".
+- **⚠️ Gap découvert (pas encore signalé à Thư avant ce round) : aucun endpoint réel pour déclencher
+  une analyse** (`POST /api/procedures/:id/analyze`, contrat v1.7/v1.8) — recherche exhaustive dans
+  `backend/API.md`, zéro résultat. Reste sur MSW/mock. Question ouverte posée à Thư dans
+  `docs/api-requests.md` #2.
+- Thư va ajouter : 3 dates distinctes, date de publication réelle, résumé — pas encore livré,
+  `AwaitingBackendBadge` reste en place.
+- **Question ouverte pour Giang/Francis** (pas pour Thư) : sur quel critère classer les documents ?
+  Aucune taxonomie n'a jamais été donnée (`docs/api-requests.md` #3).
+- Docs mis à jour en conséquence : `docs/api-contract.md` (bandeau gel), `docs/api-requests.md`
+  (nouveau), `CLAUDE.md` (§0.3, §2, §3 règle 2, §4), `docs/phases/phase-6-francis-feedback.md` §2,
+  `docs/phases/phase-7-european-search.md` (nouvelle section après Jour 0).
+
+## Mise à jour 2026-09-14 (2) — Thư a livré dates + résumé, bug de code périmé trouvé
+
+Pull du travail de Thư (+ une session de code FE qui avait déjà anticipé le contrat v1.10) :
+- **Livré et vérifié réel** : `Document.created_at`/`updated_at`/`published_at`/`summary`,
+  `Procedure.created_at`/`updated_at`, `RegulatoryRequirement.created_at`/`updated_at` — tout
+  existe maintenant dans `backend/app/models/*.py` et `backend/API.md`. Frontend déjà adapté
+  (commit `1a88b12`, contrat v1.10) : résumé affiché sur le Dashboard et `/regulations`, dates
+  mappées dans `adapt.ts`. `docs/api-requests.md` #4/#5/#6 marqués livrés.
+- **Bug de code périmé trouvé (pas un sujet Thư)** : `regulation-detail-view.tsx` (en-tête de la
+  vue détail régulation) n'a pas été mis à jour en même temps que les cartes de liste — il
+  étiquette `published_at` comme « Created date » et affiche un badge « en attente » fixe pour
+  « Last updated » au lieu de lire `regulation.updated_at`, qui répond pourtant déjà. Détail et
+  prompt de correction dans `docs/phases/phase-6-francis-feedback.md` §4 (note du 2026-09-14).
+- Classification (`docs/api-requests.md` #3) et l'endpoint d'analyse (#2) restent ouverts, sans
+  changement de ce côté.
+
 ## Phase actuelle
 
 **Phase 1 — Fondations** : terminée le 2026-09-04.
@@ -1486,3 +1527,44 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   regulatory_requirement.title_lang_fr` (HTTP 500) tant que `./scripts/local-dev/setup-backend.sh`
   n'a pas été relancé (il rappelle `seed_dev_db.py::sync_missing_columns`, générique, idempotent —
   sans risque de perte de données, mais à lancer par Giang lui-même).
+
+  **Suite (même session, sur confirmation de Giang) : `./scripts/local-dev/setup-backend.sh`
+  relancé** — colonnes ajoutées (`regulatory_requirements.title_lang_fr`/
+  `.requirement_text_lang_fr`). Vérifié en conditions réelles (backend local, Thomas Rousseau,
+  onglet Exigences) : plus de 500, EN↔FR bascule proprement (retombe sur l'anglais tant que Thư n'a
+  pas rempli les valeurs `_lang_fr`, comportement attendu, pas un bug).
+
+- **2026-09-14 (Claude Code — rattrapage `regulation-detail-view.tsx`, § 4 phase-6)** : suite au
+  bug de code périmé noté dans `docs/phases/phase-6-francis-feedback.md` § 4 (« Created date »
+  encore basé sur `published_at`, « Last updated » en badge inconditionnel malgré `updated_at`
+  livré par Thư en v1.10/`1a88b12`).
+
+  **Fait :**
+  - `regulation-detail-view.tsx` : « Created date » lit `regulation.created_at` (formaté
+    `formatDateDDMMYYYY`, `AwaitingBackendBadge` seulement si absent) ; « Last updated » lit
+    `regulation.updated_at ?? <AwaitingBackendBadge .../>` au lieu du badge fixe ; nouvelle ligne
+    « Publication date » séparée pour `published_at` (conservé, pas fusionné avec Created).
+  - `docs/phases/phase-6-francis-feedback.md` § 4 mis à jour (bug marqué corrigé, item de la
+    Definition of Done coché).
+  - `backend/` non touché.
+
+  **2 bugs réels trouvés en vérifiant visuellement (backend local), sans rapport avec l'édit
+  ci-dessus** :
+  1. **Colonnes manquantes côté DB locale** (même famille que le point 14/16 de
+     `docs/backend-integration.md`) : `documents.summary`/`.updated_at`/`.published_at` et
+     `procedures`/`regulatory_requirements` `.created_at`/`.updated_at` absentes de
+     `.local/backend-dev.sqlite` — `GET /api/documents/:id` cassait en `net::ERR_FAILED` côté
+     navigateur (exception SQLAlchemy non catchée avant le middleware CORS). Corrigé en relançant
+     `./scripts/local-dev/setup-backend.sh` (7 colonnes ajoutées, générique, sans perte de
+     données).
+  2. **Test obsolète** (`lib/api/client.test.ts`) : attendait encore que `apiFetch` lève
+     `ApiContractError` sur une réponse non conforme, alors que le commit `1a88b12` (déjà dans
+     l'historique, pas de cette session) a changé le comportement en dégradation gracieuse
+     (`console.warn` + retour des champs disponibles, pour ne pas casser tout un écran sur un
+     champ manquant). Sur confirmation explicite de Giang (question posée), le test a été
+     réécrit pour refléter le nouveau comportement (assertion sur le warning + les données
+     renvoyées) plutôt que de revenir sur le comportement produit. Docstring de `apiFetch`
+     (`client.ts`) mise à jour en cohérence (devenue fausse depuis `1a88b12`).
+  - `pnpm tsc --noEmit`, `pnpm lint`, `pnpm test` (127/127) tous verts. Vérifié visuellement
+    (Thomas Rousseau, régulation `EXT-EU-AML-001`) : Created/Uploaded/Last updated/Publication
+    affichent les bonnes valeurs, zéro erreur console.
