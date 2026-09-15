@@ -43,6 +43,7 @@ Represents regulatory or internal documents.
 | created_at | DateTime | ✗ | now() | Immutable creation timestamp |
 | updated_at | DateTime | ✗ | now() | Auto-updates on change |
 | published_at | DateTime | ✓ | NULL | When document was published |
+| assignee | String | ✓ | NULL | User ID or email responsible for document (soft reference to users) |
 
 **Indexes:**
 - None explicitly defined (PK indexed by default)
@@ -427,18 +428,22 @@ Official_public_sources:
 
 ## Notes
 
-1. **Language Support:** Multi-language support is via `_lang_fr` column suffix convention (e.g., `title_lang_fr`, `requirement_text_lang_fr`).
+1. **Soft Foreign Keys:** 
+   - `documents.assignee` and other assignee fields are NOT formal FKs to `users.user_id` — stored as strings (email or user_id) for flexibility.
+   - These represent soft references to users and are validated at the application level, not the database level.
 
-2. **Cascade Deletes:** Most relationships cascade delete for data consistency. `SET NULL` is used for optional version references.
+2. **Language Support:** Multi-language support is via `_lang_fr` column suffix convention (e.g., `title_lang_fr`, `requirement_text_lang_fr`).
 
-3. **Indexes:** Strategic indexes on foreign keys and frequently-queried columns improve query performance.
+3. **Cascade Deletes:** Most relationships cascade delete for data consistency. `SET NULL` is used for optional version references.
 
-4. **Timestamps:** 
+4. **Indexes:** Strategic indexes on foreign keys and frequently-queried columns improve query performance.
+
+5. **Timestamps:** 
    - `created_at` — immutable, set once at creation
    - `updated_at` — auto-updated by SQLAlchemy on every change
    - `published_at` — optional, manually set when document is published
 
-5. **Enum Values (NOT enforced at DB level, app-side validation):**
+6. **Enum Values (NOT enforced at DB level, app-side validation):**
    - **document.category:** EXTERNAL, INTERNAL, CONTROL
    - **regulatory_requirements.risk_level:** LOW, MEDIUM, HIGH
    - **requirement_procedure_map.assessment:** COVERED, PARTIALLY_COVERED, POTENTIAL_GAP, HUMAN_REVIEW

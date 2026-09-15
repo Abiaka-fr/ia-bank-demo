@@ -11,6 +11,7 @@ from app.db import get_db
 from app.models.document import Document, DocumentChunk, DocumentVersion
 from app.models.user import User
 from app.schemas.document import (
+    AssigneeUpdate,
     DocumentChunkRead,
     DocumentContentResponse,
     DocumentListResponse,
@@ -249,3 +250,42 @@ def get_document_content(
         chunks=[DocumentChunkRead.model_validate(chunk) for chunk in chunks],
         total_chunks=len(chunks),
     )
+
+
+@router.put("/{document_id}/assignee", response_model=DocumentRead)
+def update_document_assignee(
+    document_id: str,
+    payload: AssigneeUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> DocumentRead:
+    """
+    Update the assignee of a document.
+
+    **Path Parameters:**
+    - `document_id`: The ID of the document to update (e.g., EXT-EU-AML-001)
+
+    **Request Body:**
+    - `assignee` (optional): User ID or email to assign (null to clear assignment)
+
+    **Example URLs:**
+    - `PUT /api/documents/EXT-EU-AML-001/assignee`
+
+    **Example Requests:**
+    ```json
+    {"assignee": "compliance.officer@bank.com"}
+    ```
+    or to clear:
+    ```json
+    {"assignee": null}
+    ```
+    """
+    doc = db.get(Document, document_id)
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    doc.assignee = payload.assignee
+    db.commit()
+    db.refresh(doc)
+
+    return DocumentRead.model_validate(doc)
