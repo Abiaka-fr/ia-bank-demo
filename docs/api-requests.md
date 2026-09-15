@@ -13,10 +13,18 @@ banner at its top) and is no longer the thing to check before calling an endpoin
 
 ## Open / deferred
 
-1. **European search (CELLAR / EUR-Lex)** — deferred. Thư: "để sau đi, phải coi api đó trả về được
-   cái gì đã" (need to see what that external API actually returns before deciding the backend
-   shape). No frontend work should assume a response shape yet — `AwaitingBackendBadge` stays on
-   any EU-search counters/results in the UI (see `docs/ui-guidelines.md`).
+1. **European search (CELLAR / EUR-Lex)** — split in two (2026-09-15):
+   - **Metadata search — done frontend-side, no backend needed.** A thin Next.js route
+     `GET /api/eu-search` (`frontend/src/app/api/eu-search/route.ts`) queries the public CELLAR
+     SPARQL endpoint (`https://publications.europa.eu/webapi/rdf/sparql`, no registration, no CORS
+     header → must be server-side) and returns `{ results: [{ celex, title, date, type, inForce,
+     eurlexUrl }], page, hasMore }`. Used only by the Knowledge Base search panel. Full design,
+     measured latencies and the (absent) official rate limits:
+     `docs/superpowers/specs/2026-09-15-eu-search-design.md`. Thư: this answers "what does the API
+     return" — feel free to reuse the SPARQL queries there.
+   - **EU analysis (candidate EU requirements, dedup vs Bank KB, applicability) — still deferred to
+     Thư.** Nothing in the frontend assumes a backend shape for it; `AwaitingBackendBadge` stays on
+     the EU counters of the procedure analysis screen.
 
 2. **Procedure analysis — trigger/compute endpoint.** ⚠️ **Confirmed gap, not yet raised with Thư.**
    `docs/api-contract.md` (v1.7/v1.8) proposes `POST /api/procedures/:id/analyze`, and the frontend

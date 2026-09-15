@@ -1568,3 +1568,14 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   - `pnpm tsc --noEmit`, `pnpm lint`, `pnpm test` (127/127) tous verts. Vérifié visuellement
     (Thomas Rousseau, régulation `EXT-EU-AML-001`) : Created/Uploaded/Last updated/Publication
     affichent les bonnes valeurs, zéro erreur console.
+
+- **2026-09-15 (Claude Code — recherche CELLAR dans la Knowledge Base, branche `feat/eu-search`)** :
+  recherche de textes européens livrée côté frontend, sans rien toucher sous `backend/`. Route Next
+  `GET /api/eu-search` → endpoint SPARQL CELLAR public (pas de CORS, donc côté serveur), filtres
+  mot-clé/type/thème EuroVoc/en vigueur/années/tri, 20 résultats par page, cache 1 h, erreurs
+  400/502. Panneau `EuSearchPanel` à la place du badge « Non connecté » ; Knowledge Base ouverte au
+  `COMPLIANCE_OFFICER` (auditeur toujours exclu). Vérifié avant design : aucune limite de débit
+  officielle (rafale de 30 requêtes OK), ~1–1,3 s par requête, SOAP EUR-Lex/data dump écartés
+  (inscription / EU Login). Docs : spec + plan dans `docs/superpowers/`, `docs/api-requests.md` #1
+  scindé (recherche = fait frontend ; analyse UE = toujours Thư), `docs/known-limitations.md` #16,
+  renvoi dans `docs/phases/phase-7-european-search.md`. Reste : vérification visuelle connectée (Knowledge Base en Marie Lefèvre et Thomas Rousseau, sidebar sans Knowledge Base en Claire Dubois) ; merge de la branche après relecture ; latence depuis Vercel (`iad1`) à observer après déploiement.

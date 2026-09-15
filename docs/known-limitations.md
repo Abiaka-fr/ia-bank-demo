@@ -120,6 +120,17 @@ anglais ↔ procédures internes en français) est couvert par le corpus de dém
     Le bouton Imprimer qui l'accompagne (`canPrint`) est le même garde-fou d'expérience que les
     profils d'accès (point 14) — pas un vrai contrôle d'accès.
 
+16. **La recherche de textes européens (Knowledge Base) ne porte que sur les titres, et dépend
+    d'un service public sans limite de débit publiée.** `GET /api/eu-search` interroge l'endpoint
+    SPARQL CELLAR : le mot-clé est cherché dans le titre (pas le texte intégral), les thèmes
+    EuroVoc sont une liste fermée de 8 thèmes bancaires. Aucune limite officielle n'est publiée
+    (rafale de 30 requêtes sans refus le 2026-09-15) ; chaque requête est mise en cache 1 h et un
+    échec CELLAR s'affiche comme une erreur avec « Réessayer ». **Même en mode mock, cette
+    recherche appelle le vrai CELLAR** (connexion internet requise en démo). La fonction Vercel
+    tourne dans la région par défaut `iad1` : latence vers Luxembourg non mesurée en production.
+    C'est une consultation : aucun lien n'est fait avec les procédures, et l'applicabilité reste à
+    confirmer par la Conformité (mention affichée sous le tableau).
+
 ## Garde-fou produit, rappel
 
 Aucune de ces limitations ne remet en cause la règle non négociable de `docs/ui-guardrails.md` :
