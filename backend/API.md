@@ -378,9 +378,198 @@ PUT /api/documents/EXT-EU-AML-001/assignee
 
 ---
 
-## 3. Regulatory Requirements
+## 3. Pipeline - Document Ingestion & Requirements Analysis
 
-### List All Requirements
+### Ingest Regulation Document
+
+#### `POST /api/documents/regulation-ingest`
+Ingest a regulation document: classify, chunk, and store in database.
+
+This endpoint accepts raw regulation text and uses an LLM to:
+1. Classify and extract metadata (title, domain, category, document_type, origin, language, data_classification)
+2. Automatically split the text into logical sections/chapters
+3. Store as Document → DocumentVersion → DocumentChunk rows
+
+**Authentication** Required (Bearer token)
+
+**Request Body**
+- `text` (required): Raw regulation document text (can be very long)
+- `created_by` (required): User ID or email who is ingesting the document
+- `published_at` (optional): When the document was published (ISO 8601 datetime format)
+
+**Request Example**
+```json
+POST /api/documents/regulation-ingest
+{
+  "text": "# EU AML/CFT Regulation\n\n## Section 1: Customer Due Diligence\n...",
+  "created_by": "compliance.officer@bank.com",
+  "published_at": "2026-09-16T10:00:00"
+}
+```
+
+**Response (201 Created)**
+```json
+{
+  "document_id": "EXT-EU-AML-002",
+  "title": "EU AML/CFT Customer Due Diligence Demo Standard",
+  "category": "EXTERNAL",
+  "document_type": "REGULATORY_STANDARD",
+  "origin_code": "EU",
+  "origin_name": "European Union",
+  "domain": "AML/CFT",
+  "language": "EN",
+  "data_classification": "EUR-Lex/CELLAR",
+  "current_version": "1.0",
+  "chunks_count": 8
+}
+```
+
+**Response (400 Bad Request)**
+```json
+{
+  "detail": "LLM API error: ..."
+}
+```
+
+**Response (500 on error)**
+```json
+{
+  "detail": "Document ingestion failed: ..."
+}
+```
+
+**Notes:**
+- Requires OPENROUTER_API_KEY environment variable
+- Document IDs are generated sequentially per origin_code
+- All documents start at version 1.0
+- Chunks are numbered sequentially starting from 1
+
+---
+
+### Extract Requirements from Document
+
+#### `POST /api/requirements/extract`
+Extract regulatory requirements from an ingested document using LLM analysis.
+
+This endpoint takes a document_id and uses an LLM to:
+1. Load the document's chunked content
+2. Analyze and extract all regulatory requirements
+3. Store RegulatoryRequirement rows with metadata
+
+**Authentication** Required (Bearer token)
+
+**Request Body**
+- `document_id` (required): ID of document to extract requirements from
+
+**Request Example**
+```json
+POST /api/requirements/extract
+{
+  "document_id": "EXT-EU-AML-002"
+}
+```
+
+**Response (201 Created)**
+```json
+{
+  "document_id": "EXT-EU-AML-002",
+  "requirements_count": 12,
+  "requirement_ids": ["REQ-0001", "REQ-0002", "REQ-0003", ...]
+}
+```
+
+**Response (400 Bad Request)**
+```json
+{
+  "detail": "Document EXT-EU-AML-002 not found"
+}
+```
+
+**Response (500 on error)**
+```json
+{
+  "detail": "Requirement extraction failed: ..."
+}
+```
+
+**Notes:**
+- Requires OPENROUTER_API_KEY environment variable
+- Requirement IDs are generated sequentially globally
+- All requirements are marked as ACTIVE status
+- Extract from the document (via /api/documents/ingest) before extracting requirements
+
+---
+
+### Analyze Requirement Impact on Procedures
+
+#### `POST /api/mappings/analyze`
+Analyze impact of requirements on internal procedures and generate mappings.
+
+This endpoint takes a list of requirement IDs and uses an LLM to:
+1. For each requirement, find all procedures in the same domain
+2. Assess how the requirement impacts each procedure
+3. Generate suggested modifications if needed
+4. Store RequirementProcedureMap rows with PENDING_REVIEW status
+
+**Authentication** Required (Bearer token)
+
+**Request Body**
+- `requirement_ids` (required): List of requirement IDs to analyze
+
+**Request Example**
+```json
+POST /api/mappings/analyze
+{
+  "requirement_ids": ["REQ-0001", "REQ-0002"]
+}
+```
+
+**Response (201 Created)**
+```json
+[
+  {
+    "requirement_id": "REQ-0001",
+    "mappings_created": 3,
+    "mapping_ids": ["MAP-0001", "MAP-0002", "MAP-0003"],
+    "warnings": []
+  },
+  {
+    "requirement_id": "REQ-0002",
+    "mappings_created": 2,
+    "mapping_ids": ["MAP-0004", "MAP-0005"],
+    "warnings": ["Procedure PRC-AML-010 has no active version"]
+  }
+]
+```
+
+**Response (400 Bad Request)**
+```json
+{
+  "detail": "Requirement list is empty"
+}
+```
+
+**Response (500 on error)**
+```json
+{
+  "detail": "Impact analysis failed: ..."
+}
+```
+
+**Notes:**
+- Requires OPENROUTER_API_KEY environment variable
+- Only compares requirements to procedures in the same domain (filtered)
+- Mapping IDs are generated sequentially globally
+- All mappings start with human_status = PENDING_REVIEW
+- Suggested modifications are grounded with actual chunk offsets
+- Warnings are returned for individual failures; request doesn't fail entirely
+- Review mappings via GET /api/mappings/all
+
+---
+
+## 4. Regulatory Requirements
+
+### List Regulatory Requirements
 
 #### `GET /api/requirements`
 Get all regulatory requirements with optional filtering.
@@ -561,7 +750,7 @@ GET /api/requirements/REQ-0001
 
 ---
 
-## 3.5. Procedures
+## 4.5. Procedures
 
 ### List All Procedures
 
@@ -670,7 +859,7 @@ GET /api/procedures/PRC-AML-007
 
 ---
 
-## 4. Requirement-Procedure Mappings
+## 5. Requirement-Procedure Mappings
 
 ### Update Mapping Human Review Status
 
@@ -924,7 +1113,7 @@ GET /api/mappings/procedures-to-requirements?procedure_ids=PRC-KYC-002&domain=KY
 
 ---
 
-## 5. User Management
+## 6. User Management
 
 ### List Users
 
@@ -1051,7 +1240,7 @@ PUT /api/users/USR-a1b2c3d4e5f6g7h8i9j0/role
 
 ---
 
-## 6. Authentication
+## 7. Authentication
 
 ### Signup
 

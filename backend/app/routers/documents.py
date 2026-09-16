@@ -19,7 +19,9 @@ from app.schemas.document import (
     DocumentUpdateRequest,
     DocumentVersionRead,
     DocumentVersionResponse,
+    IngestDocumentRequest,
 )
+from app.services.document_ingestion import DocumentIngestionService
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -289,3 +291,42 @@ def update_document_assignee(
     db.refresh(doc)
 
     return DocumentRead.model_validate(doc)
+
+
+@router.post("/regulation-ingest", status_code=201)
+def ingest_regulation(
+    payload: IngestDocumentRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Ingest a regulation document: classify, chunk, and store.
+
+    This endpoint accepts raw regulation text, uses an LLM to:
+    1. Classify and extract metadata (title, domain, category, etc.)
+    2. Automatically split the text into logical sections/chunks
+
+    The document is then stored with a DocumentVersion and DocumentChunks.
+
+    **Request Body:**
+    - `text` (required): Raw regulation document text
+
+    **Response:** IngestDocumentResponse with document details and chunk count
+
+    **Notes:**
+    - Requires OpenRouter API key in OPENROUTER_API_KEY env var
+    - Documents are assigned sequential IDs per origin_code
+    - Each document starts at version 1.0
+    """
+    try:
+        result = DocumentIngestionService.ingest(
+            db,
+            payload.text,
+            created_by=payload.created_by,
+            published_at=payload.published_at,
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Document ingestion failed: {str(e)}")

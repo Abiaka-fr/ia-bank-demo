@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
 
+    # OpenRouter API (for pipeline ingestion)
+    openrouter_api_key: str = ""
+
     class Config:
         env_file = ".env"
         case_sensitive = False

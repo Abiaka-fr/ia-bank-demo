@@ -24,7 +24,7 @@ source .venv/bin/activate      # Unix/macOS or
 ### 2. Start the FastAPI Server
 
 ```bash
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload
 ```
 
 The server starts at **http://localhost:8000**

@@ -160,3 +160,20 @@ class AssigneeUpdate(BaseModel):
         json_schema_extra = {
             "example": {"assignee": "compliance.officer@bank.com"}
         }
+
+
+class IngestDocumentRequest(BaseModel):
+    """Request to ingest and chunk a regulation document."""
+
+    text: str
+    created_by: str
+    published_at: datetime | None = None
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "text": "# Regulation Title\n\nSection 1...\n\nSection 2...",
+                "created_by": "compliance.officer@bank.com",
+                "published_at": "2026-09-16T10:00:00"
+            }
+        }
