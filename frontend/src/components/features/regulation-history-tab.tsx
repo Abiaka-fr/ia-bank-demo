@@ -38,7 +38,7 @@ export function RegulationHistoryTab({ regulationId }: { regulationId: string })
   if (data.length === 0) return <EmptyState message={t("empty")} />;
 
   return (
-    <div className="rounded-lg border">
+    <div className="rounded-lg border bg-card shadow-sm shadow-foreground/10">
       <Table>
         <TableHeader>
           <TableRow>

@@ -43,6 +43,16 @@ Pull du travail de Thư (+ une session de code FE qui avait déjà anticipé le 
 - Classification (`docs/api-requests.md` #3) et l'endpoint d'analyse (#2) restent ouverts, sans
   changement de ce côté.
 
+## Mise à jour 2026-09-16 — identité visuelle « Institutional Navy » validée par Francis
+
+Francis (2026-09-16) : l'app doit se reconnaître comme un outil de conformité au premier coup
+d'œil, pas comme un SaaS neutre générique. Deux directions maquettées (artefact partagé) —
+**Direction A « Institutional Navy » retenue** : sidebar/chrome navy foncé, accent brass (au lieu
+du gris neutre actuel), headings en serif (Source Serif 4), corps en IBM Plex Sans, codes de
+référence (`document_id`/`procedure_id`) en IBM Plex Mono. **Les 5 couleurs de statut et la
+palette catégorielle des graphiques ne changent pas** — gelées par la validation CVD/contraste
+existante. Détail des tokens dans `docs/ui-guidelines.md` (nouvelle section « Identité visuelle »).
+
 ## Phase actuelle
 
 **Phase 1 — Fondations** : terminée le 2026-09-04.

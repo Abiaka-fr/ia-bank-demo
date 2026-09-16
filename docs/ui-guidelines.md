@@ -31,6 +31,55 @@ approximatifs. On s'appuie sur des primitives éprouvées plutôt que de tout r�
 6. **Vérification visuelle obligatoire** avant de considérer une tâche UI terminée — voir
    `frontend/CLAUDE.md` section "Vérification visuelle".
 
+## Identité visuelle « Institutional Navy » — validée par Francis le 2026-09-16
+
+Francis (retour du 2026-09-16, sur mail) : l'app doit se reconnaître comme un outil de conformité
+réglementaire **au premier coup d'œil** — aujourd'hui le rendu est un SaaS neutre générique. Deux
+directions ont été maquettées et soumises ; **Direction A retenue** (voir l'artefact partagé avec
+Francis). Ne change QUE l'identité/chrome (nav, header, typo, accent) — les 5 couleurs de statut et
+la palette catégorielle ci-dessus restent **strictement identiques**, ne pas les toucher.
+
+### Palette (remplace les tokens neutres actuels de `globals.css`, mode clair)
+
+| Rôle | Token shadcn | Hex |
+|---|---|---|
+| Fond app | `--background` | `#EEF1F5` |
+| Texte principal | `--foreground` | `#182338` |
+| Sidebar fond | `--sidebar` | `#0B1F3A` |
+| Sidebar texte | `--sidebar-foreground` | `#F3F5F9` |
+| Sidebar item actif (fond) | `--sidebar-accent` | `#16345C` |
+| Sidebar item actif (texte) | `--sidebar-accent-foreground` | `#F6C976` |
+| Accent principal (boutons, liens actifs, icônes clés) | `--primary` | `#B8863F` (brass) |
+| Texte sur accent | `--primary-foreground` | `#20140A` |
+| Bordures | `--border` | `#DBE1EA` |
+
+**Mode sombre** : mêmes rôles, assombrir `--background`/`--card` vers un navy quasi-noir
+(`#0F1622`-ish) plutôt que le gris neutre actuel, garder `--primary` (brass) tel quel — il reste
+lisible sur fond sombre sans éclaircir. Sidebar déjà sombre en mode clair : en mode sombre, la
+distinguer du fond principal par une nuance légèrement plus froide/plus sombre, pas identique.
+
+**Ne pas toucher** : `--covered`/`--partial`/`--gap`/`--noproc`/`--expert`, `--cat-1`…`--cat-8` (et
+leurs variantes `.dark`) — ces valeurs sont gelées par la validation CVD/contraste de la compétence
+`dataviz`, indépendamment de cette identité visuelle.
+
+### Typographie
+
+- **Titres/headings** (`h1`-`h3`, titres de carte) : nouvelle police serif, **Source Serif 4**
+  (Google Fonts), chargée via `next/font/google` comme `--font-heading` (nouveau, distinct de
+  `--font-sans`) — actuellement `--font-heading` pointe sur `--font-sans` par défaut
+  (`@theme inline` dans `globals.css`), à séparer.
+- **Corps/UI** (labels, tableaux, boutons) : remplacer **Geist** par **IBM Plex Sans** —
+  garde `--font-sans` comme nom de variable pour ne rien casser côté Tailwind.
+- **Codes de référence** (`document_id`, `procedure_id`, ex. `POL-COMP-001`, `EXT-ACPR-01`) :
+  police mono, remplacer **Geist Mono** par **IBM Plex Mono** (`--font-geist-mono`) — affichée
+  explicitement en `font-mono` partout où un ID métier apparaît (badges, en-têtes de détail,
+  colonnes de tables), pas seulement là où c'est déjà le cas.
+
+### Logo / icône
+
+Le `ShieldCheck` (lucide-react) déjà utilisé dans `app-sidebar.tsx` reste tel quel — cohérent avec
+la direction retenue, pas besoin d'un nouvel icône de marque.
+
 ## Layout général
 
 - Sidebar de navigation gauche (5 écrans : Dashboard, Analyse Réglementaire, Impact Analysis,

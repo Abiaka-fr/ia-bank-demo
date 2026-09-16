@@ -39,7 +39,7 @@ export function EvidenceCard({
     <>
       <figcaption className="mb-3 flex flex-wrap items-center gap-2 text-xs">
         <FileText className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-        <span className="font-medium">{evidence.document_id}</span>
+        <span className="font-mono font-medium">{evidence.document_id}</span>
         <span className="text-muted-foreground">{evidence.document_title}</span>
         <Badge variant="secondary" className="ml-auto font-mono text-[11px]">
           {evidence.section_reference}
