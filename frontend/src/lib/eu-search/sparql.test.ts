@@ -7,6 +7,7 @@ import {
   buildEuSearchQuery,
   mapEuSearchBindings,
   toBifContainsExpression,
+  toCelex,
   type SparqlJson,
 } from "./sparql";
 
@@ -41,7 +42,7 @@ describe("euSearchParamsSchema", () => {
 
     // Assert
     expect(parsed).toEqual({
-      type: "REG_DIR",
+      types: ["REG", "DIR"],
       inForce: "true",
       sort: "newest",
       page: 1,
@@ -51,18 +52,26 @@ describe("euSearchParamsSchema", () => {
 
   it("convertit les paramètres d'URL reçus en chaînes", () => {
     // Arrange / Act
-    const parsed = euSearchParamsSchema.parse({ page: "3", from: "2015", to: "2020" });
+    const parsed = euSearchParamsSchema.parse({
+      page: "3",
+      from: "2015",
+      to: "2020",
+      types: "DEC,RECO",
+    });
 
     // Assert
     expect(parsed.page).toBe(3);
     expect(parsed.from).toBe(2015);
     expect(parsed.to).toBe(2020);
+    expect(parsed.types).toEqual(["DEC", "RECO"]);
   });
 
   it("rejette les valeurs hors liste blanche ou hors bornes", () => {
     // Arrange
     const invalidInputs = [
-      { type: "FOO" },
+      { types: "FOO" },
+      { types: "" },
+      { types: "REG,DIR,DEC,RECO,REG" },
       { subject: "unknown" },
       { page: "51" },
       { page: "0" },
@@ -121,6 +130,25 @@ describe("toBifContainsExpression", () => {
   });
 });
 
+describe("toCelex", () => {
+  it("reconnaît un numéro CELEX, avec ou sans préfixe, en minuscules ou rectificatif", () => {
+    // Arrange / Act / Assert
+    expect(toCelex("32022R2554")).toBe("32022R2554");
+    expect(toCelex("  celex:32022r2554 ")).toBe("32022R2554");
+    expect(toCelex("CELEX: 32015L0849")).toBe("32015L0849");
+    expect(toCelex("52016PC0450")).toBe("52016PC0450");
+    expect(toCelex("32022R2554R(07)")).toBe("32022R2554R(07)");
+  });
+
+  it("renvoie null pour un mot-clé, un préfixe ou un CELEX suivi de caractères", () => {
+    // Arrange / Act / Assert
+    expect(toCelex(undefined)).toBeNull();
+    expect(toCelex("blanchiment")).toBeNull();
+    expect(toCelex("32022R25")).toBeNull();
+    expect(toCelex('32022R2554" } ; DROP #')).toBeNull();
+  });
+});
+
 describe("buildEuSearchQuery", () => {
   it("construit la requête par défaut (REG+DIR en vigueur, titre FR, plus récents)", () => {
     // Arrange / Act
@@ -136,15 +164,21 @@ describe("buildEuSearchQuery", () => {
     );
     expect(query).not.toContain("bif:contains");
     expect(query).not.toContain("eurovoc");
+    expect(query).not.toContain('"^^xsd:string');
     expect(query).toContain("ORDER BY DESC(?date) ?celex");
     expect(query).toContain("LIMIT 21 OFFSET 0");
   });
 
   it("traduit chaque filtre en clause SPARQL", () => {
     // Arrange / Act / Assert
-    const dec = buildEuSearchQuery(params({ type: "DEC" }));
+    const dec = buildEuSearchQuery(params({ types: "DEC" }));
     expect(dec).toContain("resource-type/DEC>");
     expect(dec).not.toContain("resource-type/REG>");
+
+    const decReco = buildEuSearchQuery(params({ types: "DEC,RECO" }));
+    expect(decReco).toContain(
+      "FILTER(?type IN (<http://publications.europa.eu/resource/authority/resource-type/DEC>, <http://publications.europa.eu/resource/authority/resource-type/RECO>))",
+    );
 
     expect(buildEuSearchQuery(params({ subject: "money-laundering" }))).toContain(
       "?work cdm:work_is_about_concept_eurovoc <http://eurovoc.europa.eu/5465> .",
@@ -172,6 +206,19 @@ describe("buildEuSearchQuery", () => {
     // Assert
     expect(query).toContain(`?tSel bif:contains "'blanchiment'" .`);
     expect(query).not.toContain("OPTIONAL { ?eSel");
+  });
+
+  it("cherche le CELEX exact au lieu du titre, en gardant les autres filtres", () => {
+    // Arrange / Act
+    const query = buildEuSearchQuery(params({ q: "celex:32005l0060", subject: "money-laundering" }));
+
+    // Assert
+    expect(query).toContain('?work cdm:resource_legal_id_celex "32005L0060"^^xsd:string .');
+    expect(query).not.toContain("bif:contains");
+    expect(query).toContain("OPTIONAL { ?eSel");
+    expect(query).toContain(`FILTER(?type IN (<${REG_IRI}>,`);
+    expect(query).toContain('FILTER(?inForce = "true"^^xsd:boolean)');
+    expect(query).toContain("cdm:work_is_about_concept_eurovoc <http://eurovoc.europa.eu/5465>");
   });
 
   it("n'insère jamais le mot-clé brut dans la requête", () => {

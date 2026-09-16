@@ -1579,3 +1579,14 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   (inscription / EU Login). Docs : spec + plan dans `docs/superpowers/`, `docs/api-requests.md` #1
   scindé (recherche = fait frontend ; analyse UE = toujours Thư), `docs/known-limitations.md` #16,
   renvoi dans `docs/phases/phase-7-european-search.md`. Reste : vérification visuelle connectée (Knowledge Base en Marie Lefèvre et Thomas Rousseau, sidebar sans Knowledge Base en Claire Dubois) ; merge de la branche après relecture ; latence depuis Vercel (`iad1`) à observer après déploiement.
+
+- **2026-09-16 (Claude Code — recherche UE : CELEX + filtre Type, branche `feat/eu-search`)** :
+  le champ de recherche accepte aussi un numéro CELEX exact (`32022R2554`, `CELEX:32022r2554`,
+  rectificatif `…R(07)`) ; les filtres restent appliqués (choix de Giang), et la recherche par
+  préfixe de CELEX est écartée (~8,6 s et surtout des rectificatifs, contre ~1 s en exact). Le
+  filtre Type devient une liste à cocher (`types=REG,DIR`) : l'option gigogne « Règlements et
+  directives » recouvrait « Règlement » et « Directive », doublon signalé par Giang. Les libellés
+  des filtres passent à gauche des contrôles (`Label` + `htmlFor`), les items ne répètent plus
+  « Type : ». Vérifié : 151 tests, lint/typecheck/check:i18n verts ; via la route réelle — CELEX
+  exact 1 résultat, CELEX abrogé 0 en « En vigueur » et 1 en « Tous », `types=DEC` uniquement des
+  décisions, `types=FOO` → 400. Reste : vérification visuelle connectée (Ruling R8).

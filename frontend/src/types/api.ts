@@ -276,7 +276,11 @@ export const apiErrorSchema = z.object({
  */
 export const euDocumentTypeSchema = z.enum(["REG", "DIR", "DEC", "RECO"]);
 
-export const euSearchTypeSchema = z.enum(["REG_DIR", "REG", "DIR", "DEC", "RECO"]);
+/** Types cochés, reçus en `types=REG,DIR` : au moins un, jamais plus que la liste. */
+const euSearchTypesSchema = z.preprocess(
+  (value) => (typeof value === "string" ? value.split(",") : value),
+  z.array(euDocumentTypeSchema).min(1).max(euDocumentTypeSchema.options.length),
+);
 
 export const euSubjectSchema = z.enum([
   "money-laundering",
@@ -293,8 +297,9 @@ const euYearSchema = z.coerce.number().int().min(1950).max(new Date().getFullYea
 
 export const euSearchParamsSchema = z
   .object({
+    /** Mot-clé cherché dans le titre, ou numéro CELEX exact (voir `toCelex`). */
     q: z.string().max(100).optional(),
-    type: euSearchTypeSchema.default("REG_DIR"),
+    types: euSearchTypesSchema.default(["REG", "DIR"]),
     subject: euSubjectSchema.optional(),
     inForce: z.enum(["true", "all"]).default("true"),
     from: euYearSchema.optional(),

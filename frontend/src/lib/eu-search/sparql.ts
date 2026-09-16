@@ -1,6 +1,5 @@
 import {
   euDocumentTypeSchema,
-  type EuDocumentType,
   type EuSearchParams,
   type EuSearchResponse,
   type EuSearchResult,
@@ -10,7 +9,8 @@ import {
 /**
  * Construction de la requête SPARQL CELLAR et lecture de sa réponse — fonctions pures,
  * testées sans réseau. Aucune valeur saisie n'est interpolée brute : types, thèmes et
- * langues passent par des listes blanches, le mot-clé est réduit à des lettres/chiffres.
+ * langues passent par des listes blanches, le mot-clé est réduit à des lettres/chiffres,
+ * un CELEX n'est inséré qu'après validation par une expression stricte.
  */
 
 export const EU_PAGE_SIZE = 20;
@@ -18,14 +18,8 @@ export const EU_PAGE_SIZE = 20;
 const RESOURCE_TYPE_PREFIX = "http://publications.europa.eu/resource/authority/resource-type/";
 const LANGUAGE_PREFIX = "http://publications.europa.eu/resource/authority/language/";
 const MAX_KEYWORD_WORDS = 8;
-
-const TYPES_BY_FILTER: Record<EuSearchParams["type"], EuDocumentType[]> = {
-  REG_DIR: ["REG", "DIR"],
-  REG: ["REG"],
-  DIR: ["DIR"],
-  DEC: ["DEC"],
-  RECO: ["RECO"],
-};
+/** Secteur + année + type (1-2 lettres) + numéro, rectificatif `R(nn)` optionnel. */
+const CELEX_PATTERN = /^\d{5}[A-Z]{1,2}\d{4}(R\(\d{2}\))?$/;
 
 const LANGUAGE_CODES: Record<EuSearchParams["lang"], string> = { fr: "FRA", en: "ENG" };
 
@@ -47,17 +41,25 @@ export function toBifContainsExpression(q: string | undefined): string | null {
   return words.length ? words.map((word) => `'${word}'`).join(" AND ") : null;
 }
 
+/** Saisie → numéro CELEX normalisé (`celex:32022r2554` → `32022R2554`), ou `null`. */
+export function toCelex(q: string | undefined): string | null {
+  const candidate = (q ?? "").trim().replace(/^CELEX:\s*/i, "").toUpperCase();
+  return CELEX_PATTERN.test(candidate) ? candidate : null;
+}
+
 export function buildEuSearchQuery(params: EuSearchParams): string {
-  const types = TYPES_BY_FILTER[params.type]
-    .map((type) => `<${RESOURCE_TYPE_PREFIX}${type}>`)
-    .join(", ");
+  const types = params.types.map((type) => `<${RESOURCE_TYPE_PREFIX}${type}>`).join(", ");
   const language = `<${LANGUAGE_PREFIX}${LANGUAGE_CODES[params.lang]}>`;
-  const keyword = toBifContainsExpression(params.q);
+  // ponytail: CELEX exact seulement — la recherche par préfixe (STRSTARTS) prend ~8,6 s
+  // sur CELLAR et remonte surtout des rectificatifs (mesuré le 2026-09-15).
+  const celex = toCelex(params.q);
+  const keyword = celex ? null : toBifContainsExpression(params.q);
   const selectedTitle = `?eSel cdm:expression_belongs_to_work ?work ; cdm:expression_uses_language ${language} ; cdm:expression_title ?tSel .`;
 
   const lines = [
     "PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>",
     "SELECT DISTINCT ?celex ?date ?type ?inForce (COALESCE(?tSel, ?tEng) AS ?title) WHERE {",
+    celex ? `  ?work cdm:resource_legal_id_celex "${celex}"^^xsd:string .` : null,
     "  ?work cdm:resource_legal_id_celex ?celex ; cdm:work_date_document ?date ; cdm:work_has_resource-type ?type .",
     `  FILTER(?type IN (${types}))`,
     params.inForce === "true"

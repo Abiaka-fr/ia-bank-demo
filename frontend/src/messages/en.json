@@ -219,7 +219,7 @@
     "lastUpdatedLabel": "Last updated",
     "europeanSectionTitle": "European Regulatory Sources",
     "euSearch": {
-      "keywordPlaceholder": "Keyword in title (e.g. money laundering)",
+      "keywordPlaceholder": "Title keyword or CELEX (e.g. money laundering, 32022R2554)",
       "yearFrom": "From (year)",
       "yearTo": "To (year)",
       "searchButton": "Search",
@@ -234,7 +234,6 @@
       "statusNotInForce": "Not in force",
       "statusAll": "All",
       "types": {
-        "REG_DIR": "Regulations and directives",
         "REG": "Regulation",
         "DIR": "Directive",
         "DEC": "Decision",

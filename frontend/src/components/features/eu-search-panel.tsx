@@ -2,7 +2,7 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { cn } from "cn";
-import { ExternalLink, Search } from "lucide-react";
+import { ChevronDown, ExternalLink, Search } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { type FormEvent, useState } from "react";
 
@@ -13,7 +13,14 @@ import {
 } from "@/components/features/query-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -33,8 +40,8 @@ import { fetchEuSearch } from "@/lib/api/eu-search";
 import { queryKeys } from "@/lib/api/query-keys";
 import { formatDateDDMMYYYY } from "@/lib/format-date";
 import {
+  euDocumentTypeSchema,
   euSearchParamsSchema,
-  euSearchTypeSchema,
   euSubjectSchema,
   type EuSearchParams,
 } from "@/types/api";
@@ -179,7 +186,7 @@ export function EuSearchPanel() {
   return (
     <div className="space-y-4">
       <form onSubmit={handleSubmit} className="flex flex-wrap items-center gap-2">
-        <div className="relative w-full max-w-xs">
+        <div className="relative w-full max-w-sm">
           <Search
             className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
             aria-hidden
@@ -223,79 +230,105 @@ export function EuSearchPanel() {
         </p>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Select
-          value={filters.type}
-          onValueChange={(value) => applyFilters({ type: value as EuSearchParams["type"] })}
-        >
-          <SelectTrigger size="sm" aria-label={t("filterType")} className="w-64">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {euSearchTypeSchema.options.map((type) => (
-              <SelectItem key={type} value={type}>
-                {t("filterType")}: {t(`types.${type}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="eu-filter-types">{t("filterType")}</Label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                id="eu-filter-types"
+                variant="outline"
+                size="sm"
+                className="w-56 justify-between font-normal"
+              >
+                <span className="truncate">
+                  {filters.types.map((type) => t(`types.${type}`)).join(", ")}
+                </span>
+                <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {euDocumentTypeSchema.options.map((type) => {
+                const checked = filters.types.includes(type);
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={type}
+                    checked={checked}
+                    // Au moins un type reste coché : une liste vide serait refusée par la route.
+                    disabled={checked && filters.types.length === 1}
+                    // Menu gardé ouvert pour cocher plusieurs types d'affilée.
+                    onSelect={(event) => event.preventDefault()}
+                    onCheckedChange={(isChecked) =>
+                      applyFilters({
+                        types: euDocumentTypeSchema.options.filter((option) =>
+                          option === type ? isChecked : filters.types.includes(option),
+                        ),
+                      })
+                    }
+                  >
+                    {t(`types.${type}`)}
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
-        <Select
-          value={filters.subject ?? ALL_SUBJECTS}
-          onValueChange={(value) =>
-            applyFilters({
-              subject: value === ALL_SUBJECTS ? undefined : (value as EuSearchParams["subject"]),
-            })
-          }
-        >
-          <SelectTrigger size="sm" aria-label={t("filterSubject")} className="w-72">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_SUBJECTS}>
-              {t("filterSubject")}: {common("all")}
-            </SelectItem>
-            {euSubjectSchema.options.map((subject) => (
-              <SelectItem key={subject} value={subject}>
-                {t("filterSubject")}: {t(`subjects.${subject}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Label htmlFor="eu-filter-subject">{t("filterSubject")}</Label>
+          <Select
+            value={filters.subject ?? ALL_SUBJECTS}
+            onValueChange={(value) =>
+              applyFilters({
+                subject: value === ALL_SUBJECTS ? undefined : (value as EuSearchParams["subject"]),
+              })
+            }
+          >
+            <SelectTrigger id="eu-filter-subject" size="sm" className="w-56">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_SUBJECTS}>{common("all")}</SelectItem>
+              {euSubjectSchema.options.map((subject) => (
+                <SelectItem key={subject} value={subject}>
+                  {t(`subjects.${subject}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Select
-          value={filters.inForce}
-          onValueChange={(value) => applyFilters({ inForce: value as EuSearchParams["inForce"] })}
-        >
-          <SelectTrigger size="sm" aria-label={t("filterStatus")} className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="true">
-              {t("filterStatus")}: {t("statusInForce")}
-            </SelectItem>
-            <SelectItem value="all">
-              {t("filterStatus")}: {t("statusAll")}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Label htmlFor="eu-filter-status">{t("filterStatus")}</Label>
+          <Select
+            value={filters.inForce}
+            onValueChange={(value) => applyFilters({ inForce: value as EuSearchParams["inForce"] })}
+          >
+            <SelectTrigger id="eu-filter-status" size="sm" className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="true">{t("statusInForce")}</SelectItem>
+              <SelectItem value="all">{t("statusAll")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Select
-          value={filters.sort}
-          onValueChange={(value) => applyFilters({ sort: value as EuSearchParams["sort"] })}
-        >
-          <SelectTrigger size="sm" aria-label={t("sortLabel")} className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="newest">
-              {t("sortLabel")}: {t("sortNewest")}
-            </SelectItem>
-            <SelectItem value="oldest">
-              {t("sortLabel")}: {t("sortOldest")}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Label htmlFor="eu-filter-sort">{t("sortLabel")}</Label>
+          <Select
+            value={filters.sort}
+            onValueChange={(value) => applyFilters({ sort: value as EuSearchParams["sort"] })}
+          >
+            <SelectTrigger id="eu-filter-sort" size="sm" className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">{t("sortNewest")}</SelectItem>
+              <SelectItem value="oldest">{t("sortOldest")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {renderResults()}

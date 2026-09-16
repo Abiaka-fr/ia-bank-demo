@@ -219,7 +219,7 @@
     "lastUpdatedLabel": "Dernière mise à jour",
     "europeanSectionTitle": "European Regulatory Sources",
     "euSearch": {
-      "keywordPlaceholder": "Mot-clé dans le titre (ex. blanchiment)",
+      "keywordPlaceholder": "Mot-clé du titre ou CELEX (ex. blanchiment, 32022R2554)",
       "yearFrom": "De (année)",
       "yearTo": "À (année)",
       "searchButton": "Rechercher",
@@ -234,7 +234,6 @@
       "statusNotInForce": "Non en vigueur",
       "statusAll": "Tous",
       "types": {
-        "REG_DIR": "Règlements et directives",
         "REG": "Règlement",
         "DIR": "Directive",
         "DEC": "Décision",

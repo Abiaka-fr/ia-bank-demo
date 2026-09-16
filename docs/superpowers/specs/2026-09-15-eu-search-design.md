@@ -63,7 +63,8 @@ EUR-Lex (inscription obligatoire), data dump (EU Login), flux RSS (V2).
 
 **Volumes en vigueur par type (CELEX secteur 3)** : `DEC_ENTSCHEID` 11 971, `DEC` 11 803,
 `REG_IMPL` 7 929, `REG` 6 647, `DEC_IMPL` 3 286, `REG_DEL` 1 601, `DIR` 1 109, `RECO` 576. Sans
-filtre de type, les résultats sont dominés par des décisions administratives → défaut `REG_DIR`.
+filtre de type, les résultats sont dominés par des décisions administratives → par défaut, seuls
+`REG` et `DIR` sont cochés.
 
 ## 2. Architecture et flux
 
@@ -92,8 +93,8 @@ KnowledgeBaseView
 
 | Paramètre | Valeurs acceptées | Défaut |
 |---|---|---|
-| `q` | chaîne ≤ 100 caractères | vide |
-| `type` | `REG_DIR` \| `REG` \| `DIR` \| `DEC` \| `RECO` | `REG_DIR` |
+| `q` | chaîne ≤ 100 caractères : mot-clé du titre, ou numéro CELEX exact (`32022R2554`, `CELEX:32022r2554`, rectificatif `…R(07)`) | vide |
+| `types` | liste non vide de `REG`, `DIR`, `DEC`, `RECO` (ex. `types=REG,DIR`) | `REG,DIR` |
 | `subject` | une clé de la table EuroVoc ci-dessous, ou vide | vide |
 | `inForce` | `true` \| `all` | `true` |
 | `from`, `to` | entier 1950 … année courante ; `from ≤ to` si les deux sont fournis | vide |
@@ -103,8 +104,8 @@ KnowledgeBaseView
 
 Tout paramètre hors de ces valeurs → `400` `{ error: { code: "INVALID_PARAMS", message } }`.
 
-`type` → IRI `http://publications.europa.eu/resource/authority/resource-type/{REG|DIR|DEC|RECO}`
-(`REG_DIR` = REG + DIR). `REG_IMPL`, `REG_DEL`, `DEC_IMPL`, `DEC_ENTSCHEID` sont volontairement
+`types` → une IRI `http://publications.europa.eu/resource/authority/resource-type/{REG|DIR|DEC|RECO}`
+par type coché. `REG_IMPL`, `REG_DEL`, `DEC_IMPL`, `DEC_ENTSCHEID` sont volontairement
 exclus.
 
 `lang` → IRI `http://publications.europa.eu/resource/authority/language/{FRA|ENG}`.
@@ -190,6 +191,12 @@ LIMIT 21 OFFSET (page-1)*20
 
 Avec un mot-clé, la recherche porte sur le titre dans la langue choisie uniquement (pas de repli
 EN pour la correspondance).
+
+Quand `q` est reconnu comme un numéro CELEX (`toCelex` : `32022R2554`, `CELEX:32022r2554`,
+rectificatif `…R(07)`), la clause `bif:contains` est remplacée par
+`?work cdm:resource_legal_id_celex "<CELEX>"^^xsd:string` et tous les autres filtres restent
+appliqués. La recherche par préfixe de CELEX n'est pas proposée : ~8,6 s et surtout des
+rectificatifs (mesuré le 2026-09-15), contre ~1 s pour un CELEX exact.
 
 ## 4. Interface
 
