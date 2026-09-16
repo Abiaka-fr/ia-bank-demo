@@ -288,7 +288,7 @@
     "title": "Importer une régulation",
     "description": "Le document est ajouté au corpus ; l'extraction des exigences est réalisée par le backend.",
     "fileLabel": "Fichier de la régulation",
-    "fileHelp": "Format accepté : Word (.docx) uniquement.",
+    "fileHelp": "Formats acceptés : Word (.docx) ou Excel (.xlsx).",
     "assigneeLabel": "Personne en charge",
     "assigneeHelp": "Modifiable ensuite directement sur la carte de la régulation.",
     "cancel": "Annuler",
@@ -296,7 +296,7 @@
     "uploading": "Import en cours…",
     "succeeded": "Régulation importée",
     "failed": "L'import a échoué.",
-    "wrongFormat": "Seuls les fichiers Word (.docx) sont acceptés."
+    "wrongFormat": "Seuls les fichiers Word (.docx) ou Excel (.xlsx) sont acceptés."
   },
   "procedures": {
     "title": "Procédures",
@@ -318,14 +318,20 @@
     "title": "Importer une procédure",
     "description": "Le document est ajouté au corpus ; il peut ensuite être analysé contre la base de conformité.",
     "fileLabel": "Fichier de la procédure",
-    "fileHelp": "Format accepté : Word (.docx) uniquement.",
+    "fileHelp": "Formats acceptés : Word (.docx) ou Excel (.xlsx).",
     "assigneeLabel": "Personne en charge",
     "cancel": "Annuler",
     "submit": "Importer",
     "uploading": "Import en cours…",
     "succeeded": "Procédure importée",
     "failed": "L'import a échoué.",
-    "wrongFormat": "Seuls les fichiers Word (.docx) sont acceptés."
+    "wrongFormat": "Seuls les fichiers Word (.docx) ou Excel (.xlsx) sont acceptés."
+  },
+  "fileExtraction": {
+    "extracting": "Extraction du contenu…",
+    "extractionFailed": "L'extraction du contenu a échoué — le fichier est peut-être corrompu ou protégé par mot de passe.",
+    "previewLabel": "{count, plural, =0 {Aucun contenu extrait} one {# section extraite} other {# sections extraites}} ({chars} caractères)",
+    "retry": "Réessayer"
   },
   "regulatoryScope": {
     "label": "Périmètre réglementaire",

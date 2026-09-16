@@ -77,7 +77,8 @@ GET /api/documents?domain=MIFID&document_type=GUIDELINE&limit=20
       "data_classification": "SYNTHETIC_DEMO",
       "created_at": "2024-03-25T09:00:00",
       "updated_at": "2024-03-25T09:00:00",
-      "published_at": "2024-03-25T10:00:00"
+      "published_at": "2024-03-25T10:00:00",
+      "assignee": null
     }
   ],
   "limit": 50,
@@ -318,6 +319,62 @@ GET /api/documents/content/VER-EXT-EU-AML-001-01
 - Chunks are sorted by `chunk_no` in ascending order
 - Each chunk contains the full text content for that section
 - `total_chunks` indicates the total number of chunks in this version
+
+---
+
+### Update Document Assignee
+
+#### `PUT /api/documents/{document_id}/assignee`
+Update the assignee (responsible person) of a document.
+
+**Path Parameters**
+- `document_id` (required): The ID of the document (e.g., EXT-EU-AML-001)
+
+**Request Body**
+- `assignee` (optional): User ID or email to assign (can be null to clear assignment)
+
+**Authentication** Required (Bearer token)
+
+**Request Examples**
+```json
+PUT /api/documents/EXT-EU-AML-001/assignee
+{"assignee": "compliance.officer@bank.com"}
+
+PUT /api/documents/EXT-EU-AML-001/assignee
+{"assignee": "junior.analyst@bank.com"}
+
+PUT /api/documents/EXT-EU-AML-001/assignee
+{"assignee": null}
+```
+
+**Response (200 OK)**
+```json
+{
+  "document_id": "EXT-EU-AML-001",
+  "title": "EU AML/CFT Customer Due Diligence Demo Standard",
+  "category": "EXTERNAL",
+  "document_type": "REGULATORY_STANDARD",
+  "origin_code": "EU",
+  "origin_name": "European Union",
+  "domain": "AML/CFT",
+  "language": "EN",
+  "summary": "This standard provides guidance on customer due diligence procedures for AML/CFT compliance.",
+  "current_version": "2.0",
+  "current_file_path": "documents/external/EXT-EU-AML-001__v2_0__EN.md",
+  "data_classification": "SYNTHETIC_DEMO",
+  "created_at": "2024-03-25T09:00:00",
+  "updated_at": "2024-03-25T09:00:00",
+  "published_at": "2024-03-25T10:00:00",
+  "assignee": "compliance.officer@bank.com"
+}
+```
+
+**Response (404 Not Found)**
+```json
+{
+  "detail": "Document not found"
+}
+```
 
 ---
 
@@ -656,8 +713,7 @@ PUT /api/mappings/MAP-0001/human-status
   "recommended_action": "No immediate update proposed...",
   "explanation_lang_fr": "La procédure interne contient des contrôles explicites...",
   "recommended_action_lang_fr": "Aucune mise à jour immédiate proposée...",
-  "human_status": "ACCEPT",
-  "assignee": null
+  "human_status": "ACCEPT"
 }
 ```
 
@@ -665,57 +721,6 @@ PUT /api/mappings/MAP-0001/human-status
 ```json
 {
   "detail": "Invalid human_status. Allowed values: PENDING_REVIEW, ESCALATE, ACCEPT, REJECT"
-}
-```
-
-**Response (404 Not Found)**
-```json
-{
-  "detail": "Mapping not found"
-}
-```
-
----
-
-### Update Mapping Assignee
-
-#### `PUT /api/mappings/{mapping_id}/assignee`
-Update the assignee of a requirement-procedure mapping to assign compliance work to a specific team member.
-
-**Path Parameters**
-- `mapping_id` (required): The ID of the mapping (e.g., MAP-0001)
-
-**Request Body**
-- `assignee` (optional): User ID or email to assign (can be null to clear assignment)
-
-**Authentication** Required (Bearer token)
-
-**Request Examples**
-```json
-PUT /api/mappings/MAP-0001/assignee
-{"assignee": "compliance.officer@bank.com"}
-
-PUT /api/mappings/MAP-0001/assignee
-{"assignee": "junior.analyst@bank.com"}
-
-PUT /api/mappings/MAP-0001/assignee
-{"assignee": null}
-```
-
-**Response (200 OK)**
-```json
-{
-  "mapping_id": "MAP-0001",
-  "requirement_id": "REQ-0001",
-  "procedure_id": "PRC-AML-007",
-  "assessment": "COVERED",
-  "confidence": 0.93,
-  "explanation": "The internal procedure contains explicit controls...",
-  "recommended_action": "No immediate update proposed...",
-  "explanation_lang_fr": "La procédure interne contient des contrôles explicites...",
-  "recommended_action_lang_fr": "Aucune mise à jour immédiate proposée...",
-  "human_status": "ACCEPT",
-  "assignee": "compliance.officer@bank.com"
 }
 ```
 
@@ -831,8 +836,7 @@ GET /api/mappings/requirements-to-procedures?requirement_ids=REQ-0001&assessment
             "recommended_action": "...",
             "explanation_lang_fr": "...",
             "recommended_action_lang_fr": "...",
-            "human_status": "PENDING_REVIEW",
-            "assignee": null
+            "human_status": "PENDING_REVIEW"
           }
         }
       ],
@@ -895,8 +899,7 @@ GET /api/mappings/procedures-to-requirements?procedure_ids=PRC-KYC-002&domain=KY
             "recommended_action": "...",
             "explanation_lang_fr": "...",
             "recommended_action_lang_fr": "...",
-            "human_status": "PENDING_REVIEW",
-            "assignee": "compliance.officer@bank.com"
+            "human_status": "PENDING_REVIEW"
           }
         }
       ],

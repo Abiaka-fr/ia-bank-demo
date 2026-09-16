@@ -15,14 +15,19 @@ anglais ↔ procédures internes en français) est couvert par le corpus de dém
 
 ## Limitations à annoncer avant la démo
 
-1. **La validation humaine est persistée côté serveur réel depuis le 2026-09-09.** Accepter/
-   Rejeter/Escalader (et l'assignation associée à une escalade) appelle désormais
-   `PUT /api/mappings/:id/human-status` et `/assignee` en mode backend réel — la décision survit à
-   un rechargement, un autre onglet ou un autre poste. Ce qui n'est PAS transmis au backend :
-   `custom_action` (action retenue par le relecteur) et `reviewer_comment`, faute de colonnes
-   côté serveur — la décision (Accepté/Rejeté/Escaladé) est bien réelle, ces deux détails restent
-   locaux à la session du navigateur. En mode mock (MSW), rien ne change : tout reste dans
-   `sessionStorage` comme avant.
+1. **La validation humaine (Accepter/Rejeter/Escalader) est persistée côté serveur réel depuis le
+   2026-09-09**, via `PUT /api/mappings/:id/human-status` — la décision survit à un rechargement,
+   un autre onglet ou un autre poste. Ce qui n'est PAS transmis au backend : `custom_action`
+   (action retenue par le relecteur) et `reviewer_comment`, faute de colonnes côté serveur — la
+   décision (Accepté/Rejeté/Escaladé) est bien réelle, ces deux détails restent locaux à la
+   session du navigateur. En mode mock (MSW), rien ne change : tout reste dans `sessionStorage`
+   comme avant.
+   **Nouveau (2026-09-15)** : **l'assignation d'un constat escaladé à une personne précise n'a
+   plus d'équivalent serveur.** Thư a supprimé la colonne `assignee` de
+   `requirement_procedure_map` (`3f3f05b`) au profit d'une assignation au niveau document
+   uniquement (voir point 6 ci-dessous, maintenant réel). Choisir un assigné sur une escalade
+   reste possible et s'affiche immédiatement, mais n'est plus enregistré côté serveur — il
+   disparaît au rechargement, comme avant le 2026-09-09.
 2. **L'onglet Historique (qui a décidé quoi, quand) fonctionne uniquement en mock.** Le backend
    peut désormais stocker une décision mais ne dit pas encore qui l'a prise (`actor_id`) — sans
    quoi l'historique resterait vide pour toute décision réelle. Décision explicite : mieux vaut ne
@@ -43,12 +48,12 @@ anglais ↔ procédures internes en français) est couvert par le corpus de dém
    mise à jour de document existant (`POST /api/documents/{id}/update`) mais pas encore de création
    avec extraction automatique d'exigences — importer un `.docx` en mode backend réel n'aurait donc
    aucun effet observable au-delà de l'écran.
-6. **L'assignation « Personne en charge » d'une régulation est purement locale au navigateur en
-   mode backend réel.** Le backend n'a pas de champ `assignee_id` sur un document ; la valeur
-   choisie est mémorisée dans le navigateur (comme la validation humaine et l'historique) et ne
-   survit ni à un autre poste, ni à l'ouverture dans un autre navigateur. Corrige un bug réel signalé
-   le 2026-09-09 (l'assignation échouait purement et simplement, avec un message d'erreur, en mode
-   backend réel).
+6. **✅ Résolu le 2026-09-15 — l'assignation « Personne en charge » d'une régulation est
+   maintenant persistée côté serveur réel.** Thư a ajouté un champ `assignee` sur `Document` et
+   `PUT /api/documents/:id/assignee` (`4ea5611`) : l'assignation survit à un rechargement, un
+   autre onglet ou un autre poste, comme la validation humaine. Remplace le correctif local
+   purement navigateur qui existait depuis le 2026-09-09 (retiré le même jour,
+   `regulation-assignee-overrides.ts` supprimé).
 7. **Les textes générés par le backend (explication, action recommandée) sont traduits en
    français quand le backend fournit une variante.** Depuis le 2026-09-09, l'écran affiche la
    variante française (`explanation_fr`/`recommended_action_fr`) en interface FR, dès que le

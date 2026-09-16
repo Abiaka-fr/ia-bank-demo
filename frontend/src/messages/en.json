@@ -288,7 +288,7 @@
     "title": "Upload a regulation",
     "description": "The document is added to the corpus; requirement extraction is performed by the backend.",
     "fileLabel": "Regulation file",
-    "fileHelp": "Accepted format: Word (.docx) only.",
+    "fileHelp": "Accepted formats: Word (.docx) or Excel (.xlsx).",
     "assigneeLabel": "Assigned to",
     "assigneeHelp": "Can be changed later directly on the regulation card.",
     "cancel": "Cancel",
@@ -296,7 +296,7 @@
     "uploading": "Uploading…",
     "succeeded": "Regulation uploaded",
     "failed": "The upload failed.",
-    "wrongFormat": "Only Word (.docx) files are accepted."
+    "wrongFormat": "Only Word (.docx) or Excel (.xlsx) files are accepted."
   },
   "procedures": {
     "title": "Procedures",
@@ -318,14 +318,20 @@
     "title": "Upload a procedure",
     "description": "The document is added to the corpus; it can then be analyzed against the compliance base.",
     "fileLabel": "Procedure file",
-    "fileHelp": "Accepted format: Word (.docx) only.",
+    "fileHelp": "Accepted formats: Word (.docx) or Excel (.xlsx).",
     "assigneeLabel": "Assigned to",
     "cancel": "Cancel",
     "submit": "Upload",
     "uploading": "Uploading…",
     "succeeded": "Procedure uploaded",
     "failed": "The upload failed.",
-    "wrongFormat": "Only Word (.docx) files are accepted."
+    "wrongFormat": "Only Word (.docx) or Excel (.xlsx) files are accepted."
+  },
+  "fileExtraction": {
+    "extracting": "Extracting content…",
+    "extractionFailed": "Content extraction failed — the file may be corrupted or password-protected.",
+    "previewLabel": "{count, plural, =0 {No content extracted} one {# section extracted} other {# sections extracted}} ({chars} characters)",
+    "retry": "Try again"
   },
   "regulatoryScope": {
     "label": "Regulatory scope",

@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AssigneeSelect } from "@/components/features/assignee-select";
+import { ExtractedContentPreview } from "@/components/features/extracted-content-preview";
 import { useSession } from "@/components/providers/session-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +25,12 @@ import { useRouter } from "@/i18n/navigation";
 import { accessProfileForUser, canUploadRegulations } from "@/lib/access-profile";
 import { queryKeys } from "@/lib/api/query-keys";
 import { uploadProcedure } from "@/lib/api/procedures";
+import {
+  ACCEPTED_UPLOAD_EXTENSIONS,
+  ACCEPTED_UPLOAD_MIME_TYPES,
+  isAcceptedUploadFile,
+} from "@/lib/file-extract";
+import { useFileExtraction } from "@/lib/use-file-extraction";
 
 /**
  * Copie de `UploadRegulationDialog` (Phase 7 Jour 0, écran `/procedures`) — même
@@ -31,9 +38,7 @@ import { uploadProcedure } from "@/lib/api/procedures";
  * succès changent. Le backend n'expose aucune route `POST /api/procedures`
  * aujourd'hui (contrat v1.8, proposition) : toujours servi par MSW.
  */
-const ACCEPTED_EXTENSION = ".docx";
-const ACCEPTED_MIME =
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const ACCEPT_ATTRIBUTE = [...ACCEPTED_UPLOAD_EXTENSIONS, ...ACCEPTED_UPLOAD_MIME_TYPES].join(",");
 
 export function UploadProcedureDialog() {
   const t = useTranslations("uploadProcedure");
@@ -42,9 +47,10 @@ export function UploadProcedureDialog() {
   const { user } = useSession();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
   const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { file, chunks, status: extractionStatus, selectFile, reset: resetExtraction } =
+    useFileExtraction();
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -52,12 +58,13 @@ export function UploadProcedureDialog() {
         file: file!,
         assigneeId,
         uploadedById: user?.user_id,
+        chunks,
       }),
     onSuccess: async (created) => {
       toast.success(t("succeeded"), { description: created.title });
       await queryClient.invalidateQueries({ queryKey: queryKeys.procedures() });
       setIsOpen(false);
-      setFile(null);
+      resetExtraction();
       router.push(`/procedures/${created.document_id}`);
     },
     onError: () => toast.error(t("failed")),
@@ -65,13 +72,15 @@ export function UploadProcedureDialog() {
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const selected = event.target.files?.[0] ?? null;
-    if (selected && !selected.name.toLowerCase().endsWith(ACCEPTED_EXTENSION)) {
+    if (selected && !isAcceptedUploadFile(selected.name)) {
       toast.error(t("wrongFormat"));
       if (inputRef.current) inputRef.current.value = "";
-      setFile(null);
+      resetExtraction();
       return;
     }
-    setFile(selected);
+    // Extraction côté client (demande de Thư, 2026-09-14) — voir `lib/file-extract.ts` :
+    // avant tout appel réseau, pas encore de vraie route de création de document.
+    selectFile(selected);
   }
 
   // Même restriction que l'upload de régulation (Phase 6 § 1) : lecture seule pour
@@ -86,7 +95,10 @@ export function UploadProcedureDialog() {
           {t("trigger")}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      {/* `max-h-[90vh] overflow-y-auto` : sans ça, l'aperçu d'extraction (Thư,
+          2026-09-14) pousse le contenu au-delà du viewport sur un document avec
+          beaucoup de sections. Même pattern que `upload-regulation-dialog.tsx`. */}
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>{t("description")}</DialogDescription>
@@ -99,10 +111,15 @@ export function UploadProcedureDialog() {
               id="procedure-file"
               ref={inputRef}
               type="file"
-              accept={`${ACCEPTED_EXTENSION},${ACCEPTED_MIME}`}
+              accept={ACCEPT_ATTRIBUTE}
               onChange={handleFileChange}
             />
             <p className="text-xs text-muted-foreground">{t("fileHelp")}</p>
+            <ExtractedContentPreview
+              status={extractionStatus}
+              chunks={chunks}
+              onRetry={() => selectFile(file)}
+            />
           </div>
 
           <div className="space-y-2">
@@ -126,7 +143,9 @@ export function UploadProcedureDialog() {
           </Button>
           <Button
             onClick={() => mutation.mutate()}
-            disabled={!file || mutation.isPending}
+            disabled={
+              !file || extractionStatus === "extracting" || extractionStatus === "error" || mutation.isPending
+            }
           >
             <Upload aria-hidden />
             {mutation.isPending ? t("uploading") : t("submit")}

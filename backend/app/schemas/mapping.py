@@ -18,7 +18,6 @@ class MappingRead(BaseModel):
     explanation_lang_fr: str | None = None
     recommended_action_lang_fr: str | None = None
     human_status: str | None = None
-    assignee: str | None = None
 
     class Config:
         from_attributes = True
@@ -105,17 +104,6 @@ class HumanStatusUpdate(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {"human_status": "ACCEPT"}
-        }
-
-
-class AssigneeUpdate(BaseModel):
-    """Update assignee of a mapping."""
-
-    assignee: str | None = None
-
-    class Config:
-        json_schema_extra = {
-            "example": {"assignee": "compliance.officer@bank.com"}
         }
 
 

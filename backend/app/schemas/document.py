@@ -64,6 +64,7 @@ class DocumentRead(BaseModel):
     created_at: datetime
     updated_at: datetime | None = None
     published_at: datetime | None = None
+    assignee: str | None = None
 
     @field_validator("current_version", mode="before")
     @classmethod
@@ -148,3 +149,14 @@ class DocumentVersionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class AssigneeUpdate(BaseModel):
+    """Update assignee of a document."""
+
+    assignee: str | None = None
+
+    class Config:
+        json_schema_extra = {
+            "example": {"assignee": "compliance.officer@bank.com"}
+        }

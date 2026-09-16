@@ -21,7 +21,6 @@ class RequirementProcedureMap(Base):
     explanation_lang_fr = Column(Text, nullable=True)  # French explanation
     recommended_action_lang_fr = Column(Text, nullable=True)  # French recommended action
     human_status = Column(String)  # PENDING_REVIEW, ACCEPTED, REJECTED, ESCALATED
-    assignee = Column(String, nullable=True)  # User ID or email, optional
 
     # Indexes
     __table_args__ = (
