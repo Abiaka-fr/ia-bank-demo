@@ -34,3 +34,14 @@ class RequirementsListResponse(BaseModel):
     limit: int
     offset: int
     document_ids_queried: list[str]
+
+
+class ExtractRequirementsRequest(BaseModel):
+    """Request to extract requirements from a document."""
+
+    document_id: str
+
+    class Config:
+        json_schema_extra = {
+            "example": {"document_id": "EXT-EU-AML-001"}
+        }

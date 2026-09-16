@@ -7,7 +7,12 @@ from app.core.deps import get_current_user
 from app.db import get_db
 from app.models.requirement import RegulatoryRequirement
 from app.models.user import User
-from app.schemas.requirement import RegulatoryRequirementRead, RequirementsListResponse
+from app.schemas.requirement import (
+    ExtractRequirementsRequest,
+    RegulatoryRequirementRead,
+    RequirementsListResponse,
+)
+from app.services.requirement_extraction import RequirementExtractionService
 
 router = APIRouter(prefix="/api/requirements", tags=["requirements"])
 
@@ -133,3 +138,36 @@ def get_requirement(
         raise HTTPException(status_code=404, detail="Requirement not found")
 
     return RegulatoryRequirementRead.model_validate(req)
+
+
+@router.post("/extract", status_code=201)
+def extract_requirements(
+    payload: ExtractRequirementsRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Extract regulatory requirements from a document using LLM analysis.
+
+    This endpoint takes a document_id and uses an LLM to:
+    1. Load the document's chunked content
+    2. Analyze and extract all regulatory requirements
+    3. Store RegulatoryRequirement rows with metadata
+
+    **Request Body:**
+    - `document_id` (required): ID of document to extract requirements from
+
+    **Response:** ExtractRequirementsResponse with count and IDs of extracted requirements
+
+    **Notes:**
+    - Requires OpenRouter API key in OPENROUTER_API_KEY env var
+    - Requirements are assigned sequential IDs globally
+    - All requirements are marked as ACTIVE status
+    """
+    try:
+        result = RequirementExtractionService.extract(db, payload.document_id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Requirement extraction failed: {str(e)}")
