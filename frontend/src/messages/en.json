@@ -218,8 +218,50 @@
     "sourcesLabel": "Sources",
     "lastUpdatedLabel": "Last updated",
     "europeanSectionTitle": "European Regulatory Sources",
-    "notConnectedStatus": "Not connected",
-    "notConnectedDescription": "No European regulatory source (CELLAR/EUR-Lex) is connected yet — feature under evaluation, see docs/phases/phase-7-european-search.md."
+    "euSearch": {
+      "keywordPlaceholder": "Title keyword or CELEX (e.g. money laundering, 32022R2554)",
+      "yearFrom": "From (year)",
+      "yearTo": "To (year)",
+      "searchButton": "Search",
+      "invalidYears": "Invalid years: between 1950 and the current year, \"from\" less than or equal to \"to\".",
+      "filterType": "Type",
+      "filterSubject": "EuroVoc subject",
+      "filterStatus": "Status",
+      "sortLabel": "Sort",
+      "sortNewest": "Newest",
+      "sortOldest": "Oldest",
+      "statusInForce": "In force",
+      "statusNotInForce": "Not in force",
+      "statusAll": "All",
+      "types": {
+        "REG": "Regulation",
+        "DIR": "Directive",
+        "DEC": "Decision",
+        "RECO": "Recommendation"
+      },
+      "subjects": {
+        "money-laundering": "Money laundering",
+        "banking-supervision": "Banking supervision",
+        "financial-services": "Financial services",
+        "risk-management": "Risk management",
+        "outsourcing": "Outsourcing",
+        "consumer-protection": "Consumer protection",
+        "information-security": "Information security",
+        "payment": "Payment"
+      },
+      "columnCelex": "CELEX",
+      "columnTitle": "Title",
+      "columnType": "Type",
+      "columnDate": "Date",
+      "columnStatus": "Status",
+      "columnSource": "Source",
+      "openOnEurLex": "View on EUR-Lex",
+      "noResults": "No European text matches these criteria.",
+      "pageLabel": "Page {page}",
+      "previous": "Previous",
+      "next": "Next",
+      "sourceNote": "Source: CELLAR — Publications Office of the EU. Relevance and applicability to be confirmed by Compliance."
+    }
   },
   "roles": {
     "headOfCompliance": "Head of Compliance",

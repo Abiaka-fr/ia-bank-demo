@@ -22,6 +22,12 @@ fait maintenant la priorité n°1 (avant même le reste du redesign Dashboard). 
 en suivant phase-6, pas ici en double** — ce document garde le détail technique (composants,
 fichiers), phase-6 porte la priorité et le lien avec la demande de Francis.
 
+**Mise à jour du 2026-09-15** : une première brique réelle existe côté frontend — la **recherche de
+textes UE dans CELLAR** (mot-clé, type, thème EuroVoc, en vigueur, années) dans la carte « European
+Regulatory Sources » de la Knowledge Base, via la route Next `GET /api/eu-search`. Consultation
+seulement : elle ne remplace aucun jour D2–D9 ci-dessous (candidats UE, dédoublonnage,
+applicabilité restent backend / Thư). Design : `docs/superpowers/specs/2026-09-15-eu-search-design.md`.
+
 ---
 
 ## ⚠️ Jour 0 (prérequis, hors des 10 jours de Francis) : écran Procédure, à corriger

@@ -110,11 +110,11 @@ describe("permissions par profil", () => {
     }
   });
 
-  it("réserve la Knowledge Base à l'admin et au Head of Compliance", () => {
+  it("ouvre la Knowledge Base à l'admin, au Head of Compliance et au Compliance Officer", () => {
     // Arrange / Act / Assert
     expect(canSeeKnowledgeBase("COMPLIANCE_ADMIN")).toBe(true);
     expect(canSeeKnowledgeBase("HEAD_OF_COMPLIANCE")).toBe(true);
-    expect(canSeeKnowledgeBase("COMPLIANCE_OFFICER")).toBe(false);
+    expect(canSeeKnowledgeBase("COMPLIANCE_OFFICER")).toBe(true);
     expect(canSeeKnowledgeBase("AUDITOR")).toBe(false);
   });
 

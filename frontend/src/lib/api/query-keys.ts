@@ -1,3 +1,5 @@
+import type { EuSearchParams } from "@/types/api";
+
 /** Clés TanStack Query centralisées — évite les chaînes dupliquées dans les écrans. */
 export const queryKeys = {
   regulations: () => ["regulations"] as const,
@@ -15,4 +17,5 @@ export const queryKeys = {
   users: () => ["users"] as const,
   procedures: () => ["procedures"] as const,
   procedure: (id: string) => ["procedures", id] as const,
+  euSearch: (params: EuSearchParams) => ["eu-search", params] as const,
 } as const;

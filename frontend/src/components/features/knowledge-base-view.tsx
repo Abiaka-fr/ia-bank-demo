@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Cable, FileStack, ListChecks, ScrollText } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { EuSearchPanel } from "@/components/features/eu-search-panel";
 import { ErrorState, LoadingState } from "@/components/features/query-state";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,10 +22,9 @@ function mostRecent(dates: readonly (string | undefined)[]): string | undefined 
 }
 
 /**
- * Écran « Base de connaissances » (Phase 6 § 3) — version simple, sans rien attendre
- * de Thư : uniquement des chiffres déjà disponibles via les endpoints existants.
- * Aucune source européenne n'est réellement connectée — affiché honnêtement plutôt que
- * de simuler un statut « connecté » (docs/ui-guardrails.md).
+ * Écran « Base de connaissances » (Phase 6 § 3) — chiffres du corpus Bank déjà
+ * disponibles via les endpoints existants, et recherche de textes européens dans
+ * CELLAR (consultation uniquement, voir `EuSearchPanel`).
  */
 export function KnowledgeBaseView() {
   const t = useTranslations("knowledgeBase");
@@ -135,14 +135,8 @@ export function KnowledgeBaseView() {
             {t("europeanSectionTitle")}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {/* Statut honnête (docs/ui-guardrails.md) : jamais "connecté" tant que rien
-              de réel n'existe. Teinte neutre, pas une des 5 couleurs de statut — ce
-              n'est pas un assessment. */}
-          <Badge variant="secondary" className="text-xs font-medium">
-            {t("notConnectedStatus")}
-          </Badge>
-          <p className="text-sm text-muted-foreground">{t("notConnectedDescription")}</p>
+        <CardContent>
+          <EuSearchPanel />
         </CardContent>
       </Card>
     </div>

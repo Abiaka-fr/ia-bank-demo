@@ -1669,3 +1669,27 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   Zéro erreur console. `pnpm tsc --noEmit`, `pnpm lint`, `pnpm test` (135/135, +1 test
   `adaptDocument`) tous verts. `docs/known-limitations.md` (#1, #6) et `docs/api-requests.md`
   (#10, #11, #12) mis à jour. `backend/` non touché.
+
+- **2026-09-15 (Claude Code — recherche CELLAR dans la Knowledge Base, branche `feat/eu-search`)** :
+  recherche de textes européens livrée côté frontend, sans rien toucher sous `backend/`. Route Next
+  `GET /api/eu-search` → endpoint SPARQL CELLAR public (pas de CORS, donc côté serveur), filtres
+  mot-clé/type/thème EuroVoc/en vigueur/années/tri, 20 résultats par page, cache 1 h, erreurs
+  400/502. Panneau `EuSearchPanel` à la place du badge « Non connecté » ; Knowledge Base ouverte au
+  `COMPLIANCE_OFFICER` (auditeur toujours exclu). Vérifié avant design : aucune limite de débit
+  officielle (rafale de 30 requêtes OK), ~1–1,3 s par requête, SOAP EUR-Lex/data dump écartés
+  (inscription / EU Login). Docs : spec + plan dans `docs/superpowers/`, `docs/api-requests.md` #1
+  scindé (recherche = fait frontend ; analyse UE = toujours Thư), `docs/known-limitations.md` #16,
+  renvoi dans `docs/phases/phase-7-european-search.md`. Vérification visuelle faite le 2026-09-16 (Marie Lefèvre, FR et EN) ; intégration via la PR #1 ; latence depuis Vercel (`iad1`) à observer après déploiement.
+
+- **2026-09-16 (Claude Code — recherche UE : CELEX + filtre Type, branche `feat/eu-search`)** :
+  le champ de recherche accepte aussi un numéro CELEX exact (`32022R2554`, `CELEX:32022r2554`,
+  rectificatif `…R(07)`) ; les filtres restent appliqués (choix de Giang), et la recherche par
+  préfixe de CELEX est écartée (~8,6 s et surtout des rectificatifs, contre ~1 s en exact). Le
+  filtre Type devient une liste à cocher (`types=REG,DIR`) : l'option gigogne « Règlements et
+  directives » recouvrait « Règlement » et « Directive », doublon signalé par Giang. Les libellés
+  des filtres passent à gauche des contrôles (`Label` + `htmlFor`), les items ne répètent plus
+  « Type : ». Vérifié : 151 tests, lint/typecheck/check:i18n verts ; via la route réelle — CELEX
+  exact 1 résultat, CELEX abrogé 0 en « En vigueur » et 1 en « Tous », `types=DEC` uniquement des
+  décisions, `types=FOO` → 400. Vérification visuelle faite le 2026-09-16 (Marie Lefèvre) : CELEX exact → 1 ligne, dropdown Type à
+  4 cases avec la dernière verrouillée, libellés à gauche, FR et EN ; responsive vérifié à 375, 768
+  et 1440 px (aucun débordement horizontal de la page, seule la table défile dans son cadre).
