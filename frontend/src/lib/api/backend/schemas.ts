@@ -67,6 +67,9 @@ export const backendDocumentSchema = z
     summary: z.string().nullable().optional(),
     /** Publication/release date of the document */
     published_at: z.string().nullable().optional(),
+    /** Ajouté par Thư le 2026-09-15 (`4ea5611`, « Add assignee column in table
+     * document ») — user_id ou email, voir `PUT /api/documents/:id/assignee`. */
+    assignee: z.string().nullable().optional(),
   })
   // Allow extra fields from backend (graceful degradation for API evolution)
   .passthrough();

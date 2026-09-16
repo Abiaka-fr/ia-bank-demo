@@ -114,6 +114,16 @@ describe("adaptDocument", () => {
       version: "2.0",
       status: "NOT_ANALYZED",
     });
+    expect(result.assignee_id).toBeUndefined();
+  });
+
+  it("reprend l'assignation quand le backend la fournit (2026-09-15, 4ea5611)", () => {
+    // Arrange
+    const document = backendDocument({ assignee: "USR-001" });
+    // Act
+    const result = adaptDocument(document);
+    // Assert
+    expect(result.assignee_id).toBe("USR-001");
   });
 });
 

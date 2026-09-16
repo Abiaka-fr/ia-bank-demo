@@ -95,6 +95,9 @@ export function adaptDocument(document: BackendDocument): DocumentMeta {
     created_at: document.created_at ?? undefined,
     updated_at: document.updated_at ?? undefined,
     summary: document.summary ?? undefined,
+    // Ajouté par Thư le 2026-09-15 (`4ea5611`) — remplace le correctif local
+    // `regulation-assignee-overrides.ts`, devenu inutile (voir `regulations.ts`).
+    assignee_id: document.assignee ?? undefined,
   };
 }
 
