@@ -258,6 +258,7 @@
       "openOnEurLex": "View on EUR-Lex",
       "documentNote": "Source text published by the EU Publications Office (CELLAR), shown for consultation. Only the version published in the Official Journal of the EU is authentic; relevance and applicability to be confirmed by Compliance.",
       "downloadDocx": "Download (.docx)",
+      "download": "Download",
       "documentFrameTitle": "Full text {celex}",
       "noResults": "No European text matches these criteria.",
       "pageLabel": "Page {page}",

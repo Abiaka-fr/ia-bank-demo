@@ -1718,3 +1718,23 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   téléchargement `32022R2554_FR.docx`) à 1440 px, 375 px et en EN. Seules erreurs console : les
   blocages CSP voulus (CSS/images relatives d'EUR-Lex). Limites : `docs/known-limitations.md` #16.
   Non fait : pas de commit (non demandé) ; latence et gros actes depuis Vercel à observer.
+- **2026-09-17 (Claude Code — style du lecteur de textes UE, `main`)** : `main` tiré (PR #2
+  mergée). `EuDocumentDialog` : la CSS injectée dans l'iframe met le texte CELLAR en « page »
+  blanche sur le fond de l'app (palette Institutional Navy en hex, les variables CSS n'entrent pas
+  dans l'iframe) — police serif à chiffres alignés (Charter/Cambria), en-tête du JO en ligne
+  flexible, drapeau cassé masqué (image relative bloquée par la CSP), listes « (1) … » alignées,
+  appels de note en exposant, tableaux bordés avec ligne d'en-tête, notes et mentions ELI/ISSN
+  atténuées, bandeau EUR-Lex des anciens textes masqué. En-tête de la fenêtre : CELEX en `Badge`
+  mono, titre `text-lg`, avertissement en `text-xs`. Vérifié : lint/typecheck verts, 12 tests
+  des zones touchées ; captures Playwright du HTML réel injecté (32026R1867 EN, 32023R1113 FR avec
+  chapitres/annexes/tableaux, 31991L0308 ancien format). Non vérifié : capture de la fenêtre dans
+  l'app (écran derrière connexion). Non fait : pas de commit (non demandé).
+  Ajout demandé ensuite : boutons `outline` `xs` « Voir sur EUR-Lex » + « Télécharger (.docx) »
+  côte à côte dans la colonne Source de la table de résultats (même route `format=docx`, 200 vérifié sur 32026R1867 ; 17 tests
+  verts). Contrairement à la fenêtre, le lien s'affiche sans avoir chargé le texte : un acte absent
+  de CELLAR donne un téléchargement en échec (404) côté navigateur. Puis : bouton de la table
+  libellé « Télécharger » (nouvelle clé `euSearch.download`, la fenêtre garde « (.docx) ») ; titre
+  sur une ligne avec « … » (titre complet au survol), colonne Title à 68 % — 32rem fixe jugé trop
+  étroit, puis 55 % laissait un blanc visible après les boutons de Source (la place en trop va aux
+  colonnes auto) ; `max-w-0` sur la cellule : la colonne se réduit sur écran étroit sans
+  défilement horizontal (mesuré en Playwright à 1960, 1100 et 800 px). 163 tests, check:i18n verts.
