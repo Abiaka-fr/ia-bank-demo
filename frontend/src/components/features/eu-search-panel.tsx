@@ -6,6 +6,7 @@ import { ChevronDown, ExternalLink, Search } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { type FormEvent, useState } from "react";
 
+import { EuDocumentDialog } from "@/components/features/eu-document-dialog";
 import {
   EmptyState,
   ErrorState,
@@ -44,6 +45,7 @@ import {
   euSearchParamsSchema,
   euSubjectSchema,
   type EuSearchParams,
+  type EuSearchResult,
 } from "@/types/api";
 
 const ALL_SUBJECTS = "ALL";
@@ -66,6 +68,7 @@ export function EuSearchPanel() {
   const [fromYear, setFromYear] = useState("");
   const [toYear, setToYear] = useState("");
   const [invalidYears, setInvalidYears] = useState(false);
+  const [openedDocument, setOpenedDocument] = useState<EuSearchResult | null>(null);
 
   const params: EuSearchParams = { ...filters, lang };
   const searchQuery = useQuery({
@@ -130,7 +133,15 @@ export function EuSearchPanel() {
                 <TableRow key={result.celex}>
                   <TableCell className="font-mono text-xs">{result.celex}</TableCell>
                   {/* Titre CELLAR affiché tel quel : texte source, jamais traduit. */}
-                  <TableCell className="min-w-72 whitespace-normal">{result.title}</TableCell>
+                  <TableCell className="min-w-72 whitespace-normal">
+                    <button
+                      type="button"
+                      onClick={() => setOpenedDocument(result)}
+                      className="text-left font-medium underline-offset-4 hover:underline focus-visible:underline"
+                    >
+                      {result.title}
+                    </button>
+                  </TableCell>
                   <TableCell>{t(`types.${result.type}`)}</TableCell>
                   <TableCell className="tabular-nums">
                     {formatDateDDMMYYYY(result.date) ?? common("notAvailable")}
@@ -334,6 +345,8 @@ export function EuSearchPanel() {
       {renderResults()}
 
       <p className="text-xs text-muted-foreground">{t("sourceNote")}</p>
+
+      <EuDocumentDialog result={openedDocument} onClose={() => setOpenedDocument(null)} />
     </div>
   );
 }
