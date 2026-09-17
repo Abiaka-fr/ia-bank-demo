@@ -2,7 +2,7 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { cn } from "cn";
-import { ChevronDown, ExternalLink, Search } from "lucide-react";
+import { ChevronDown, Download, ExternalLink, Search } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { type FormEvent, useState } from "react";
 
@@ -37,7 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fetchEuSearch } from "@/lib/api/eu-search";
+import { euDocumentUrl, fetchEuSearch } from "@/lib/api/eu-search";
 import { queryKeys } from "@/lib/api/query-keys";
 import { formatDateDDMMYYYY } from "@/lib/format-date";
 import {
@@ -121,7 +121,7 @@ export function EuSearchPanel() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t("columnCelex")}</TableHead>
-                <TableHead>{t("columnTitle")}</TableHead>
+                <TableHead className="w-[68%]">{t("columnTitle")}</TableHead>
                 <TableHead>{t("columnType")}</TableHead>
                 <TableHead>{t("columnDate")}</TableHead>
                 <TableHead>{t("columnStatus")}</TableHead>
@@ -132,12 +132,12 @@ export function EuSearchPanel() {
               {results.map((result) => (
                 <TableRow key={result.celex}>
                   <TableCell className="font-mono text-xs">{result.celex}</TableCell>
-                  {/* Titre CELLAR affiché tel quel : texte source, jamais traduit. */}
-                  <TableCell className="min-w-72 whitespace-normal">
+                  <TableCell className="max-w-0">
                     <button
                       type="button"
+                      title={result.title}
                       onClick={() => setOpenedDocument(result)}
-                      className="text-left font-medium underline-offset-4 hover:underline focus-visible:underline"
+                      className="block w-full truncate text-left font-medium underline-offset-4 hover:underline focus-visible:underline"
                     >
                       {result.title}
                     </button>
@@ -153,15 +153,20 @@ export function EuSearchPanel() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <a
-                      href={result.eurlexUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-sm underline-offset-4 hover:underline"
-                    >
-                      {t("openOnEurLex")}
-                      <ExternalLink className="size-3.5" aria-hidden />
-                    </a>
+                    <div className="flex gap-1.5">
+                      <Button asChild size="xs" variant="outline">
+                        <a href={result.eurlexUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink aria-hidden />
+                          {t("openOnEurLex")}
+                        </a>
+                      </Button>
+                      <Button asChild size="xs" variant="outline">
+                        <a href={euDocumentUrl(result.celex, lang, "docx")} download>
+                          <Download aria-hidden />
+                          {t("download")}
+                        </a>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
