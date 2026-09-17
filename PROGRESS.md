@@ -1703,3 +1703,18 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   décisions, `types=FOO` → 400. Vérification visuelle faite le 2026-09-16 (Marie Lefèvre) : CELEX exact → 1 ligne, dropdown Type à
   4 cases avec la dernière verrouillée, libellés à gauche, FR et EN ; responsive vérifié à 375, 768
   et 1440 px (aucun débordement horizontal de la page, seule la table défile dans son cadre).
+- **2026-09-17 (Claude Code — lecture intégrale + .docx des textes UE, branche `feat/eu-search-viewer`)** :
+  `main` tiré (PR #1 + « Institutional Navy »). Dans la recherche UE, le titre d'un résultat ouvre
+  le texte intégral dans une fenêtre (`EuDocumentDialog`, iframe `sandbox` + CSP), avec
+  « Télécharger (.docx) » et « Voir sur EUR-Lex ». Route Next `GET /api/eu-document?celex&lang&format`
+  → CELLAR par négociation de contenu (`/resource/celex/{CELEX}`, XHTML sinon HTML, langue de
+  l'interface puis l'autre en repli). Vérifié avant de coder : EUR-Lex refuse l'intégration
+  (`X-Frame-Options: SAMEORIGIN`) et CELLAR ne publie aucun .docx → `format=docx` emballe le HTML
+  officiel dans un .docx `altChunk` (zip via le CFB de `xlsx`, aucune dépendance ajoutée).
+  **Piège trouvé** : Word déclare le fichier corrompu si le HTML garde son prologue `<?xml ?>` —
+  retiré. Vérifié : 163 tests (+4), lint/typecheck/check:i18n verts ; 5 .docx réels (DORA FR/EN,
+  AMLD4, CRR 491 pages, directive 1991) ouverts dans Word par COM, accents corrects, un aussi dans
+  LibreOffice ; parcours Playwright en mode mock (recherche CELEX → fenêtre → texte chargé →
+  téléchargement `32022R2554_FR.docx`) à 1440 px, 375 px et en EN. Seules erreurs console : les
+  blocages CSP voulus (CSS/images relatives d'EUR-Lex). Limites : `docs/known-limitations.md` #16.
+  Non fait : pas de commit (non demandé) ; latence et gros actes depuis Vercel à observer.

@@ -18,4 +18,5 @@ export const queryKeys = {
   procedures: () => ["procedures"] as const,
   procedure: (id: string) => ["procedures", id] as const,
   euSearch: (params: EuSearchParams) => ["eu-search", params] as const,
+  euDocument: (celex: string, lang: string) => ["eu-document", celex, lang] as const,
 } as const;

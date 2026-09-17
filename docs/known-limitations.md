@@ -139,6 +139,12 @@ anglais ↔ procédures internes en français) est couvert par le corpus de dém
     La route `/api/eu-search` n'est pas authentifiée : quiconque connaît l'URL peut déclencher des
     requêtes CELLAR (chaque mot-clé différent contourne le cache) — acceptable pour une démo,
     prévoir une règle de limitation de débit (Vercel Firewall) si l'URL est diffusée largement.
+    **Lecture et .docx (2026-09-17)** : cliquer un titre ouvre le texte intégral CELLAR dans
+    l'app (`GET /api/eu-document`, même absence d'authentification). Les images et feuilles de
+    style d'origine ne s'affichent pas (liens relatifs au site EUR-Lex, bloqués). Le .docx n'est
+    pas publié par l'UE : c'est le HTML officiel emballé, que Word ou LibreOffice convertit à
+    l'ouverture — Google Docs et les aperçus rapides affichent un document vide. Très gros actes
+    (CRR ≈ 6,6 Mo de HTML) : non vérifiés depuis Vercel.
 
 ## Garde-fou produit, rappel
 
