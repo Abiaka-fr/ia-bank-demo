@@ -701,6 +701,7 @@ GET /api/requirements?status=ACTIVE&limit=50
       "risk_level": "MEDIUM",
       "source_reference": "Section 3",
       "status": "ACTIVE",
+      "evidence": "This requirement is supported by the following evidence: Customer classification matrices are defined in Section 3.2 of the regulation.",
       "created_at": "2026-09-10T10:00:00",
       "updated_at": "2026-09-10T10:00:00"
     }
@@ -829,7 +830,10 @@ GET /api/requirements/REQ-0001
   "requirement_text_lang_fr": "Les clients doivent être classés selon les facteurs documentés de risque de blanchiment de capitaux et de financement du terrorisme.",
   "risk_level": "MEDIUM",
   "source_reference": "Section 3",
-  "status": "ACTIVE"
+  "status": "ACTIVE",
+  "evidence": "This requirement is supported by the following evidence: Customer classification matrices are defined in Section 3.2 of the regulation.",
+  "created_at": "2026-09-10T10:00:00",
+  "updated_at": "2026-09-10T10:00:00"
 }
 ```
 

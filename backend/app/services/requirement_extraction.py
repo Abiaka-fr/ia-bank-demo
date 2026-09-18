@@ -22,6 +22,7 @@ class RequirementInput(BaseModel):
     risk_level: str  # LOW, MEDIUM, HIGH
     source_reference: str  # e.g., Article 5, Section 2.1
     domain: str
+    evidence: str | None = None  # Supporting evidence for the requirement
 
 
 class ExtractRequirementsResponse(BaseModel):
@@ -127,7 +128,8 @@ class RequirementExtractionService:
                         "- requirement_text_lang_fr: French translation of the requirement text\n"
                         "- risk_level: LOW, MEDIUM, or HIGH based on compliance importance\n"
                         "- source_reference: Where in the document this comes from chunk_no (e.g 1, 2, 3)\n"
-                        "- domain: The regulatory domain (e.g., AML/CFT, KYC, DATA_PROTECTION)\n\n"
+                        "- domain: The regulatory domain (e.g., AML/CFT, KYC, DATA_PROTECTION)\n"
+                        "- evidence: Extract the precise text from the document that substantiates the requirement\n\n"
                         "Respond with valid JSON matching this structure (no markdown):\n"
                         "{\n"
                         '  "requirements": [\n'
@@ -138,7 +140,8 @@ class RequirementExtractionService:
                         '      "requirement_text_lang_fr": "...",\n'
                         '      "risk_level": "...",\n'
                         '      "source_reference": "...",\n'
-                        '      "domain": "..."\n'
+                        '      "domain": "...",\n'
+                        '      "evidence": "..."\n'
                         "    }\n"
                         "  ]\n"
                         "}\n\n"
@@ -181,6 +184,7 @@ class RequirementExtractionService:
                 requirement_text_lang_fr=req_input.requirement_text_lang_fr,
                 risk_level=req_input.risk_level,
                 source_reference=req_input.source_reference,
+                evidence=req_input.evidence,
                 status="ACTIVE",
             )
             db.add(requirement)

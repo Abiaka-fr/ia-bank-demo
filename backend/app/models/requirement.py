@@ -24,6 +24,7 @@ class RegulatoryRequirement(Base):
     risk_level = Column(String)  # LOW, MEDIUM, HIGH
     source_reference = Column(String)  # e.g., Article 5, Section 2.1
     status = Column(String)  # ACTIVE, SUPERSEDED, etc.
+    evidence = Column(Text, nullable=True)  # Evidence supporting this requirement
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

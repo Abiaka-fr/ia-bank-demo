@@ -19,6 +19,7 @@ class RegulatoryRequirementRead(BaseModel):
     risk_level: str | None = None
     source_reference: str | None = None
     status: str | None = None
+    evidence: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
