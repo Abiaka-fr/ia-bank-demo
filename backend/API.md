@@ -761,7 +761,8 @@ GET /api/requirements/by-documents?document_ids=EXT-ACPR-LCBFT-003&language=FR&d
       "requirement_text_lang_fr": "Les clients doivent être classés selon les facteurs documentés de risque de blanchiment de capitaux et de financement du terrorisme.",
       "risk_level": "MEDIUM",
       "source_reference": "Section 3",
-      "status": "ACTIVE"
+      "status": "ACTIVE",
+      "evidence": "Section 3.2: Each customer shall be assessed and classified into one of the\nfollowing risk categories based on documented factors:\n- Low Risk: Established customers with transparent beneficial ownership\n- Medium Risk: Standard commercial entities\n- High Risk: Entities with opaque structures or high-risk jurisdictions"
     },
     {
       "requirement_id": "REQ-0002",
@@ -774,7 +775,8 @@ GET /api/requirements/by-documents?document_ids=EXT-ACPR-LCBFT-003&language=FR&d
       "requirement_text_lang_fr": "Les clients à risque élevé nécessitent une diligence renforcée et une approbation documentée.",
       "risk_level": "HIGH",
       "source_reference": "Section 4",
-      "status": "ACTIVE"
+      "status": "ACTIVE",
+      "evidence": "Section 4.1: For customers classified as High Risk, the following enhanced due diligence\nmeasures shall be implemented:\n1. In-depth beneficial ownership verification\n2. Source of funds confirmation\n3. Purpose and nature of relationship analysis\n4. Senior management approval required before account opening"
     }
   ],
   "limit": 50,
