@@ -43,6 +43,16 @@ Pull du travail de Thư (+ une session de code FE qui avait déjà anticipé le 
 - Classification (`docs/api-requests.md` #3) et l'endpoint d'analyse (#2) restent ouverts, sans
   changement de ce côté.
 
+## Mise à jour 2026-09-16 — identité visuelle « Institutional Navy » validée par Francis
+
+Francis (2026-09-16) : l'app doit se reconnaître comme un outil de conformité au premier coup
+d'œil, pas comme un SaaS neutre générique. Deux directions maquettées (artefact partagé) —
+**Direction A « Institutional Navy » retenue** : sidebar/chrome navy foncé, accent brass (au lieu
+du gris neutre actuel), headings en serif (Source Serif 4), corps en IBM Plex Sans, codes de
+référence (`document_id`/`procedure_id`) en IBM Plex Mono. **Les 5 couleurs de statut et la
+palette catégorielle des graphiques ne changent pas** — gelées par la validation CVD/contraste
+existante. Détail des tokens dans `docs/ui-guidelines.md` (nouvelle section « Identité visuelle »).
+
 ## Phase actuelle
 
 **Phase 1 — Fondations** : terminée le 2026-09-04.
@@ -1568,3 +1578,163 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   - `pnpm tsc --noEmit`, `pnpm lint`, `pnpm test` (127/127) tous verts. Vérifié visuellement
     (Thomas Rousseau, régulation `EXT-EU-AML-001`) : Created/Uploaded/Last updated/Publication
     affichent les bonnes valeurs, zéro erreur console.
+
+- **2026-09-14 (Claude Code — extraction de contenu côté client, demande de Thư)** : Thư a demandé
+  que le frontend extraie le contenu d'un fichier (Word ou Excel) **côté client**, avant tout appel
+  réseau — aucune route de création de document n'existe encore côté backend (`docs/api-requests.md`
+  #2/#8), donc uniquement la partie extraction pour l'instant.
+
+  **Fait :**
+  - `lib/file-extract.ts` (nouveau) : extraction pure, sans appel réseau, via `mammoth` (.docx) et
+    `xlsx`/SheetJS (.xlsx) — deux bibliothèques éprouvées, pas de parseur maison. Résultat en
+    `chunks[]` (`{ chunk_no, section_title, content }`), volontairement alignée sur la forme déjà
+    utilisée par le seul endpoint réel qui manipule du contenu aujourd'hui
+    (`POST /api/documents/{id}/update`, `backend/API.md`) — brancher la future route de création
+    ne demandera pas de repenser la forme des données.
+  - `lib/use-file-extraction.ts` (nouveau hook) + `components/features/extracted-content-preview.tsx`
+    (nouveau) : état partagé et aperçu visuel, réutilisés par `UploadRegulationDialog` et
+    `UploadProcedureDialog` plutôt que dupliqués (règle anti-duplication).
+  - Upload accepte maintenant `.docx` **et** `.xlsx` (avant : `.docx` uniquement) — validation,
+    `accept` du `<input type="file">`, textes `fileHelp`/`wrongFormat` (FR/EN) tous mis à jour.
+    Bouton Upload désactivé tant que l'extraction n'a pas réussi.
+  - `uploadRegulation()`/`uploadProcedure()` (`lib/api/*.ts`) envoient les chunks extraits en JSON
+    dans le multipart (`extracted_chunks`) ; `lib/mocks/handlers.ts` les lit pour peupler
+    `extracted_text` du document créé (au lieu d'une chaîne vide) — seul le mock les lit, aucune
+    route réelle n'existe pour l'instant (documenté dans `docs/api-requests.md` #9, nouveau).
+  - Nouveau namespace i18n `fileExtraction` (fr/en) : état d'extraction, aperçu, erreur + retry.
+  - `pnpm tsc --noEmit`, `pnpm lint`, `pnpm test` (137/137, +10 nouveaux tests
+    `lib/file-extract.test.ts`) tous verts.
+
+  **Vérifié en conditions réelles** (upload sur `/procedures`, backend local connecté) :
+  - Un vrai `.docx` du corpus (`IABank_Internal_Procedures_KYC_AML_FR_v1.docx`, hors dépôt) donne
+    « 38 sections extracted (15531 characters) », contenu français affiché correctement dans
+    l'aperçu.
+  - Un `.xlsx` de test (registre de contrôles, 1 feuille) donne « 1 section extracted (89
+    characters) », contenu CSV correct.
+  - **Limite pré-existante retrouvée en testant, pas une régression de cette session** : en mode
+    backend réel, après upload (toujours simulé par MSW, aucune route de création réelle),
+    `router.push` vers le document créé échoue en « Resource not found » — `fetchProcedure`/
+    `fetchRegulation` interrogent le vrai backend dès qu'il est branché, qui ne connaît
+    évidemment pas un identifiant `PROC-UP-*`/`REG-UP-*` créé côté mock. Même famille de
+    limite que `uploadRegulation` avant cette session (déjà `docs/api-requests.md` #8 : « uploads
+    stay simulated in MSW until Thư builds one ») — pas corrigé ici, hors du périmètre demandé
+    (extraction uniquement).
+  - `docs/api-requests.md` (#6 follow-up marqué corrigé, nouveau #9) mis à jour. `backend/`
+    non touché.
+
+- **2026-09-15 (Claude Code — 2 bugs remontés par Giang sur l'écran d'upload)** : capture d'écran à
+  l'appui, deux problèmes trouvés en testant le flux d'upload livré la veille.
+
+  1. **Layout cassé** : `DialogContent` (les deux dialogues d'upload) n'a aucune limite de hauteur —
+     l'aperçu d'extraction ajouté la veille poussait le contenu au-delà du viewport, rendant les
+     boutons Annuler/Importer inatteignables sur un document avec beaucoup de sections. Corrigé :
+     `className="flex max-h-[90vh] flex-col overflow-y-auto"` sur les deux `DialogContent`, même
+     convention que `FindingDetailDialog`/`ProcedureEvidenceDialog`.
+  2. **« Resource not found » après clic sur Importer, confirmé être l'absence de vraie route de
+     création** (comme suspecté par Giang) : l'upload est toujours simulé par MSW
+     (`docs/api-requests.md` #2/#8/#9), mais `fetchRegulation`/`fetchProcedure` interrogent le vrai
+     backend dès qu'il est branché — qui ne connaît évidemment pas l'identifiant `REG-UP-*`/
+     `PROC-UP-*` créé côté mock. Corrigé en frontend, sans attendre Thư : nouvel export
+     `MOCK_UPLOAD_ID_PREFIX` (`lib/api/regulations.ts`/`procedures.ts`, repris par
+     `lib/mocks/handlers.ts` pour générer les identifiants — une seule source de vérité) ; les deux
+     fonctions de lecture détectent ce préfixe et passent toujours par MSW pour un document ainsi
+     créé, même en mode backend réel.
+
+  **Vérifié en conditions réelles** (backend local connecté, Thomas Rousseau) : upload d'un vrai
+  `.docx` du corpus → dialogue reste dans le viewport, boutons accessibles → clic Importer →
+  redirection immédiate vers `/regulations/REG-UP-...`, onglet « Extracted source text » affiche le
+  contenu réellement extrait, zéro erreur console. `pnpm tsc --noEmit`, `pnpm lint`, `pnpm test`
+  (137/137) tous verts. `backend/` non touché.
+
+- **2026-09-15 (Claude Code — pull backend, mapping des nouveautés de Thư)** : Giang a pull le
+  dépôt, 7 nouveaux commits côté `backend/` (`48ab727` à `4ea5611`). Trois changements réels
+  identifiés et traités, en lecture seule sur `backend/` comme toujours :
+
+  1. **`Document.assignee` + `PUT /api/documents/:id/assignee` — ✅ shippé et branché.** Remplace
+     le correctif local `regulation-assignee-overrides.ts` (fichier + test supprimés) : « Assigned
+     to » sur une régulation persiste désormais vraiment côté serveur. Modifié :
+     `lib/api/backend/schemas.ts` (champ `assignee`), `adapt.ts` (`assignee_id`, testé),
+     `resources.ts` (nouveau `updateDocumentAssignee`), `regulations.ts`
+     (`updateRegulationAssignee` appelle la vraie route en mode backend réel).
+  2. **⚠️ Régression trouvée en lisant le diff, corrigée avant qu'elle ne casse une démo** :
+     `PUT /api/mappings/:id/assignee` a été supprimé (`3f3f05b`, colonne `assignee` retirée de
+     `requirement_procedure_map` — l'assignation vit maintenant seulement au niveau document).
+     `resources.ts::validateMapping` appelait encore cette route : chaque escalade avec assigné
+     aurait échoué (404) en mode backend réel. Corrigé : l'appel supprimé, l'assigné choisi reste
+     affiché en optimiste mais n'est plus persisté pour un constat (seulement pour une régulation
+     entière, désormais réel — voir point 1). Documenté dans `docs/known-limitations.md` #1 et
+     `docs/api-requests.md` #11 (question ouverte pour Thư : intentionnel ou à remplacer ?).
+  3. **`GET /api/procedures`/`{id}` et `GET /api/requirements` (liste globale) existent
+     maintenant** (`c27f56c`) — **pas branchés** : `/api/procedures` renvoie une vraie entité
+     `Procedure` (`procedure_id` distinct de `document_id`, `name`/`owner` propres, `document`
+     imbriqué), différente du modèle actuel de l'écran `/procedures` (un document = une
+     procédure). Basculer dessus serait un changement de modèle d'identité, pas un simple
+     branchement — flagué dans `docs/api-requests.md` #12 comme décision à prendre avec Giang,
+     pas fait dans cette session.
+
+  **Vérifié en conditions réelles** (backend local, `./scripts/local-dev/setup-backend.sh`
+  relancé pour ajouter la colonne `documents.assignee`) : assignation d'une régulation via
+  `AssigneeSelect` → survit à un rechargement (persistée pour de vrai) ; escalade d'un constat
+  avec assigné → fonctionne sans erreur (plus de 404), statut « Escalated » affiché correctement.
+  Zéro erreur console. `pnpm tsc --noEmit`, `pnpm lint`, `pnpm test` (135/135, +1 test
+  `adaptDocument`) tous verts. `docs/known-limitations.md` (#1, #6) et `docs/api-requests.md`
+  (#10, #11, #12) mis à jour. `backend/` non touché.
+
+- **2026-09-15 (Claude Code — recherche CELLAR dans la Knowledge Base, branche `feat/eu-search`)** :
+  recherche de textes européens livrée côté frontend, sans rien toucher sous `backend/`. Route Next
+  `GET /api/eu-search` → endpoint SPARQL CELLAR public (pas de CORS, donc côté serveur), filtres
+  mot-clé/type/thème EuroVoc/en vigueur/années/tri, 20 résultats par page, cache 1 h, erreurs
+  400/502. Panneau `EuSearchPanel` à la place du badge « Non connecté » ; Knowledge Base ouverte au
+  `COMPLIANCE_OFFICER` (auditeur toujours exclu). Vérifié avant design : aucune limite de débit
+  officielle (rafale de 30 requêtes OK), ~1–1,3 s par requête, SOAP EUR-Lex/data dump écartés
+  (inscription / EU Login). Docs : spec + plan dans `docs/superpowers/`, `docs/api-requests.md` #1
+  scindé (recherche = fait frontend ; analyse UE = toujours Thư), `docs/known-limitations.md` #16,
+  renvoi dans `docs/phases/phase-7-european-search.md`. Vérification visuelle faite le 2026-09-16 (Marie Lefèvre, FR et EN) ; intégration via la PR #1 ; latence depuis Vercel (`iad1`) à observer après déploiement.
+
+- **2026-09-16 (Claude Code — recherche UE : CELEX + filtre Type, branche `feat/eu-search`)** :
+  le champ de recherche accepte aussi un numéro CELEX exact (`32022R2554`, `CELEX:32022r2554`,
+  rectificatif `…R(07)`) ; les filtres restent appliqués (choix de Giang), et la recherche par
+  préfixe de CELEX est écartée (~8,6 s et surtout des rectificatifs, contre ~1 s en exact). Le
+  filtre Type devient une liste à cocher (`types=REG,DIR`) : l'option gigogne « Règlements et
+  directives » recouvrait « Règlement » et « Directive », doublon signalé par Giang. Les libellés
+  des filtres passent à gauche des contrôles (`Label` + `htmlFor`), les items ne répètent plus
+  « Type : ». Vérifié : 151 tests, lint/typecheck/check:i18n verts ; via la route réelle — CELEX
+  exact 1 résultat, CELEX abrogé 0 en « En vigueur » et 1 en « Tous », `types=DEC` uniquement des
+  décisions, `types=FOO` → 400. Vérification visuelle faite le 2026-09-16 (Marie Lefèvre) : CELEX exact → 1 ligne, dropdown Type à
+  4 cases avec la dernière verrouillée, libellés à gauche, FR et EN ; responsive vérifié à 375, 768
+  et 1440 px (aucun débordement horizontal de la page, seule la table défile dans son cadre).
+- **2026-09-17 (Claude Code — lecture intégrale + .docx des textes UE, branche `feat/eu-search-viewer`)** :
+  `main` tiré (PR #1 + « Institutional Navy »). Dans la recherche UE, le titre d'un résultat ouvre
+  le texte intégral dans une fenêtre (`EuDocumentDialog`, iframe `sandbox` + CSP), avec
+  « Télécharger (.docx) » et « Voir sur EUR-Lex ». Route Next `GET /api/eu-document?celex&lang&format`
+  → CELLAR par négociation de contenu (`/resource/celex/{CELEX}`, XHTML sinon HTML, langue de
+  l'interface puis l'autre en repli). Vérifié avant de coder : EUR-Lex refuse l'intégration
+  (`X-Frame-Options: SAMEORIGIN`) et CELLAR ne publie aucun .docx → `format=docx` emballe le HTML
+  officiel dans un .docx `altChunk` (zip via le CFB de `xlsx`, aucune dépendance ajoutée).
+  **Piège trouvé** : Word déclare le fichier corrompu si le HTML garde son prologue `<?xml ?>` —
+  retiré. Vérifié : 163 tests (+4), lint/typecheck/check:i18n verts ; 5 .docx réels (DORA FR/EN,
+  AMLD4, CRR 491 pages, directive 1991) ouverts dans Word par COM, accents corrects, un aussi dans
+  LibreOffice ; parcours Playwright en mode mock (recherche CELEX → fenêtre → texte chargé →
+  téléchargement `32022R2554_FR.docx`) à 1440 px, 375 px et en EN. Seules erreurs console : les
+  blocages CSP voulus (CSS/images relatives d'EUR-Lex). Limites : `docs/known-limitations.md` #16.
+  Non fait : pas de commit (non demandé) ; latence et gros actes depuis Vercel à observer.
+- **2026-09-17 (Claude Code — style du lecteur de textes UE, `main`)** : `main` tiré (PR #2
+  mergée). `EuDocumentDialog` : la CSS injectée dans l'iframe met le texte CELLAR en « page »
+  blanche sur le fond de l'app (palette Institutional Navy en hex, les variables CSS n'entrent pas
+  dans l'iframe) — police serif à chiffres alignés (Charter/Cambria), en-tête du JO en ligne
+  flexible, drapeau cassé masqué (image relative bloquée par la CSP), listes « (1) … » alignées,
+  appels de note en exposant, tableaux bordés avec ligne d'en-tête, notes et mentions ELI/ISSN
+  atténuées, bandeau EUR-Lex des anciens textes masqué. En-tête de la fenêtre : CELEX en `Badge`
+  mono, titre `text-lg`, avertissement en `text-xs`. Vérifié : lint/typecheck verts, 12 tests
+  des zones touchées ; captures Playwright du HTML réel injecté (32026R1867 EN, 32023R1113 FR avec
+  chapitres/annexes/tableaux, 31991L0308 ancien format). Non vérifié : capture de la fenêtre dans
+  l'app (écran derrière connexion). Non fait : pas de commit (non demandé).
+  Ajout demandé ensuite : boutons `outline` `xs` « Voir sur EUR-Lex » + « Télécharger (.docx) »
+  côte à côte dans la colonne Source de la table de résultats (même route `format=docx`, 200 vérifié sur 32026R1867 ; 17 tests
+  verts). Contrairement à la fenêtre, le lien s'affiche sans avoir chargé le texte : un acte absent
+  de CELLAR donne un téléchargement en échec (404) côté navigateur. Puis : bouton de la table
+  libellé « Télécharger » (nouvelle clé `euSearch.download`, la fenêtre garde « (.docx) ») ; titre
+  sur une ligne avec « … » (titre complet au survol), colonne Title à 68 % — 32rem fixe jugé trop
+  étroit, puis 55 % laissait un blanc visible après les boutons de Source (la place en trop va aux
+  colonnes auto) ; `max-w-0` sur la cellule : la colonne se réduit sur écran étroit sans
+  défilement horizontal (mesuré en Playwright à 1960, 1100 et 800 px). 163 tests, check:i18n verts.

@@ -54,7 +54,7 @@ export function ErrorState({
 
 export function EmptyState({ message }: { message: string }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed px-6 py-12 text-center">
+    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed bg-card px-6 py-12 text-center shadow-sm shadow-foreground/10">
       <Inbox className="size-6 text-muted-foreground" aria-hidden />
       <p className="max-w-md text-sm text-muted-foreground">{message}</p>
     </div>

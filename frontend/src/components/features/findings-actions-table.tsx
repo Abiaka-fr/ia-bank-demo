@@ -192,7 +192,7 @@ export function FindingsActionsTable({
       {visibleFindings.length === 0 ? (
         <EmptyState message={impact("empty")} />
       ) : (
-        <div className="rounded-lg border">
+        <div className="rounded-lg border bg-card shadow-sm shadow-foreground/10">
           <Table>
             <TableHeader>
               <TableRow>

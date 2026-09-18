@@ -9,6 +9,7 @@ import {
   LoadingState,
 } from "@/components/features/query-state";
 import { UserRoleRow } from "@/components/features/user-role-row";
+import { Card } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -45,20 +46,22 @@ export function UserManagementView() {
         <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
         {t("permissionNotice")}
       </p>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t("columnFullName")}</TableHead>
-            <TableHead>{t("columnEmail")}</TableHead>
-            <TableHead>{t("columnRole")}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {usersQuery.data.map((user) => (
-            <UserRoleRow key={user.user_id} user={user} />
-          ))}
-        </TableBody>
-      </Table>
+      <Card className="py-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="pl-4">{t("columnFullName")}</TableHead>
+              <TableHead>{t("columnEmail")}</TableHead>
+              <TableHead className="pr-4">{t("columnRole")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {usersQuery.data.map((user) => (
+              <UserRoleRow key={user.user_id} user={user} />
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }

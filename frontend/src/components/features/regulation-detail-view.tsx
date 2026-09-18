@@ -210,7 +210,7 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
 
         <TabsContent value="source" className="mt-4">
           {regulation.extracted_text ? (
-            <ScrollArea className="h-[calc(100svh-22rem)] min-h-80 rounded-lg border">
+            <ScrollArea className="h-[calc(100svh-22rem)] min-h-80 rounded-lg border bg-card shadow-sm shadow-foreground/10">
               <div
                 lang={regulation.language.toLowerCase()}
                 className="space-y-2 p-4 text-sm leading-relaxed"

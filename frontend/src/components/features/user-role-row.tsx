@@ -50,9 +50,9 @@ export function UserRoleRow({ user }: { user: User }) {
 
   return (
     <TableRow>
-      <TableCell className="whitespace-normal font-medium">{user.full_name}</TableCell>
+      <TableCell className="whitespace-normal pl-4 font-medium">{user.full_name}</TableCell>
       <TableCell className="whitespace-normal text-muted-foreground">{user.email}</TableCell>
-      <TableCell className="whitespace-normal">
+      <TableCell className="whitespace-normal pr-4">
         <Select
           value={user.role}
           onValueChange={(nextRole) => mutation.mutate(nextRole)}

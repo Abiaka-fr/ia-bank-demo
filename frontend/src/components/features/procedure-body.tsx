@@ -53,7 +53,7 @@ export function ProcedureBody({
           première section, sans indication qu'il continuait. Un `div` à défilement
           natif n'a pas ce problème. */}
       <div
-        className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-lg border p-4 print:h-auto print:overflow-visible print:border-none print:p-0"
+        className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-lg border bg-card p-4 shadow-sm shadow-foreground/10 print:h-auto print:overflow-visible print:border-none print:p-0 print:shadow-none"
         lang={language.toLowerCase()}
       >
         {lines.map((line, index) => {

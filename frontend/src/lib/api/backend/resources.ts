@@ -122,6 +122,26 @@ export function fetchProcedures(): Promise<DocumentMeta[]> {
  * lève une erreur explicite : mieux vaut un message clair qu'un onglet « Texte source »
  * silencieusement vide.
  */
+/**
+ * `PUT /api/documents/:id/assignee` (Thư, 2026-09-15, commit `4ea5611`) — remplace le
+ * correctif local `regulation-assignee-overrides.ts` (le backend n'avait avant aucun
+ * champ `assignee` sur un document, donc l'assignation d'une régulation réelle ne
+ * pouvait pas être persistée côté serveur). `assignee` accepte un `user_id` ou un
+ * e-mail d'après `backend/API.md` — l'app envoie toujours le `user_id` déjà utilisé
+ * partout ailleurs (`AssigneeSelect`).
+ */
+export async function updateDocumentAssignee(
+  id: string,
+  assignee: string | null,
+): Promise<DocumentMeta> {
+  const response = await backendFetch(
+    `/api/documents/${encodeURIComponent(id)}/assignee`,
+    backendDocumentSchema,
+    { method: "PUT", body: { assignee } },
+  );
+  return adaptDocument(response);
+}
+
 export async function fetchDocumentDetail(id: string): Promise<DocumentDetail> {
   const document = await backendFetch(
     `/api/documents/${encodeURIComponent(id)}`,
@@ -334,9 +354,7 @@ export async function updateUserRole(
 // --- Validation humaine ---------------------------------------------------------
 
 /**
- * Persiste une décision humaine via `PUT /api/mappings/:id/human-status` puis, si un
- * assigné est fourni, `PUT /api/mappings/:id/assignee` (deux appels séparés — le
- * backend n'a pas de route combinée, contrairement au contrat). Voir
+ * Persiste une décision humaine via `PUT /api/mappings/:id/human-status`. Voir
  * `finding-adapt.ts::adaptHumanStatusToBackend` pour la traduction d'énumération
  * (verbe court côté backend, participe passé côté contrat).
  *
@@ -345,7 +363,11 @@ export async function updateUserRole(
  *   persistée, mais pas journalisée — l'onglet Historique reste sur MSW ;
  * - une exigence sans procédure associée (`assembleUnmappedFinding`, préfixe
  *   `NO-MAPPING-`) n'a pas de ligne `RequirementProcedureMap` côté backend : il n'y a
- *   rien à persister, l'appel échoue explicitement plutôt que de faire semblant.
+ *   rien à persister, l'appel échoue explicitement plutôt que de faire semblant ;
+ * - **depuis le 2026-09-15** (`3f3f05b`), l'assignation d'un constat escaladé à une
+ *   personne précise n'a plus de route serveur (`PUT /api/mappings/:id/assignee`
+ *   supprimée) — `body.assignee_id` reste appliqué en optimiste sur le retour de
+ *   cette fonction, jamais persisté.
  */
 export async function validateMapping(
   mappingId: string,
@@ -358,7 +380,7 @@ export async function validateMapping(
     );
   }
 
-  const statusResponse = await backendFetch(
+  const latest = await backendFetch(
     `/api/mappings/${encodeURIComponent(mappingId)}/human-status`,
     backendMappingSchema,
     {
@@ -367,14 +389,13 @@ export async function validateMapping(
     },
   );
 
-  const latest =
-    body.assignee_id !== undefined
-      ? await backendFetch(
-          `/api/mappings/${encodeURIComponent(mappingId)}/assignee`,
-          backendMappingSchema,
-          { method: "PUT", body: { assignee: body.assignee_id } },
-        )
-      : statusResponse;
+  // ⚠️ `PUT /api/mappings/:id/assignee` n'existe plus côté backend (Thư, 2026-09-15,
+  // `3f3f05b` — colonne `assignee` supprimée de `requirement_procedure_map`,
+  // remplacée par l'assignation au niveau document, voir `updateDocumentAssignee`).
+  // L'assignation d'un constat escaladé à une personne précise n'a donc plus
+  // d'équivalent serveur : `body.assignee_id` reste appliqué en optimiste sur le
+  // retour ci-dessous (l'écran l'affiche immédiatement) mais n'est plus persisté —
+  // il disparaît au rechargement. Documenté dans `docs/known-limitations.md`.
 
   // `priority` vit sur l'exigence (`risk_level`), pas sur le mapping : la valeur
   // exacte revient au prochain chargement de la liste, invalidé juste après par

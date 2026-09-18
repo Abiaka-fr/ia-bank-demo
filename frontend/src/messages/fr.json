@@ -218,8 +218,54 @@
     "sourcesLabel": "Sources",
     "lastUpdatedLabel": "Dernière mise à jour",
     "europeanSectionTitle": "European Regulatory Sources",
-    "notConnectedStatus": "Non connecté",
-    "notConnectedDescription": "Aucune source réglementaire européenne (CELLAR/EUR-Lex) n'est connectée pour l'instant — fonctionnalité en évaluation, voir docs/phases/phase-7-european-search.md."
+    "euSearch": {
+      "keywordPlaceholder": "Mot-clé du titre ou CELEX (ex. blanchiment, 32022R2554)",
+      "yearFrom": "De (année)",
+      "yearTo": "À (année)",
+      "searchButton": "Rechercher",
+      "invalidYears": "Années invalides : entre 1950 et l'année en cours, « de » inférieure ou égale à « à ».",
+      "filterType": "Type",
+      "filterSubject": "Thème EuroVoc",
+      "filterStatus": "Statut",
+      "sortLabel": "Tri",
+      "sortNewest": "Plus récent",
+      "sortOldest": "Plus ancien",
+      "statusInForce": "En vigueur",
+      "statusNotInForce": "Non en vigueur",
+      "statusAll": "Tous",
+      "types": {
+        "REG": "Règlement",
+        "DIR": "Directive",
+        "DEC": "Décision",
+        "RECO": "Recommandation"
+      },
+      "subjects": {
+        "money-laundering": "Blanchiment d'argent",
+        "banking-supervision": "Contrôle bancaire",
+        "financial-services": "Services financiers",
+        "risk-management": "Gestion du risque",
+        "outsourcing": "Externalisation",
+        "consumer-protection": "Protection du consommateur",
+        "information-security": "Sécurité des systèmes d'information",
+        "payment": "Paiement"
+      },
+      "columnCelex": "CELEX",
+      "columnTitle": "Titre",
+      "columnType": "Type",
+      "columnDate": "Date",
+      "columnStatus": "Statut",
+      "columnSource": "Source",
+      "openOnEurLex": "Voir sur EUR-Lex",
+      "documentNote": "Texte source publié par l'Office des publications de l'UE (CELLAR), affiché pour consultation. Seule la version publiée au Journal officiel de l'UE fait foi ; pertinence et applicabilité à confirmer par la Conformité.",
+      "downloadDocx": "Télécharger (.docx)",
+      "download": "Télécharger",
+      "documentFrameTitle": "Texte intégral {celex}",
+      "noResults": "Aucun texte européen ne correspond à ces critères.",
+      "pageLabel": "Page {page}",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "sourceNote": "Source : CELLAR — Office des publications de l'UE. Pertinence et applicabilité à confirmer par la Conformité."
+    }
   },
   "roles": {
     "headOfCompliance": "Responsable Conformité",
@@ -246,7 +292,7 @@
     "title": "Importer une régulation",
     "description": "Le document est ajouté au corpus ; l'extraction des exigences est réalisée par le backend.",
     "fileLabel": "Fichier de la régulation",
-    "fileHelp": "Format accepté : Word (.docx) uniquement.",
+    "fileHelp": "Formats acceptés : Word (.docx) ou Excel (.xlsx).",
     "assigneeLabel": "Personne en charge",
     "assigneeHelp": "Modifiable ensuite directement sur la carte de la régulation.",
     "cancel": "Annuler",
@@ -254,7 +300,7 @@
     "uploading": "Import en cours…",
     "succeeded": "Régulation importée",
     "failed": "L'import a échoué.",
-    "wrongFormat": "Seuls les fichiers Word (.docx) sont acceptés."
+    "wrongFormat": "Seuls les fichiers Word (.docx) ou Excel (.xlsx) sont acceptés."
   },
   "procedures": {
     "title": "Procédures",
@@ -276,14 +322,20 @@
     "title": "Importer une procédure",
     "description": "Le document est ajouté au corpus ; il peut ensuite être analysé contre la base de conformité.",
     "fileLabel": "Fichier de la procédure",
-    "fileHelp": "Format accepté : Word (.docx) uniquement.",
+    "fileHelp": "Formats acceptés : Word (.docx) ou Excel (.xlsx).",
     "assigneeLabel": "Personne en charge",
     "cancel": "Annuler",
     "submit": "Importer",
     "uploading": "Import en cours…",
     "succeeded": "Procédure importée",
     "failed": "L'import a échoué.",
-    "wrongFormat": "Seuls les fichiers Word (.docx) sont acceptés."
+    "wrongFormat": "Seuls les fichiers Word (.docx) ou Excel (.xlsx) sont acceptés."
+  },
+  "fileExtraction": {
+    "extracting": "Extraction du contenu…",
+    "extractionFailed": "L'extraction du contenu a échoué — le fichier est peut-être corrompu ou protégé par mot de passe.",
+    "previewLabel": "{count, plural, =0 {Aucun contenu extrait} one {# section extraite} other {# sections extraites}} ({chars} caractères)",
+    "retry": "Réessayer"
   },
   "regulatoryScope": {
     "label": "Périmètre réglementaire",

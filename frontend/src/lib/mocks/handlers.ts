@@ -4,6 +4,8 @@
  */
 import { HttpResponse, http } from "msw";
 
+import { MOCK_UPLOAD_ID_PREFIX as PROCEDURE_UPLOAD_ID_PREFIX } from "@/lib/api/procedures";
+import { MOCK_UPLOAD_ID_PREFIX as REGULATION_UPLOAD_ID_PREFIX } from "@/lib/api/regulations";
 import { toMeta } from "./data/documents";
 import { ACPR_REGULATION_ID } from "./data/documents";
 import { requirements } from "./data/requirements";
@@ -33,6 +35,7 @@ import {
   buildPortfolioSummary,
   buildRegulationMap,
 } from "./summary";
+import { chunksToText, isAcceptedUploadFile, stripAcceptedExtension } from "@/lib/file-extract";
 import {
   analyzeProcedureBodySchema,
   signupBodySchema,
@@ -55,6 +58,25 @@ function errorResponse(status: number, code: string, message: string) {
 
 function notFound(message: string) {
   return errorResponse(404, "NOT_FOUND", message);
+}
+
+/**
+ * `extracted_chunks` (Thư, 2026-09-14) : contenu déjà extrait côté client avant
+ * l'upload (voir `lib/file-extract.ts`) — aucune route réelle ne l'attend encore,
+ * seul ce mock le lit, pour que le document créé ait un vrai « Texte source » plutôt
+ * qu'une chaîne vide. Silencieusement ignoré si absent ou mal formé : un upload ne
+ * doit jamais échouer à cause de l'aperçu d'extraction.
+ */
+function extractedTextFromForm(form: FormData): string {
+  const raw = form.get("extracted_chunks");
+  if (typeof raw !== "string") return "";
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return "";
+    return chunksToText(parsed);
+  } catch {
+    return "";
+  }
 }
 
 /** Seule la régulation ACPR du corpus de démo dispose de constats. */
@@ -177,19 +199,19 @@ export const handlers = [
     const fileName =
       typeof declaredName === "string" && declaredName ? declaredName : file.name;
 
-    if (!fileName.toLowerCase().endsWith(".docx")) {
+    if (!isAcceptedUploadFile(fileName)) {
       return errorResponse(
         415,
         "UNSUPPORTED_FILE_TYPE",
-        "Seuls les fichiers Word (.docx) sont acceptés.",
+        "Seuls les fichiers Word (.docx) ou Excel (.xlsx) sont acceptés.",
       );
     }
 
     // Le backend n'extrait pas encore les exigences : la régulation est créée avec
     // ses seules métadonnées, en NOT_ANALYZED. Aucune exigence n'est inventée.
     const uploaded: DocumentDetail = {
-      document_id: `REG-UP-${Date.now()}`,
-      title: fileName.replace(/\.docx$/i, ""),
+      document_id: `${REGULATION_UPLOAD_ID_PREFIX}${Date.now()}`,
+      title: stripAcceptedExtension(fileName),
       document_type: "REGULATION",
       authority_or_owner: "—",
       domain: [],
@@ -199,7 +221,7 @@ export const handlers = [
       uploaded_by_id: typeof uploadedById === "string" ? uploadedById : undefined,
       uploaded_at: new Date().toISOString(),
       assignee_id: typeof assigneeId === "string" && assigneeId ? assigneeId : undefined,
-      extracted_text: "",
+      extracted_text: extractedTextFromForm(form),
     };
 
     return HttpResponse.json(toMeta(addRegulation(uploaded)), { status: 201 });
@@ -354,19 +376,19 @@ export const handlers = [
     const fileName =
       typeof declaredName === "string" && declaredName ? declaredName : file.name;
 
-    if (!fileName.toLowerCase().endsWith(".docx")) {
+    if (!isAcceptedUploadFile(fileName)) {
       return errorResponse(
         415,
         "UNSUPPORTED_FILE_TYPE",
-        "Seuls les fichiers Word (.docx) sont acceptés.",
+        "Seuls les fichiers Word (.docx) ou Excel (.xlsx) sont acceptés.",
       );
     }
 
     // Comme pour les régulations : aucune exigence/analyse n'est inventée à l'upload,
     // la procédure démarre en NOT_ANALYZED (v1.8).
     const uploaded: DocumentDetail = {
-      document_id: `PROC-UP-${Date.now()}`,
-      title: fileName.replace(/\.docx$/i, ""),
+      document_id: `${PROCEDURE_UPLOAD_ID_PREFIX}${Date.now()}`,
+      title: stripAcceptedExtension(fileName),
       document_type: "INTERNAL_PROCEDURE",
       authority_or_owner: "—",
       domain: [],
@@ -376,7 +398,7 @@ export const handlers = [
       uploaded_by_id: typeof uploadedById === "string" ? uploadedById : undefined,
       uploaded_at: new Date().toISOString(),
       assignee_id: typeof assigneeId === "string" && assigneeId ? assigneeId : undefined,
-      extracted_text: "",
+      extracted_text: extractedTextFromForm(form),
     };
 
     return HttpResponse.json(toMeta(addProcedure(uploaded)), { status: 201 });

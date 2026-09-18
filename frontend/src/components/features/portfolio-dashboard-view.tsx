@@ -130,7 +130,7 @@ export function PortfolioDashboardView() {
           <EmptyState message={t("byRegulationAllHandled")} />
         ) : (
           <>
-            <div className="rounded-lg border">
+            <div className="rounded-lg border bg-card shadow-sm shadow-foreground/10">
               <Table>
                 <TableHeader>
                   <TableRow>
