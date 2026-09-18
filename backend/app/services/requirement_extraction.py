@@ -129,7 +129,8 @@ class RequirementExtractionService:
                         "- risk_level: LOW, MEDIUM, or HIGH based on compliance importance\n"
                         "- source_reference: Where in the document this comes from chunk_no (e.g 1, 2, 3)\n"
                         "- domain: The regulatory domain (e.g., AML/CFT, KYC, DATA_PROTECTION)\n"
-                        "- evidence: Extract the precise text from the document that substantiates the requirement\n\n"
+                        "- evidence: Copy the EXACT raw text from the document that substantiates this requirement. "
+                        "Preserve all original formatting including newlines, spaces, and special characters exactly as they appear.\n\n"
                         "Respond with valid JSON matching this structure (no markdown):\n"
                         "{\n"
                         '  "requirements": [\n'
