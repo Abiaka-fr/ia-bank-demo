@@ -57,12 +57,24 @@ export class UnsupportedFileFormatError extends Error {
 /** Même libellé que l'exemple de chunk dans `backend/API.md` (« Document Header »). */
 const DEFAULT_SECTION_TITLE = "Document Header";
 const HEADING_TAGS = new Set(["H1", "H2", "H3", "H4", "H5", "H6"]);
+/** Blocs porteurs de texte ; `div`/`table`/`ul` ne sont que des conteneurs de mise en page. */
+const TEXT_BLOCKS = "h1,h2,h3,h4,h5,h6,p,li,td,th";
+/** Titres du Journal officiel de l'UE (`oj-ti-art`, `oj-ti-section-1`…) : des `<p>`, pas des `<h*>`. */
+const EUR_LEX_HEADING_CLASS = /\boj-ti-/;
+
+/** Texte propre du bloc, sans celui des blocs imbriqués (`<li>` parent, `<td><p>`), lus à leur tour. */
+function ownText(node: Element): string {
+  const clone = node.cloneNode(true) as Element;
+  clone.querySelectorAll(TEXT_BLOCKS).forEach((nested) => nested.remove());
+  return clone.textContent?.replace(/\s+/g, " ").trim() ?? "";
+}
 
 /**
- * Découpe le HTML converti par mammoth en sections à chaque titre — un chunk par
- * titre, le texte avant le premier titre forme le chunk d'en-tête. `DOMParser` est
- * natif en navigateur comme sous `jsdom` (environnement de test) : pas de dépendance
- * supplémentaire pour parser un fragment HTML déjà bien formé.
+ * Découpe du HTML (converti par mammoth, ou embarqué en altChunk) en sections à chaque
+ * titre — un chunk par titre, le texte avant le premier titre forme le chunk d'en-tête.
+ * Parcourt tous les blocs de texte, pas seulement les enfants directs de `<body>` : le
+ * HTML EUR-Lex imbrique tout dans des `div`/`table`, qui sortaient en un seul bloc.
+ * `DOMParser` est natif en navigateur comme sous `jsdom` (environnement de test).
  */
 export function splitHtmlIntoChunks(html: string): ExtractedChunk[] {
   const parsed = new DOMParser().parseFromString(html, "text/html");
@@ -78,11 +90,11 @@ export function splitHtmlIntoChunks(html: string): ExtractedChunk[] {
     currentParagraphs = [];
   }
 
-  for (const node of Array.from(parsed.body.children)) {
-    const text = node.textContent?.trim() ?? "";
+  for (const node of Array.from(parsed.body.querySelectorAll(TEXT_BLOCKS))) {
+    const text = ownText(node);
     if (!text) continue;
 
-    if (HEADING_TAGS.has(node.tagName)) {
+    if (HEADING_TAGS.has(node.tagName) || EUR_LEX_HEADING_CLASS.test(node.className)) {
       flush();
       currentTitle = text;
     } else {
@@ -94,10 +106,31 @@ export function splitHtmlIntoChunks(html: string): ExtractedChunk[] {
   return chunks;
 }
 
+/**
+ * Parties HTML du paquet .docx (cibles des `w:altChunk`), lues avec le CFB de `xlsx` —
+ * celui qui écrit ce zip dans `eu-search/docx.ts`.
+ * ponytail: UTF-8 supposé (vrai pour nos exports) ; lire le `charset` si un autre outil en produit.
+ */
+export function altChunkHtml(buffer: ArrayBuffer): string {
+  // `CFB` est typé `any` par `xlsx` : seule la forme lue ici est déclarée.
+  const zip: { FileIndex: { name: string; content: ArrayLike<number> }[] } = XLSX.CFB.read(
+    new Uint8Array(buffer),
+    { type: "array" },
+  );
+  return zip.FileIndex.filter((entry) => /\.x?html?$/i.test(entry.name))
+    .map((entry) => new TextDecoder().decode(new Uint8Array(entry.content)))
+    .join("\n");
+}
+
 async function extractDocxChunks(buffer: ArrayBuffer): Promise<ExtractedChunk[]> {
   const { value: html } = await mammoth.convertToHtml({ arrayBuffer: buffer });
   const chunks = splitHtmlIntoChunks(html);
   if (chunks.length > 0) return chunks;
+
+  // Contenu embarqué en `w:altChunk` HTML (ex. les .docx de la recherche UE,
+  // `eu-search/docx.ts`) : Word le convertit à l'ouverture, mammoth l'ignore.
+  const altChunks = splitHtmlIntoChunks(altChunkHtml(buffer));
+  if (altChunks.length > 0) return altChunks;
 
   // Document sans titre détectable (rare) : retombe sur le texte brut plutôt que de
   // renvoyer un tableau vide.
@@ -150,7 +183,18 @@ export async function extractFileChunks(file: File): Promise<ExtractedChunk[]> {
   throw new UnsupportedFileFormatError(file.name);
 }
 
-/** Pour un aperçu ou un stockage à plat (ex. `DocumentDetail.extracted_text`). */
+/**
+ * Pour un stockage à plat (ex. `DocumentDetail.extracted_text`). Le titre de section
+ * devient un titre Markdown (format du corpus, rendu par `MarkdownLine`) : sans lui,
+ * les intitulés d'articles disparaissaient du texte source. L'en-tête par défaut est
+ * un libellé technique, pas un vrai titre — omis.
+ */
 export function chunksToText(chunks: readonly ExtractedChunk[]): string {
-  return chunks.map((chunk) => chunk.content).join("\n\n");
+  return chunks
+    .map((chunk) =>
+      chunk.section_title && chunk.section_title !== DEFAULT_SECTION_TITLE
+        ? `## ${chunk.section_title}\n\n${chunk.content}`
+        : chunk.content,
+    )
+    .join("\n\n");
 }

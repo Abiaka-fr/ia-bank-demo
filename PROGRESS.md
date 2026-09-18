@@ -1738,3 +1738,32 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   étroit, puis 55 % laissait un blanc visible après les boutons de Source (la place en trop va aux
   colonnes auto) ; `max-w-0` sur la cellule : la colonne se réduit sur écran étroit sans
   défilement horizontal (mesuré en Playwright à 1960, 1100 et 800 px). 163 tests, check:i18n verts.
+- **2026-09-18 (Claude Code — revue du flux d'upload Word/Excel, `main`)** : `main` tiré (PR #3).
+  Parcours rejoué en mode mock sur `/procedures` et `/regulations` avec des fichiers de test fictifs
+  (docx valide, vide, corrompu, gros docx, faux .pdf). 3 bugs corrigés :
+  1. **Titres de section perdus** : `chunksToText` ne gardait que `content` — les intitulés
+     d'articles disparaissaient du « Texte source » après upload (l'aperçu, lui, les montrait).
+     Désormais émis en `## titre` (format Markdown du corpus), sauf l'en-tête technique
+     « Document Header ». Test mis à jour.
+  2. **Faux avertissement** « Le passage cité n'a pas pu être localisé… » sur toute procédure
+     ouverte directement (`/procedures/[id]` sans `excerpt`, donc aussi juste après un upload) :
+     `ProcedureBody` ne l'affiche plus que s'il y a un extrait à chercher.
+  3. **Upload d'un .docx sans texte** possible (« Aucun contenu extrait (0 caractères) » mais
+     bouton Importer actif) : les deux dialogues désactivent Importer tant qu'aucun chunk n'est extrait.
+  Vérifié : typecheck, lint, 163 tests verts ; navigateur (docx vide/corrompu → Importer grisé,
+  titre rendu dans le texte source, avertissement absent sans extrait et présent avec un extrait
+  introuvable). **PDF : non pris en charge** (seulement .docx/.xlsx, refusé proprement avec toast) —
+  l'ajouter demanderait une dépendance (`pdfjs-dist`), pas fait. Non corrigés (mineurs) : Annuler ne
+  vide pas le dialogue (le fichier précédent réapparaît à la réouverture), fenêtre fermable pendant
+  l'envoi. Upload toujours simulé par MSW (`docs/api-requests.md` #2/#8/#9). Pas de commit.
+  **Suite (même jour) — upload d'un .docx exporté par la recherche UE : « 0 caractère extrait »**
+  (capture de Giang, `32026R1867_FR.docx`). Cause : ce .docx (`eu-search/docx.ts`) ne contient qu'un
+  `w:altChunk` pointant vers le HTML CELLAR, que Word convertit à l'ouverture — mammoth l'ignore.
+  Corrigé dans `lib/file-extract.ts` : si mammoth ne trouve rien, lecture des parties HTML du zip
+  (CFB de `xlsx`, déjà installé) ; `splitHtmlIntoChunks` parcourt désormais tous les blocs de texte
+  (p/li/td/h*) au lieu des seuls enfants directs de `<body>` — le HTML EUR-Lex, tout en `div`/`table`,
+  sortait sinon en un bloc — et reconnaît les titres du JO (`<p class="oj-ti-*">`). Bonus pour les
+  .docx Word ordinaires : listes et tableaux ne sont plus collés en une seule ligne. Vérifié : le
+  fichier réel donne 4 sections / 5 142 caractères, accents corrects, « Article premier »/« Article 2 »
+  en titres dans le texte source ; docx ordinaire inchangé ; 165 tests, typecheck, lint verts.
+  Limite : dans les listes EUR-Lex en tableau, le numéro « (4) »/« a) » reste sur sa propre ligne.
