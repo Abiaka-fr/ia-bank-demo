@@ -383,17 +383,22 @@ PUT /api/documents/EXT-EU-AML-001/assignee
 ### Ingest Regulation Document
 
 #### `POST /api/documents/regulation-ingest`
-Ingest a regulation document: classify, chunk, and store in database.
+Ingest a regulation document: chunk by token count and store in database.
 
-This endpoint accepts raw regulation text and uses an LLM to:
-1. Classify and extract metadata (title, domain, category, document_type, origin, language, data_classification)
-2. Automatically split the text into logical sections/chapters
-3. Store as Document → DocumentVersion → DocumentChunk rows
+This endpoint accepts raw regulation text and:
+1. Extracts metadata heuristically (title, domain, language, summary)
+2. Splits the text into chunks using token-based chunking (max 800 tokens per chunk)
+3. Respects paragraph boundaries - text in one chunk stays within the same paragraph
+4. Stores as Document → DocumentVersion → DocumentChunk rows
 
 **Authentication** Required (Bearer token)
 
 **Request Body**
 - `text` (required): Raw regulation document text (can be very long)
+- `title` (required): Document title
+- `domain` (required): Compliance domain (e.g., AML/CFT, KYC, DORA, MIFID, SANCTIONS, OUTSOURCING, DATA_PROTECTION, COMPLIANCE, AI_GOVERNANCE)
+- `language` (required): Document language (EN or FR)
+- `summary` (optional): Brief summary of the document
 - `created_by` (required): User ID or email who is ingesting the document
 - `published_at` (optional): When the document was published (ISO 8601 datetime format)
 
@@ -402,6 +407,10 @@ This endpoint accepts raw regulation text and uses an LLM to:
 POST /api/documents/regulation-ingest
 {
   "text": "# EU AML/CFT Regulation\n\n## Section 1: Customer Due Diligence\n...",
+  "title": "EU AML/CFT Regulation",
+  "domain": "AML/CFT",
+  "language": "EN",
+  "summary": "Guidelines on customer due diligence and AML/CFT compliance",
   "created_by": "compliance.officer@bank.com",
   "published_at": "2026-09-16T10:00:00"
 }
@@ -439,7 +448,11 @@ POST /api/documents/regulation-ingest
 ```
 
 **Notes:**
-- Requires OPENROUTER_API_KEY environment variable
+- No LLM required - uses token counting (tiktoken or word-based estimation)
+- Chunks have maximum 800 tokens each
+- Paragraph boundaries are respected - paragraphs are never split across chunks
+- Headings (Markdown # format or short uppercase lines) are detected and become chunk section titles
+- **Metadata must be provided by the client** (title, domain, language, summary) - no automatic extraction
 - Document IDs are generated sequentially per origin_code
 - All documents start at version 1.0
 - Chunks are numbered sequentially starting from 1

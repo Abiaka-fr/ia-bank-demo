@@ -1,13 +1,14 @@
 """Service for ingesting and chunking regulatory documents."""
 
 import logging
+import re
 from datetime import datetime
 
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.models.document import Document, DocumentChunk, DocumentVersion
-from app.services.llm_client import LLMClient
+from app.services.token_chunker import TokenBasedChunker
 
 logger = logging.getLogger(__name__)
 
@@ -75,71 +76,61 @@ class DocumentIngestionService:
         return f"{prefix}-{next_seq:03d}"
 
     @staticmethod
-    def ingest(db: Session, text: str, created_by: str, published_at: datetime | None = None) -> IngestDocumentResponse:
+    def ingest(
+        db: Session,
+        text: str,
+        title: str,
+        domain: str,
+        language: str,
+        created_by: str,
+        summary: str | None = None,
+        published_at: datetime | None = None,
+    ) -> IngestDocumentResponse:
         """
-        Ingest a regulation document: classify, chunk, and persist.
+        Ingest a regulation document: chunk by token count, and persist.
+
+        Uses token-based chunking (max 800 tokens per chunk) respecting paragraph boundaries.
+        No LLM required - metadata must be provided by client.
 
         Args:
             db: Database session
             text: Raw regulation text
+            title: Document title (provided by client)
+            domain: Compliance domain (AML/CFT, KYC, etc.) - provided by client
+            language: Document language (EN, FR) - provided by client
+            created_by: User/system performing the ingestion
+            summary: Optional summary (provided by client)
+            published_at: Optional publication date
 
         Returns:
             IngestDocumentResponse with document and chunk info
         """
-        # Step 1: LLM call to classify and chunk
-        logger.info("Step 1: Calling LLM to classify and chunk document...")
+        # Step 1: Use provided metadata
+        logger.info(f"Step 1: Using provided metadata for document ingestion...")
+        logger.info(f"  Title: {title}")
+        logger.info(f"  Domain: {domain}")
+        logger.info(f"  Language: {language}")
 
-        class ChunkingResponse(BaseModel):
-            """Response from LLM chunking call."""
-
-            metadata: DocumentMetadata
-            chunks: list[DocumentChunkInput]
-
-        response = LLMClient.call(
-            messages=[
-                {
-                    "role": "user",
-                    "content": (
-                        "You are a regulatory document processor. Analyze the following EU regulation "
-                        "text and:\n\n"
-                        "1. Extract metadata: title, domain (e.g. AML/CFT, KYC), language (EN or FR), "
-                        "and a brief summary (2-3 sentences).\n\n"
-                        "2. Split the text into logical sections/chapters. For each chunk provide: "
-                        "chunk_no (sequential starting at 1), section_title, content (the full text "
-                        "of that section), language, domain.\n\n"
-                        "Respond with valid JSON matching this structure:\n"
-                        "{\n"
-                        '  "metadata": {\n'
-                        '    "title": "...",\n'
-                        '    "domain": "...",\n'
-                        '    "language": "...",\n'
-                        '    "summary": "..."\n'
-                        "  },\n"
-                        '  "chunks": [\n'
-                        "    {\n"
-                        '      "chunk_no": 1,\n'
-                        '      "section_title": "...",\n'
-                        '      "content": "...",\n'
-                        '      "language": "...",\n'
-                        '      "domain": "..."\n'
-                        "    }\n"
-                        "  ]\n"
-                        "}\n\n"
-                        f"Text to process:\n\n{text}"
-                    ),
-                }
-            ],
-            response_schema=ChunkingResponse,
+        metadata = DocumentMetadata(
+            title=title,
+            domain=domain,
+            language=language,
+            summary=summary or f"Document: {title}",
         )
 
-        metadata = response.metadata
-        chunks_input = response.chunks
+        # Step 2: Chunk document by token count (max 800 tokens per chunk)
+        logger.info("Step 2: Chunking document by token count (max 800 tokens per chunk)...")
+        chunker = TokenBasedChunker(max_tokens=800)
+        chunks = chunker.chunk(
+            text,
+            language=metadata.language,
+            domain=metadata.domain,
+        )
 
-        logger.info(f"Classified as: {metadata.title} ({metadata.domain})")
-        logger.info(f"Extracted {len(chunks_input)} chunks")
+        logger.info(f"Created {len(chunks)} chunks from token-based splitting")
 
-        # Step 2: Generate IDs and persist
-        logger.info("Step 2: Generating IDs and persisting to database...")
+        # Step 3: Generate IDs and persist
+        logger.info("Step 3: Generating IDs and persisting to database...")
 
         # Use constants for fixed metadata
         CATEGORY = "EXTERNAL"
@@ -185,31 +176,36 @@ class DocumentIngestionService:
             status="ACTIVE",
             file_path=doc.current_file_path,
             created_by=created_by,
-            change_reason="Initial document ingestion",
+            change_reason="Initial document ingestion (token-based chunking, max 800 tokens per chunk)",
         )
         db.add(doc_version)
         db.flush()
 
-        # Create DocumentChunks
+        # Create DocumentChunks from token-based chunks
         created_chunks = []
-        for chunk_input in chunks_input:
-            chunk_id = f"CHK-{document_id}-{version_num_padded}-{str(chunk_input.chunk_no).zfill(3)}"
-            chunk = DocumentChunk(
+        for chunk in chunks:
+            chunk_id = f"CHK-{document_id}-{version_num_padded}-{str(chunk.chunk_no).zfill(3)}"
+            doc_chunk = DocumentChunk(
                 chunk_id=chunk_id,
                 document_id=document_id,
                 version_id=version_id,
-                chunk_no=chunk_input.chunk_no,
-                section_title=chunk_input.section_title,
-                content=chunk_input.content,
-                language=chunk_input.language,
-                domain=chunk_input.domain,
+                chunk_no=chunk.chunk_no,
+                section_title=chunk.section_title,
+                content=chunk.content,
+                language=metadata.language,
+                domain=metadata.domain,
             )
-            db.add(chunk)
-            created_chunks.append(chunk)
+            db.add(doc_chunk)
+            created_chunks.append(doc_chunk)
+            logger.debug(
+                f"  Chunk {chunk.chunk_no}: '{chunk.section_title}' "
+                f"({chunk.token_count} tokens, {len(chunk.content)} chars)"
+            )
 
         db.commit()
         logger.info(
-            f"✅ Document {document_id} ingested: {len(created_chunks)} chunks persisted"
+            f"✅ Document {document_id} ingested: {len(created_chunks)} chunks persisted "
+            f"(token-based, max 800 tokens/chunk, respecting paragraph boundaries)"
         )
 
         return IngestDocumentResponse(

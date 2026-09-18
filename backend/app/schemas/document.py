@@ -163,9 +163,17 @@ class AssigneeUpdate(BaseModel):
 
 
 class IngestDocumentRequest(BaseModel):
-    """Request to ingest and chunk a regulation document."""
+    """Request to ingest and chunk a regulation document.
+
+    Uses token-based chunking (max 800 tokens per chunk).
+    Metadata must be provided by the client (no LLM extraction).
+    """
 
     text: str
+    title: str
+    domain: str  # e.g., AML/CFT, KYC, DORA, MIFID, etc.
+    language: str  # EN, FR
+    summary: str | None = None
     created_by: str
     published_at: datetime | None = None
 
@@ -173,6 +181,10 @@ class IngestDocumentRequest(BaseModel):
         json_schema_extra = {
             "example": {
                 "text": "# Regulation Title\n\nSection 1...\n\nSection 2...",
+                "title": "EU AML/CFT Regulation",
+                "domain": "AML/CFT",
+                "language": "EN",
+                "summary": "Guidelines on customer due diligence and AML/CFT compliance",
                 "created_by": "compliance.officer@bank.com",
                 "published_at": "2026-09-16T10:00:00"
             }

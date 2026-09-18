@@ -300,29 +300,41 @@ def ingest_regulation(
     db: Session = Depends(get_db),
 ):
     """
-    Ingest a regulation document: classify, chunk, and store.
+    Ingest a regulation document: chunk by token count and store.
 
-    This endpoint accepts raw regulation text, uses an LLM to:
-    1. Classify and extract metadata (title, domain, category, etc.)
-    2. Automatically split the text into logical sections/chunks
-
-    The document is then stored with a DocumentVersion and DocumentChunks.
+    This endpoint accepts raw regulation text and:
+    1. Uses token-based chunking (max 800 tokens per chunk)
+    2. Respects paragraph boundaries - text in one chunk stays within the same paragraph
+    3. Uses provided metadata (title, domain, language, summary)
+    4. Stores as Document → DocumentVersion → DocumentChunk rows
 
     **Request Body:**
     - `text` (required): Raw regulation document text
+    - `title` (required): Document title
+    - `domain` (required): Compliance domain (e.g., AML/CFT, KYC, DORA)
+    - `language` (required): Document language (EN, FR)
+    - `summary` (optional): Brief summary of the document
+    - `created_by` (required): User/system performing the ingestion
+    - `published_at` (optional): Publication date (ISO 8601 format)
 
     **Response:** IngestDocumentResponse with document details and chunk count
 
     **Notes:**
-    - Requires OpenRouter API key in OPENROUTER_API_KEY env var
+    - Uses token-based chunking (max 800 tokens per chunk)
+    - Paragraph boundaries are preserved
+    - No LLM required
     - Documents are assigned sequential IDs per origin_code
     - Each document starts at version 1.0
     """
     try:
         result = DocumentIngestionService.ingest(
             db,
-            payload.text,
+            text=payload.text,
+            title=payload.title,
+            domain=payload.domain,
+            language=payload.language,
             created_by=payload.created_by,
+            summary=payload.summary,
             published_at=payload.published_at,
         )
         return result
