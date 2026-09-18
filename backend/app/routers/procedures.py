@@ -12,6 +12,8 @@ from app.models.procedure import Procedure
 from app.models.user import User
 from app.schemas.document import DocumentRead
 from app.schemas.mapping import ProcedureRead
+from app.schemas.procedure import IngestProcedureRequest, IngestProcedureResponse
+from app.services.procedure_ingestion import ProcedureIngestionService
 
 router = APIRouter(prefix="/api/procedures", tags=["procedures"])
 
@@ -111,3 +113,55 @@ def get_procedure(
         raise HTTPException(status_code=404, detail="Procedure not found")
 
     return ProcedureRead.model_validate(proc)
+
+
+@router.post("/ingest", response_model=IngestProcedureResponse, status_code=201)
+def ingest_procedure(
+    payload: IngestProcedureRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> IngestProcedureResponse:
+    """
+    Ingest an internal procedure document: chunk by token count and store.
+
+    This endpoint accepts raw procedure text and:
+    1. Uses token-based chunking (max 800 tokens per chunk)
+    2. Respects paragraph boundaries - text in one chunk stays within the same paragraph
+    3. Uses provided metadata (title, domain, language, summary)
+    4. Creates linked Document → DocumentVersion → DocumentChunk → Procedure → ProcedureVersion rows
+
+    **Request Body:**
+    - `text` (required): Raw procedure document text
+    - `title` (required): Procedure title
+    - `domain` (required): Compliance domain (e.g., AML/CFT, KYC, DORA)
+    - `language` (required): Document language (EN, FR)
+    - `summary` (optional): Brief summary of the procedure
+    - `created_by` (required): User/system performing the ingestion
+    - `published_at` (optional): Publication date (ISO 8601 format)
+
+    **Response:** IngestProcedureResponse with procedure details and chunk count
+
+    **Notes:**
+    - Uses token-based chunking (max 800 tokens per chunk)
+    - Paragraph boundaries are preserved
+    - No LLM required
+    - Procedures are assigned sequential IDs
+    - Each procedure starts at version 1.0
+    - Category: INTERNAL, Origin: European Union (EU)
+    """
+    try:
+        result = ProcedureIngestionService.ingest(
+            db,
+            text=payload.text,
+            title=payload.title,
+            domain=payload.domain,
+            language=payload.language,
+            created_by=payload.created_by,
+            summary=payload.summary,
+            published_at=payload.published_at,
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Procedure ingestion failed: {str(e)}")

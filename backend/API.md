@@ -459,6 +459,85 @@ POST /api/documents/regulation-ingest
 
 ---
 
+### Ingest Internal Procedure Document
+
+#### `POST /api/procedures/ingest`
+Ingest an internal procedure document: chunk by token count and store in database.
+
+This endpoint accepts raw procedure text and:
+1. Chunks the text using token-based chunking (max 800 tokens per chunk)
+2. Respects paragraph boundaries - text in one chunk stays within the same paragraph
+3. Stores as Document → DocumentVersion → DocumentChunk rows (with DOCUMENT_TYPE="PROCEDURE" to identify it as an internal procedure)
+
+**Authentication** Required (Bearer token)
+
+**Request Body**
+- `text` (required): Raw procedure document text (can be very long)
+- `title` (required): Procedure title
+- `domain` (required): Compliance domain (e.g., AML/CFT, KYC, DORA, MIFID, SANCTIONS, OUTSOURCING, DATA_PROTECTION, COMPLIANCE, AI_GOVERNANCE)
+- `language` (required): Document language (EN or FR)
+- `summary` (optional): Brief summary of the procedure
+- `created_by` (required): User ID or email who is ingesting the procedure
+- `published_at` (optional): When the procedure was published (ISO 8601 datetime format)
+
+**Request Example**
+```json
+POST /api/procedures/ingest
+{
+  "text": "# KYC Onboarding Procedure\n\n## Section 1: Customer Identification\n...",
+  "title": "KYC Onboarding Procedure",
+  "domain": "KYC",
+  "language": "EN",
+  "summary": "Internal procedure for customer onboarding and KYC verification",
+  "created_by": "compliance.officer@bank.com",
+  "published_at": "2026-09-16T10:00:00"
+}
+```
+
+**Response (201 Created)**
+```json
+{
+  "document_id": "INT-EU-KYC-001",
+  "title": "KYC Onboarding Procedure",
+  "category": "INTERNAL",
+  "document_type": "PROCEDURE",
+  "origin_code": "EU",
+  "origin_name": "European Union",
+  "domain": "KYC",
+  "language": "EN",
+  "data_classification": "",
+  "current_version": "1.0",
+  "chunks_count": 5
+}
+```
+
+**Response (400 Bad Request)**
+```json
+{
+  "detail": "Invalid request: ..."
+}
+```
+
+**Response (500 on error)**
+```json
+{
+  "detail": "Procedure ingestion failed: ..."
+}
+```
+
+**Notes:**
+- No LLM required - uses token counting (tiktoken or word-based estimation)
+- Chunks have maximum 800 tokens each
+- Paragraph boundaries are respected - paragraphs are never split across chunks
+- Headings (Markdown # format or short uppercase lines) are detected and become chunk section titles
+- **Metadata must be provided by the client** (title, domain, language, summary)
+- Document IDs are generated sequentially per origin_code (INT-EU-\<seq\>)
+- All procedures start at version 1.0
+- Category: INTERNAL, Origin: European Union (EU)
+- Stored as Document with DOCUMENT_TYPE="PROCEDURE" to identify internal procedures
+
+---
+
 ### Extract Requirements from Document
 
 #### `POST /api/requirements/extract`
