@@ -49,7 +49,10 @@ function buildUrl(path: string, searchParams?: RequestOptions["searchParams"]) {
 
 async function readError(response: Response): Promise<ApiError> {
   try {
-    const parsed = apiErrorSchema.safeParse(await response.json());
+    const json = await response.json();
+
+    // Try parsing as contract format: { error: { code, message } }
+    const parsed = apiErrorSchema.safeParse(json);
     if (parsed.success) {
       return new ApiError(
         parsed.data.error.code,
@@ -57,7 +60,15 @@ async function readError(response: Response): Promise<ApiError> {
         response.status,
       );
     }
-  } catch {
+
+    // Try parsing as backend format: { detail: "..." }
+    if (typeof json === "object" && json !== null && "detail" in json) {
+      const detail = json.detail;
+      const message = typeof detail === "string" ? detail : JSON.stringify(detail);
+      return new ApiError("BACKEND_ERROR", message, response.status);
+    }
+  } catch (err) {
+    console.error("Error parsing API error response:", err);
     // Corps illisible : on retombe sur une erreur générique ci-dessous.
   }
   return new ApiError("HTTP_ERROR", `HTTP ${response.status}`, response.status);

@@ -258,6 +258,20 @@ export const handlers = [
     return HttpResponse.json(requirementsForRegulation(String(params.id)));
   }),
 
+  http.post("/api/requirements/extract", async ({ request }) => {
+    await delay();
+    const body = await request.json() as { document_id: string };
+    const extractedRequirements = requirementsForRegulation(body.document_id);
+    return HttpResponse.json(
+      {
+        document_id: body.document_id,
+        requirements_count: extractedRequirements.length,
+        requirement_ids: extractedRequirements.map((req) => req.requirement_id),
+      },
+      { status: 201 }
+    );
+  }),
+
   // --- Constats -----------------------------------------------------------
 
   http.get("/api/requirements/:id/findings", async ({ params }) => {

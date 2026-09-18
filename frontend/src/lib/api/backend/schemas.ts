@@ -197,6 +197,15 @@ export const backendRequirementsToProceduresSchema = z.object({
   data: z.array(backendRequirementWithProceduresSchema),
 });
 
+/**
+ * Response from POST /api/requirements/extract — contains extracted requirement IDs and count.
+ */
+export const backendExtractRequirementsSchema = z.object({
+  document_id: z.string(),
+  requirements_count: z.number(),
+  requirement_ids: z.array(z.string()),
+});
+
 /** Format d'erreur du backend — `{detail}`, là où le contrat prévoit `{error:{code,message}}`. */
 export const backendErrorSchema = z.object({
   detail: z.union([z.string(), z.array(z.unknown()), z.record(z.string(), z.unknown())]),

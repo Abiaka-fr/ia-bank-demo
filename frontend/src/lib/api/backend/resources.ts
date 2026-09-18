@@ -48,6 +48,7 @@ import {
 } from "./finding-adapt";
 import {
   backendDocumentContentSchema,
+  backendExtractRequirementsSchema,
   backendDocumentListSchema,
   backendDocumentSchema,
   backendMappingSchema,
@@ -417,4 +418,25 @@ export async function validateMapping(
     assignee_id: body.assignee_id,
     updated_at: new Date().toISOString(),
   };
+}
+
+/**
+ * Extract regulatory requirements from a document using LLM analysis.
+ * Calls backend endpoint: POST /api/requirements/extract
+ */
+export async function extractRequirementsFromBackend(
+  documentId: string,
+): Promise<{
+  document_id: string;
+  requirements_count: number;
+  requirement_ids: string[];
+}> {
+  return backendFetch(
+    "/api/requirements/extract",
+    backendExtractRequirementsSchema,
+    {
+      method: "POST",
+      body: { document_id: documentId },
+    },
+  );
 }

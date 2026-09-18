@@ -114,3 +114,27 @@ export function analyzeRegulation(id: string) {
     { method: "POST" },
   );
 }
+
+/**
+ * Extract regulatory requirements from a document using LLM analysis.
+ * Returns the count of extracted requirements and their IDs.
+ *
+ * Endpoint: POST /api/requirements/extract
+ * Uses backend when available, falls back to MSW mock otherwise.
+ */
+export function extractRequirements(documentId: string) {
+  if (isBackendLive) return backend.extractRequirementsFromBackend(documentId);
+
+  return apiFetch(
+    "/api/requirements/extract",
+    z.object({
+      document_id: z.string(),
+      requirements_count: z.number(),
+      requirement_ids: z.array(z.string()),
+    }),
+    {
+      method: "POST",
+      body: { document_id: documentId },
+    },
+  );
+}

@@ -65,7 +65,7 @@ export function ProcedurePageView({ procedureId }: { procedureId: string }) {
   if (isError) return <ErrorState error={error} onRetry={() => void refetch()} />;
 
   return (
-    <div className="mx-auto flex h-svh max-w-5xl flex-col gap-4 p-6">
+    <div className="mx-auto flex max-w-5xl flex-col gap-4 p-6">
       <div className="print:hidden">
         {regulationId && requirementId ? (
           // Nouvel onglet = pas d'historique de navigation à remonter (Phase 6 § 10) :

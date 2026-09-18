@@ -1,7 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 
 import { AssigneeName } from "@/components/features/assignee-select";
 import { AwaitingBackendBadge } from "@/components/features/awaiting-backend-badge";
@@ -19,6 +21,7 @@ import { RequirementsTab } from "@/components/features/requirements-tab";
 import { BreadcrumbTrail } from "@/components/layout/breadcrumb-trail";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchFindingsByRegulation } from "@/lib/api/findings";
@@ -29,6 +32,7 @@ import { queryKeys } from "@/lib/api/query-keys";
 import {
   fetchRegulation,
   fetchRegulationRequirements,
+  extractRequirements,
 } from "@/lib/api/regulations";
 import { formatDateDDMMYYYY } from "@/lib/format-date";
 
@@ -52,6 +56,28 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
   const findingsQuery = useQuery({
     queryKey: queryKeys.findings(regulationId),
     queryFn: () => fetchFindingsByRegulation(regulationId),
+  });
+
+  const queryClient = useQueryClient();
+  const extractMutation = useMutation({
+    mutationFn: () => extractRequirements(regulationId),
+    onSuccess: (data) => {
+      // Refetch requirements after extraction
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.regulationRequirements(regulationId),
+      });
+      toast.success(t("extractionSuccess", { count: data.requirements_count }), {
+        duration: 3000,
+      });
+    },
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error("Requirement extraction failed:", error, errorMessage);
+      toast.error(t("extractionFailed"), {
+        description: errorMessage,
+        duration: 5000,
+      });
+    },
   });
 
   // Le backend réel ne renseigne jamais `status: ANALYZED` (voir
@@ -183,7 +209,40 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
           {requirementsQuery.isPending ? (
             <LoadingState rows={3} />
           ) : requirements.length === 0 ? (
-            <EmptyState message={t("requirementsEmpty")} />
+            <div className="flex flex-col items-center gap-6 rounded-lg border border-dashed bg-card px-6 py-16 text-center shadow-sm shadow-foreground/10">
+              {extractMutation.isPending ? (
+                <>
+                  <Loader className="size-12 animate-spin text-primary" aria-hidden />
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-foreground">
+                      {t("analyzing")}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {t("extractionInProgress")}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <p className="max-w-md text-sm text-muted-foreground">
+                      {t("requirementsEmpty")}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {t("requirementsAnalyzeHint")}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => extractMutation.mutate()}
+                    disabled={extractMutation.isPending}
+                    size="lg"
+                    className="mt-2"
+                  >
+                    {t("analyzeButton")}
+                  </Button>
+                </>
+              )}
+            </div>
           ) : (
             <RequirementsTab
               requirements={requirements}
@@ -210,7 +269,7 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
 
         <TabsContent value="source" className="mt-4">
           {regulation.extracted_text ? (
-            <ScrollArea className="h-[calc(100svh-22rem)] min-h-80 rounded-lg border bg-card shadow-sm shadow-foreground/10">
+            <ScrollArea className="min-h-80 rounded-lg border bg-card shadow-sm shadow-foreground/10">
               <div
                 lang={regulation.language.toLowerCase()}
                 className="space-y-2 p-4 text-sm leading-relaxed"
