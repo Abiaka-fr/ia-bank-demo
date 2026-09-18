@@ -143,7 +143,8 @@ export function UploadRegulationDialog() {
           <Button
             onClick={() => mutation.mutate()}
             disabled={
-              !file || extractionStatus === "extracting" || extractionStatus === "error" || mutation.isPending
+              // Vide tant que rien n'est extrait (aucun fichier, en cours, échec ou fichier sans texte).
+              chunks.length === 0 || mutation.isPending
             }
           >
             <Upload aria-hidden />

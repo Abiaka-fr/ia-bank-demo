@@ -41,7 +41,8 @@ export function ProcedureBody({
     // `min-h-0` : sans ça, un enfant flex refuse de rétrécir sous sa taille de
     // contenu et le `div` à défilement ci-dessous ignorerait `flex-1`, débordant la fenêtre.
     <div className="flex min-h-0 flex-1 flex-col gap-2">
-      {quotedIndexes.size === 0 ? (
+      {/* Sans extrait (ouverture directe depuis `/procedures`), rien à localiser. */}
+      {excerpt && quotedIndexes.size === 0 ? (
         <p className="text-xs text-muted-foreground print:hidden">{t("noHighlight")}</p>
       ) : null}
 
