@@ -4,6 +4,7 @@ import type { EuSearchParams } from "@/types/api";
 export const queryKeys = {
   regulations: () => ["regulations"] as const,
   regulation: (id: string) => ["regulations", id] as const,
+  documentContent: (id: string) => ["documents", id, "content"] as const,
   regulationRequirements: (id: string) =>
     ["regulations", id, "requirements"] as const,
   requirementFindings: (requirementId: string) =>

@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 
+import { DocumentViewerWithHighlights } from "@/components/features/document-viewer-with-highlights";
 import { EvidenceCard } from "@/components/features/evidence-card";
 import { EvidenceStrength } from "@/components/features/evidence-strength";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +58,9 @@ export function FindingDetailDialog({
     finding.recommended_action,
     finding.recommended_action_fr,
   );
+  const requirementSourceText = requirement
+    ? pickLocalizedText(locale, requirement.source_text, requirement.source_text_fr)
+    : "";
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -85,6 +89,15 @@ export function FindingDetailDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {/* Requirement source text and constat details */}
+            <div>
+              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {evidenceT("requirement")}
+              </h3>
+              <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap rounded-lg bg-muted p-3">
+                {requirementSourceText || "—"}
+              </p>
+            </div>
         {/* `overflow-y-auto` natif plutôt que `ScrollArea` (Radix) : dans ce dialogue,
             le viewport interne de `ScrollArea` ne se limitait jamais à la hauteur
             donnée par flexbox (`height:100%` refusait de se résoudre ici, cause non
@@ -93,76 +106,18 @@ export function FindingDetailDialog({
             hauteur, résolue par flexbox, suffit à faire défiler son contenu — pas
             besoin d'un enfant en pourcentage. */}
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-1">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <section className="space-y-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {evidenceT("regulatorySide")}
-              </h3>
-              {finding.regulatory_evidence.map((evidence) => (
-                <EvidenceCard
-                  key={`${evidence.document_id}-${evidence.section_reference}`}
-                  evidence={evidence}
-                />
-              ))}
-            </section>
-
-            <section className="space-y-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {evidenceT("internalSide")}
-              </h3>
-              {finding.internal_evidence.length ? (
-                finding.internal_evidence.map((evidence) => (
-                  <EvidenceCard
-                    key={`${evidence.document_id}-${evidence.section_reference}`}
-                    evidence={evidence}
-                    openable
-                    regulationId={regulationId}
-                    requirementId={finding.requirement_id}
-                  />
-                ))
-              ) : (
-                <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                  {evidenceT("noInternalEvidence")}
-                </p>
-              )}
-            </section>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div>
-              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {evidenceT("explanation")}
-              </h3>
-              <p className="text-sm leading-relaxed">{explanation}</p>
-              <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                {evidenceT("evidenceStrength")}
-                <EvidenceStrength value={finding.confidence_or_evidence_strength} />
-              </p>
-            </div>
-            <div>
-              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {t("columnRecommended")}
-              </h3>
-              <p className="text-sm leading-relaxed">{recommendedAction}</p>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {evidenceT("missingElements")}
+          {/* Full document with highlighted evidence */}
+          <section className="space-y-2 border-b pb-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {evidenceT("regulatorySide")} — Full Document
             </h3>
-            {finding.missing_or_ambiguous_elements.length ? (
-              <ul className="list-disc space-y-1 pl-5 text-sm">
-                {finding.missing_or_ambiguous_elements.map((element) => (
-                  <li key={element}>{element}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                {evidenceT("noMissingElements")}
-              </p>
+            {finding.regulatory_evidence.length > 0 && (
+              <DocumentViewerWithHighlights
+                documentId={finding.regulatory_evidence[0]?.document_id}
+                evidence={finding.regulatory_evidence}
+              />
             )}
-          </div>
+          </section>
         </div>
       </DialogContent>
     </Dialog>

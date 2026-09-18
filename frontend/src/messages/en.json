@@ -156,7 +156,8 @@
     "noMissingElements": "No missing element reported.",
     "sourceLanguageNote": "Excerpt shown in its original language ({language}).",
     "evidenceStrength": "Evidence strength",
-    "evidenceStrengthHelp": "A decision-support indicator, not a legal probability."
+    "evidenceStrengthHelp": "A decision-support indicator, not a legal probability.",
+    "requirement": "Requirement"
   },
   "copilot": {
     "title": "Copilot",

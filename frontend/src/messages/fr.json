@@ -156,7 +156,8 @@
     "noMissingElements": "Aucun élément manquant relevé.",
     "sourceLanguageNote": "Extrait affiché dans sa langue d'origine ({language}).",
     "evidenceStrength": "Force de la preuve",
-    "evidenceStrengthHelp": "Indicateur d'aide à la décision, ce n'est pas une probabilité juridique."
+    "evidenceStrengthHelp": "Indicateur d'aide à la décision, ce n'est pas une probabilité juridique.",
+    "requirement": "Exigence"
   },
   "copilot": {
     "title": "Copilot",
