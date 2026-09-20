@@ -18,6 +18,7 @@ import type {
   DocumentMeta,
   DocumentStatus,
   DocumentType,
+  EvidenceRef,
   Language,
   Requirement,
   User,
@@ -144,7 +145,31 @@ export function adaptRequirement(requirement: BackendRequirement): Requirement {
     domain: adaptDomain(requirement.domain),
     impacted_activity: [],
     language: adaptLanguage(requirement.language),
+    evidence: requirement.evidence ?? undefined,
   };
+}
+
+/**
+ * Convert requirement evidence string to EvidenceRef array for highlighting.
+ * Creates a single evidence item using the requirement's source reference and evidence text.
+ */
+export function adaptRequirementEvidenceToEvidenceRef(
+  requirement: Requirement,
+  documentTitle?: string,
+): EvidenceRef[] {
+  if (!requirement.evidence?.trim()) {
+    return [];
+  }
+
+  return [
+    {
+      document_id: requirement.source_document_id,
+      document_title: documentTitle || requirement.source_document_id,
+      section_reference: requirement.source_reference,
+      excerpt: requirement.evidence,
+      language: requirement.language,
+    },
+  ];
 }
 
 /**

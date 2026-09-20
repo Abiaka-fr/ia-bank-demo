@@ -120,6 +120,8 @@ export const backendRequirementSchema = z
     risk_level: z.string().nullable().optional(),
     source_reference: z.string().nullable().optional(),
     status: z.string().nullable().optional(),
+    /** Evidence text extracted from the source document. */
+    evidence: z.string().nullable().optional(),
   })
   // Allow extra fields from backend (graceful degradation for API evolution)
   .passthrough();

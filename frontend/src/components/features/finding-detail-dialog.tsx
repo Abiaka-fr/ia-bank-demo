@@ -52,12 +52,6 @@ export function FindingDetailDialog({
   const evidenceT = useTranslations("evidence");
   const locale = useLocale();
 
-  const explanation = pickLocalizedText(locale, finding.explanation, finding.explanation_fr);
-  const recommendedAction = pickLocalizedText(
-    locale,
-    finding.recommended_action,
-    finding.recommended_action_fr,
-  );
   const requirementSourceText = requirement
     ? pickLocalizedText(locale, requirement.source_text, requirement.source_text_fr)
     : "";

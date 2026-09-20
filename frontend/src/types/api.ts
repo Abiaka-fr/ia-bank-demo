@@ -110,6 +110,8 @@ export const requirementSchema = z
     created_at: z.string().optional(),
     /** v1.10 — ISO 8601 timestamp de dernière modification. */
     updated_at: z.string().optional(),
+    /** Evidence text extracted from the source document. */
+    evidence: z.string().optional(),
   })
   // Allow extra fields from backend (graceful degradation for API evolution)
   .passthrough();

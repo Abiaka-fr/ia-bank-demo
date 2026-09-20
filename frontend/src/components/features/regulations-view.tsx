@@ -82,7 +82,6 @@ export function RegulationsView() {
   const visibleRegulations = useMemo(() => {
     const query = search.trim().toLowerCase();
     const filtered = (regulationsQuery.data ?? []).filter((reg) => {
-      console.log("reg", reg)
       const matchesSearch =
         query === "" ||
         reg.title.toLowerCase().includes(query) ||
