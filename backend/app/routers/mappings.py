@@ -5,11 +5,12 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.db import get_db
+from app.models.document import Document
 from app.models.mapping import RequirementProcedureMap
-from app.models.procedure import Procedure
 from app.models.requirement import RegulatoryRequirement
 from app.models.user import User
 from app.schemas.mapping import (
+    AnalyzeMappingsRequest,
     HumanStatusEnum,
     HumanStatusUpdate,
     MappingListResponse,
@@ -21,6 +22,7 @@ from app.schemas.mapping import (
     RequirementRead,
     RequirementWithProceduresRead,
 )
+from app.services.requirement_procedure_mapping import RequirementProcedureMappingService
 
 router = APIRouter(prefix="/api/mappings", tags=["mappings"])
 
@@ -77,12 +79,30 @@ def get_requirements_with_procedures(
 
         procedures_list = []
         for mapping in mappings:
-            procedures_list.append(
-                {
-                    "procedure": ProcedureRead.model_validate(mapping.procedure),
-                    "mapping": MappingRead.model_validate(mapping),
-                }
-            )
+            # Fetch procedure document using procedure_id (which stores document_id)
+            procedure_doc = db.query(Document).filter(
+                Document.document_id == mapping.procedure_id
+            ).first()
+
+            if procedure_doc:
+                # Convert Document to ProcedureRead format
+                procedure_read = ProcedureRead(
+                    procedure_id=procedure_doc.document_id,
+                    document_id=procedure_doc.document_id,
+                    name=procedure_doc.title,
+                    domain=procedure_doc.domain,
+                    owner=procedure_doc.assignee,
+                    status=None,  # Document doesn't have status, it's in DocumentVersion
+                    current_version=procedure_doc.current_version,
+                    created_at=procedure_doc.created_at,
+                    updated_at=procedure_doc.updated_at,
+                )
+                procedures_list.append(
+                    {
+                        "procedure": procedure_read,
+                        "mapping": MappingRead.model_validate(mapping),
+                    }
+                )
 
         result_data.append(
             RequirementWithProceduresRead(
@@ -126,7 +146,11 @@ def get_procedures_with_requirements(
     if not procedure_ids or len(procedure_ids) == 0:
         raise HTTPException(status_code=400, detail="At least one procedure_id is required")
 
-    query = db.query(Procedure).filter(Procedure.procedure_id.in_(procedure_ids))
+    # Query procedures from document table (procedure_ids are actually document_ids)
+    query = db.query(Document).filter(
+        Document.document_id.in_(procedure_ids),
+        Document.document_type == "PROCEDURE"
+    )
     procedures = query.all()
 
     result_data = []
@@ -134,7 +158,7 @@ def get_procedures_with_requirements(
 
     for proc in procedures:
         mapping_query = db.query(RequirementProcedureMap).filter(
-            RequirementProcedureMap.procedure_id == proc.procedure_id
+            RequirementProcedureMap.procedure_id == proc.document_id
         )
 
         if assessment:
@@ -157,9 +181,22 @@ def get_procedures_with_requirements(
                 }
             )
 
+        # Convert Document to ProcedureRead format
+        procedure_read = ProcedureRead(
+            procedure_id=proc.document_id,
+            document_id=proc.document_id,
+            name=proc.title,
+            domain=proc.domain,
+            owner=proc.assignee,
+            status=None,  # Document doesn't have status, it's in DocumentVersion
+            current_version=proc.current_version,
+            created_at=proc.created_at,
+            updated_at=proc.updated_at,
+        )
+
         result_data.append(
             ProcedureWithRequirementsRead(
-                procedure=ProcedureRead.model_validate(proc),
+                procedure=procedure_read,
                 requirements=requirements_list,
                 total_requirements=len(requirements_list),
             )
@@ -268,3 +305,39 @@ def update_mapping_human_status(
     db.refresh(mapping)
 
     return MappingRead.model_validate(mapping)
+
+
+@router.post("/analyze", status_code=201)
+def analyze_requirement_impact(
+    payload: AnalyzeMappingsRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Analyze impact of requirements on internal procedures.
+
+    This endpoint takes a list of requirement IDs and uses an LLM to:
+    1. For each requirement, find all procedures in the same domain
+    2. Assess how the requirement impacts each procedure
+    3. Generate suggested modifications if needed
+    4. Store RequirementProcedureMap rows with PENDING_REVIEW status
+
+    **Request Body:**
+    - `requirement_ids` (required): List of requirement IDs to analyze
+
+    **Response:** List of AnalyzeMappingsResponse, one per requirement
+
+    **Notes:**
+    - Requires OpenRouter API key in OPENROUTER_API_KEY env var
+    - Mappings are assigned sequential IDs globally
+    - All mappings start with human_status = PENDING_REVIEW
+    - Suggested modifications are grounded with actual chunk offsets
+    - Warnings are returned instead of failing the whole request
+    """
+    try:
+        results = RequirementProcedureMappingService.analyze(db, payload.requirement_ids)
+        return results
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Impact analysis failed: {str(e)}")

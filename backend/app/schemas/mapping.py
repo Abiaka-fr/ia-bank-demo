@@ -1,8 +1,9 @@
 """Pydantic schemas for requirement-procedure mappings."""
 
+import json
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class ModificationLocation(BaseModel):
@@ -35,6 +36,14 @@ class MappingRead(BaseModel):
     recommended_action_lang_fr: str | None = None
     human_status: str | None = None
     suggested_modifications: list[SuggestedModification] | None = None
+
+    @field_validator("suggested_modifications", mode="before")
+    @classmethod
+    def parse_suggested_modifications(cls, v):
+        """Parse JSON string to list of SuggestedModification objects."""
+        if isinstance(v, str):
+            return json.loads(v)
+        return v
 
     class Config:
         from_attributes = True
@@ -121,6 +130,17 @@ class HumanStatusUpdate(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {"human_status": "ACCEPT"}
+        }
+
+
+class AnalyzeMappingsRequest(BaseModel):
+    """Request to analyze impact of requirements on procedures."""
+
+    requirement_ids: list[str]
+
+    class Config:
+        json_schema_extra = {
+            "example": {"requirement_ids": ["REQ-0001", "REQ-0002"]}
         }
 
 
