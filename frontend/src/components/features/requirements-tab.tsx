@@ -134,8 +134,11 @@ export function RequirementsTab({
 
       {visibleRequirements.map((requirement) => {
         // Une exigence peut porter plusieurs constats (un par procédure touchée).
+        // Exclude NO_RELEVANT_PROCEDURE findings as they are not real findings
         const related = findings.filter(
-          (finding) => finding.requirement_id === requirement.requirement_id,
+          (finding) =>
+            finding.requirement_id === requirement.requirement_id &&
+            finding.assessment !== "NO_RELEVANT_PROCEDURE",
         );
 
         const counts = humanStatusValues.map((human_status) => ({
@@ -143,15 +146,12 @@ export function RequirementsTab({
           count: related.filter((finding) => finding.human_status === human_status)
             .length,
         }));
-
-        // Une exigence sans constat n'a nulle part où naviguer : la carte reste
-        // alors statique plutôt que d'offrir un lien qui ne mène à rien.
-        const singleFinding = related.length === 1 ? related[0] : undefined;
-        const focusHref =
-          related.length > 1
-            ? `/regulations/${regulationId}?tab=actions&focus=${requirement.requirement_id}`
-            : undefined;
-        const isClickable = Boolean(singleFinding) || Boolean(focusHref);
+        // Open detail dialog with first finding when available
+        const firstFinding = related.length > 0 ? related[0] : undefined;
+        const focusHref = firstFinding
+          ? `/regulations/${regulationId}?tab=actions&focus=${requirement.requirement_id}`
+          : undefined;
+        const isClickable = Boolean(firstFinding);
 
         // v1.9 — variantes françaises (Thư, `be74658`) : la langue d'origine du corpus
         // reste `requirement.language`, l'interface choisit la variante à afficher
@@ -171,8 +171,8 @@ export function RequirementsTab({
             ? "fr"
             : requirement.language.toLowerCase();
 
-        function openSingleFindingDetail() {
-          if (singleFinding) setOpenDetail({ finding: singleFinding, requirement });
+        function openFindingDetail() {
+          if (firstFinding) setOpenDetail({ finding: firstFinding, requirement });
         }
 
         return (
@@ -202,45 +202,36 @@ export function RequirementsTab({
                     <HumanStatusBadge status={finding.human_status} />
                   </span>
                 ))}
-                {singleFinding ? (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="relative z-10 ml-auto"
-                    onClick={openSingleFindingDetail}
-                  >
-                    {actionsT("goToRequirement")}
-                    <ChevronRight aria-hidden />
-                  </Button>
-                ) : focusHref ? (
+                {firstFinding && focusHref ? (
                   <Button asChild size="sm" variant="ghost" className="relative z-10 ml-auto">
                     <Link href={focusHref}>
                       {actionsT("goToRequirement")}
                       <ChevronRight aria-hidden />
                     </Link>
                   </Button>
-                ) : null}
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="relative z-10 ml-auto"
+                    disabled
+                  >
+                    {t("analyzeImpactButton")}
+                    <ChevronRight aria-hidden />
+                  </Button>
+                )}
               </div>
               <CardTitle className="text-sm font-medium leading-snug">
-                {singleFinding ? (
-                  // `::after` couvre toute la carte, comme la variante `Link`
-                  // ci-dessous — mêmes styles, ouvre le détail au lieu de naviguer.
+                {firstFinding ? (
+                  // `::after` couvre toute la carte — cliquer n'importe où dessus
+                  // ouvre le détail du premier constat.
                   <button
                     type="button"
-                    onClick={openSingleFindingDetail}
+                    onClick={openFindingDetail}
                     className="text-left after:absolute after:inset-0 hover:underline focus:outline-none"
                   >
                     {displayedRequirementText}
                   </button>
-                ) : focusHref ? (
-                  // `::after` couvre toute la carte : cliquer n'importe où dessus
-                  // navigue, comme les cartes de régulation (regulations-view.tsx).
-                  <Link
-                    href={focusHref}
-                    className="after:absolute after:inset-0 hover:underline focus:outline-none"
-                  >
-                    {displayedRequirementText}
-                  </Link>
                 ) : (
                   displayedRequirementText
                 )}
@@ -256,16 +247,6 @@ export function RequirementsTab({
               >
                 {displayedSourceText}
               </blockquote>
-              <div className="flex flex-wrap items-center gap-1">
-                <span className="text-xs text-muted-foreground">
-                  {t("impactedActivity")} :
-                </span>
-                {requirement.impacted_activity.map((activity) => (
-                  <Badge key={activity} variant="outline" className="text-[11px]">
-                    {activity}
-                  </Badge>
-                ))}
-              </div>
             </CardContent>
           </Card>
         );

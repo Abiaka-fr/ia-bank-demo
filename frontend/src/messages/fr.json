@@ -132,6 +132,7 @@
     "sortOldest": "Import le plus ancien",
     "sortTitle": "Titre (A→Z)",
     "filterNoResults": "Aucune régulation ne correspond à ce filtre.",
+    "analyzeImpactButton": "Analyser l'impact",
     "searchByTitlePlaceholder": "Rechercher une régulation (titre, identifiant)…",
     "summaryLabel": "Résumé",
     "createdDateLabel": "Date de création",

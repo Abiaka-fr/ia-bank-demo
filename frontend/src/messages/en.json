@@ -132,6 +132,7 @@
     "sortOldest": "Oldest import",
     "sortTitle": "Title (A→Z)",
     "filterNoResults": "No regulation matches this filter.",
+    "analyzeImpactButton": "Analyze impact",
     "searchByTitlePlaceholder": "Search a regulation (title, ID)…",
     "summaryLabel": "Summary",
     "createdDateLabel": "Created date",
