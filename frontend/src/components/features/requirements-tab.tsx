@@ -1,9 +1,11 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, Search, Zap } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { AssessmentBadge } from "@/components/features/assessment-badge";
 import { FindingDetailDialog } from "@/components/features/finding-detail-dialog";
@@ -24,6 +26,8 @@ import {
 import { Link } from "@/i18n/navigation";
 import { humanStatusValues } from "@/lib/assessment";
 import { pickLocalizedText } from "@/lib/localized-text";
+import { analyzeMappings } from "@/lib/api/regulations";
+import { queryKeys } from "@/lib/api/query-keys";
 import type { Finding, Requirement } from "@/types/api";
 
 const ALL_DOMAINS = "ALL";
@@ -51,6 +55,7 @@ export function RequirementsTab({
   const t = useTranslations("regulations");
   const actionsT = useTranslations("actions");
   const locale = useLocale();
+  const queryClient = useQueryClient();
   const [openDetail, setOpenDetail] = useState<{
     finding: Finding;
     requirement: Requirement;
@@ -58,6 +63,26 @@ export function RequirementsTab({
 
   const [search, setSearch] = useState("");
   const [domain, setDomain] = useState<string>(ALL_DOMAINS);
+
+  const analyzeMutation = useMutation({
+    mutationFn: (requirementId: string) => analyzeMappings([requirementId]),
+    onSuccess: (data) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.findings(regulationId),
+      });
+      const mappingsCreated = data.reduce((sum, item) => sum + item.mappings_created, 0);
+      toast.success(t("analyzeSuccess", { count: mappingsCreated }), {
+        duration: 3000,
+      });
+    },
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      toast.error(t("analyzeFailed"), {
+        description: errorMessage,
+        duration: 5000,
+      });
+    },
+  });
 
   const domains = useMemo(
     () =>
@@ -151,7 +176,7 @@ export function RequirementsTab({
         const focusHref = firstFinding
           ? `/regulations/${regulationId}?tab=actions&focus=${requirement.requirement_id}`
           : undefined;
-        const isClickable = Boolean(firstFinding);
+        const [expandFindings, setExpandFindings] = useState(false);
 
         // v1.9 — variantes françaises (Thư, `be74658`) : la langue d'origine du corpus
         // reste `requirement.language`, l'interface choisit la variante à afficher
@@ -178,30 +203,12 @@ export function RequirementsTab({
         return (
           <Card
             key={requirement.requirement_id}
-            className={cn(
-              isClickable &&
-                "relative transition-colors focus-within:ring-2 focus-within:ring-ring hover:border-foreground/30",
-            )}
           >
             <CardHeader>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-xs font-medium">
                   {requirement.requirement_id}
                 </span>
-                <Badge variant="secondary" className="font-mono text-[11px]">
-                  {requirement.source_reference}
-                </Badge>
-                {related.map((finding) => (
-                  <span key={finding.finding_id} className="flex items-center gap-1">
-                    <AssessmentBadge assessment={finding.assessment} />
-                    {finding.procedure_id ? (
-                      <Badge variant="outline" className="font-mono text-[11px]">
-                        {finding.procedure_id}
-                      </Badge>
-                    ) : null}
-                    <HumanStatusBadge status={finding.human_status} />
-                  </span>
-                ))}
                 {firstFinding && focusHref ? (
                   <Button asChild size="sm" variant="ghost" className="relative z-10 ml-auto">
                     <Link href={focusHref}>
@@ -212,23 +219,31 @@ export function RequirementsTab({
                 ) : (
                   <Button
                     size="sm"
-                    variant="ghost"
-                    className="relative z-10 ml-auto"
-                    disabled
+                    variant="default"
+                    className="relative z-10 ml-auto gap-1"
+                    onClick={() => analyzeMutation.mutate(requirement.requirement_id)}
+                    disabled={analyzeMutation.isPending}
                   >
-                    {t("analyzeImpactButton")}
-                    <ChevronRight aria-hidden />
+                    {analyzeMutation.isPending ? (
+                      <>
+                        <div className="size-3 animate-spin rounded-full border border-current border-t-transparent" />
+                        {t("analyzing")}
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="size-4" />
+                        {t("analyzeImpactButton")}
+                      </>
+                    )}
                   </Button>
                 )}
               </div>
               <CardTitle className="text-sm font-medium leading-snug">
                 {firstFinding ? (
-                  // `::after` couvre toute la carte — cliquer n'importe où dessus
-                  // ouvre le détail du premier constat.
                   <button
                     type="button"
                     onClick={openFindingDetail}
-                    className="text-left after:absolute after:inset-0 hover:underline focus:outline-none"
+                    className="text-left hover:underline focus:outline-none"
                   >
                     {displayedRequirementText}
                   </button>
@@ -247,6 +262,44 @@ export function RequirementsTab({
               >
                 {displayedSourceText}
               </blockquote>
+              {related.length > 0 && (
+                <div className="space-y-2 border-t pt-3">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExpandFindings(!expandFindings);
+                    }}
+                    className="flex w-full items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    <ChevronDown
+                      className={cn("size-4 transition-transform", expandFindings && "rotate-180")}
+                      aria-hidden
+                    />
+                    Findings ({related.length})
+                  </button>
+                  {expandFindings && (
+                    <div className="space-y-1 pt-2">
+                      {related.map((finding) => (
+                        <div key={finding.finding_id} className="flex items-center justify-between gap-3 border-l-2 border-muted-foreground/20 py-2 pl-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-medium truncate">
+                              {finding.procedure_id || "—"}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground truncate">
+                              {finding.finding_id}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <AssessmentBadge assessment={finding.assessment} />
+                            <HumanStatusBadge status={finding.human_status} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         );

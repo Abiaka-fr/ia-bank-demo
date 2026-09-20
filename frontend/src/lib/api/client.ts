@@ -1,6 +1,7 @@
 import type { z } from "zod";
 
 import { apiErrorSchema } from "@/types/api";
+import { readToken } from "./token";
 
 /**
  * Base URL de l'API. Vide par défaut : les requêtes partent en relatif et sont
@@ -90,9 +91,19 @@ export async function apiFetch<TSchema extends z.ZodType>(
 ): Promise<z.infer<TSchema>> {
   const { method = "GET", body, formData, searchParams } = options;
 
+  const headers: Record<string, string> = {};
+  if (body) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const token = readToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const response = await fetch(buildUrl(path, searchParams), {
     method,
-    headers: body ? { "Content-Type": "application/json" } : undefined,
+    headers,
     body: formData ?? (body ? JSON.stringify(body) : undefined),
   });
 

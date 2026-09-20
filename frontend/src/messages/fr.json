@@ -133,6 +133,8 @@
     "sortTitle": "Titre (A→Z)",
     "filterNoResults": "Aucune régulation ne correspond à ce filtre.",
     "analyzeImpactButton": "Analyser l'impact",
+    "analyzeSuccess": "✓ {count} correspondance(s) créée(s) avec succès.",
+    "analyzeFailed": "L'analyse d'impact a échoué. Veuillez réessayer.",
     "searchByTitlePlaceholder": "Rechercher une régulation (titre, identifiant)…",
     "summaryLabel": "Résumé",
     "createdDateLabel": "Date de création",

@@ -138,3 +138,27 @@ export function extractRequirements(documentId: string) {
     },
   );
 }
+
+/**
+ * Analyze impact of requirements on internal procedures and generate mappings.
+ * Takes a list of requirement IDs and uses LLM to assess impact on each procedure.
+ *
+ * Endpoint: POST /api/mappings/analyze
+ */
+export function analyzeMappings(requirementIds: string[]) {
+  return apiFetch(
+    "/api/mappings/analyze",
+    z.array(
+      z.object({
+        requirement_id: z.string(),
+        mappings_created: z.number(),
+        mapping_ids: z.array(z.string()),
+        warnings: z.array(z.string()),
+      }),
+    ),
+    {
+      method: "POST",
+      body: { requirement_ids: requirementIds },
+    },
+  );
+}
