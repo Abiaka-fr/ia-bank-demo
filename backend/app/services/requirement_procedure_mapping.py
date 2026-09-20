@@ -80,7 +80,6 @@ class RequirementProcedureMappingService:
         warnings = []
         grounded = []
 
-        print("suggested_mods", suggested_mods)
         if not suggested_mods:
             return [], []
 
