@@ -124,7 +124,7 @@ export function ProcedurePageView({ procedureId }: { procedureId: string }) {
           déclenchement de l'analyse Bank(+Europe), fusionnés sur cette même page
           plutôt qu'un écran séparé (décision de Francis, 2026-09-11). Masqué à
           l'impression : sans intérêt sur le papier, comme le reste des contrôles. */}
-      {canAnalyzeProcedures(accessProfileForUser(user)) ? (
+      {/* {canAnalyzeProcedures(accessProfileForUser(user)) ? (
         <Card className="print:hidden">
           <CardHeader>
             <CardTitle className="text-sm">{analyzeT("title")}</CardTitle>
@@ -190,7 +190,7 @@ export function ProcedurePageView({ procedureId }: { procedureId: string }) {
             ) : null}
           </CardContent>
         </Card>
-      ) : null}
+      ) : null} */}
 
       <ProcedureBody text={data.extracted_text} excerpt={excerpt} language={data.language} />
     </div>
