@@ -76,6 +76,39 @@ class RequirementRead(BaseModel):
     risk_level: str | None = None
     source_reference: str | None = None
     status: str | None = None
+    evidence: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class DocumentRead(BaseModel):
+    """Document data for linked documents."""
+
+    document_id: str
+    title: str | None = None
+    category: str | None = None
+    document_type: str | None = None
+    origin_code: str | None = None
+    origin_name: str | None = None
+    domain: str | None = None
+    language: str | None = None
+    data_classification: str | None = None
+    current_version: str | float | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class MappingDetailResponse(BaseModel):
+    """Complete mapping detail with all linked data."""
+
+    mapping: MappingRead
+    requirement: RequirementRead
+    requirement_source_document: DocumentRead
+    procedure: ProcedureRead
 
     class Config:
         from_attributes = True

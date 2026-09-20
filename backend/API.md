@@ -1082,6 +1082,93 @@ GET /api/mappings/all?human_status=PENDING_REVIEW
 
 ---
 
+#### `GET /api/mappings/{mapping_id}`
+Get complete details of a specific requirement-procedure mapping with all linked data.
+
+**Path Parameters**
+- `mapping_id` (required): The ID of the mapping to retrieve (e.g., MAP-0001)
+
+**Authentication** Required (Bearer token)
+
+**Request Examples**
+```
+GET /api/mappings/MAP-0001
+```
+
+**Response (200 OK)**
+```json
+{
+  "mapping": {
+    "mapping_id": "MAP-0001",
+    "requirement_id": "REQ-0001",
+    "procedure_id": "INT-PROC-AML-001",
+    "assessment": "COVERED",
+    "confidence": 0.93,
+    "explanation": "The internal procedure contains explicit controls matching the requirement.",
+    "recommended_action": "No immediate update proposed.",
+    "explanation_lang_fr": "La procédure interne contient des contrôles explicites...",
+    "recommended_action_lang_fr": "Aucune mise à jour immédiate proposée...",
+    "human_status": "PENDING_REVIEW",
+    "suggested_modifications": [
+      {
+        "location": {
+          "chunk_no": 1,
+          "start_offset": 245,
+          "end_offset": 310
+        },
+        "original_text": "daily monitoring",
+        "new_text": "continuous real-time monitoring with automated alerts"
+      }
+    ]
+  },
+  "requirement": {
+    "requirement_id": "REQ-0001",
+    "source_document_id": "EXT-EU-AML-001",
+    "title": "Risk classification",
+    "domain": "AML/CFT",
+    "language": "en",
+    "risk_level": "MEDIUM",
+    "source_reference": "Article 5, Section 2",
+    "status": "ACTIVE",
+    "evidence": "Member States shall require obliged entities to apply customer due diligence measures..."
+  },
+  "requirement_source_document": {
+    "document_id": "EXT-EU-AML-001",
+    "title": "ACPR Instruction on Customer Knowledge (KYC)",
+    "category": "REGULATION",
+    "document_type": "REGULATION",
+    "origin_code": "EU",
+    "origin_name": "European Union",
+    "domain": "AML/CFT",
+    "language": "en",
+    "data_classification": "PUBLIC",
+    "current_version": "1.0",
+    "created_at": "2026-01-15T10:30:00Z",
+    "updated_at": "2026-01-15T10:30:00Z"
+  },
+  "procedure": {
+    "procedure_id": "INT-PROC-AML-001",
+    "document_id": "INT-PROC-AML-001",
+    "name": "AML Risk Classification Procedure",
+    "domain": "AML/CFT",
+    "owner": "Compliance Team",
+    "status": null,
+    "current_version": "2.1",
+    "created_at": "2025-11-20T14:22:00Z",
+    "updated_at": "2026-02-01T09:15:00Z"
+  }
+}
+```
+
+**Error Response (404 Not Found)**
+```json
+{
+  "detail": "Mapping not found"
+}
+```
+
+---
+
 ### Requirements with Their Procedures (Nested)
 
 #### `GET /api/mappings/requirements-to-procedures`

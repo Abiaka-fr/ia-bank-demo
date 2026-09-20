@@ -11,8 +11,10 @@ from app.models.requirement import RegulatoryRequirement
 from app.models.user import User
 from app.schemas.mapping import (
     AnalyzeMappingsRequest,
+    DocumentRead,
     HumanStatusEnum,
     HumanStatusUpdate,
+    MappingDetailResponse,
     MappingListResponse,
     MappingRead,
     NestedMappingResponse,
@@ -256,6 +258,82 @@ def list_mappings(
         items=[MappingRead.model_validate(item) for item in items],
         limit=limit,
         offset=offset,
+    )
+
+
+@router.get("/{mapping_id}", response_model=MappingDetailResponse)
+def get_mapping_detail(
+    mapping_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MappingDetailResponse:
+    """
+    Get complete details of a requirement-procedure mapping.
+
+    Returns the mapping with all linked data:
+    - Mapping details (assessment, confidence, suggested modifications, etc.)
+    - Requirement data
+    - Source document of the requirement (regulation document)
+    - Procedure/document it maps to
+
+    **Path Parameters:**
+    - `mapping_id`: The ID of the mapping to retrieve (e.g., MAP-0001)
+
+    **Example URLs:**
+    - `GET /api/mappings/MAP-0001`
+
+    **Response:**
+    ```json
+    {
+      "mapping": { mapping details },
+      "requirement": { requirement details },
+      "requirement_source_document": { regulation document details },
+      "procedure": { procedure/document details }
+    }
+    ```
+    """
+    mapping = db.get(RequirementProcedureMap, mapping_id)
+    if mapping is None:
+        raise HTTPException(status_code=404, detail="Mapping not found")
+
+    # Fetch the requirement
+    requirement = db.query(RegulatoryRequirement).filter(
+        RegulatoryRequirement.requirement_id == mapping.requirement_id
+    ).first()
+    if requirement is None:
+        raise HTTPException(status_code=404, detail="Requirement not found")
+
+    # Fetch the source document (regulation document)
+    source_document = db.query(Document).filter(
+        Document.document_id == requirement.source_document_id
+    ).first()
+    if source_document is None:
+        raise HTTPException(status_code=404, detail="Source document not found")
+
+    # Fetch the procedure (document with type PROCEDURE)
+    procedure_document = db.query(Document).filter(
+        Document.document_id == mapping.procedure_id,
+        Document.document_type == "PROCEDURE"
+    ).first()
+    if procedure_document is None:
+        raise HTTPException(status_code=404, detail="Procedure document not found")
+
+    # Build the response
+    return MappingDetailResponse(
+        mapping=MappingRead.model_validate(mapping),
+        requirement=RequirementRead.model_validate(requirement),
+        requirement_source_document=DocumentRead.model_validate(source_document),
+        procedure=ProcedureRead(
+            procedure_id=procedure_document.document_id,
+            document_id=procedure_document.document_id,
+            name=procedure_document.title,
+            domain=procedure_document.domain,
+            owner=procedure_document.assignee,
+            status=None,
+            current_version=procedure_document.current_version,
+            created_at=procedure_document.created_at,
+            updated_at=procedure_document.updated_at,
+        ),
     )
 
 
