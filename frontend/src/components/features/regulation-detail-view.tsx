@@ -244,6 +244,7 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
               findings={findings}
               regulationId={regulationId}
               focus={focus}
+              findingsLoaded={findingsQuery.isSuccess}
             />
           )}
         </TabsContent>

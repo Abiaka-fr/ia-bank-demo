@@ -46,11 +46,14 @@ export function RequirementsTab({
   findings,
   regulationId,
   focus,
+  findingsLoaded,
 }: {
   requirements: readonly Requirement[];
   findings: readonly Finding[];
   regulationId: string;
   focus?: string | null;
+  /** Faux tant que les constats chargent (ou en erreur) : « aucun constat » n'est pas encore sûr. */
+  findingsLoaded: boolean;
 }) {
   const t = useTranslations("regulations");
   const actionsT = useTranslations("actions");
@@ -242,7 +245,9 @@ export function RequirementsTab({
                     {actionsT("goToRequirement")}
                     <ChevronRight aria-hidden />
                   </Button>
-                ) : (
+                ) : findingsLoaded ? (
+                  // Masqué pendant le chargement : un clic relançait l'analyse LLM d'une
+                  // exigence déjà analysée et créait des mappings en double.
                   <Button
                     size="sm"
                     variant="default"
@@ -262,7 +267,7 @@ export function RequirementsTab({
                       </>
                     )}
                   </Button>
-                )}
+                ) : null}
               </div>
               <CardTitle className="text-sm font-medium leading-snug">
                 {firstFinding ? (
