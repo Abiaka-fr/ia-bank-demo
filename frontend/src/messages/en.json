@@ -133,6 +133,8 @@
     "sortTitle": "Title (A→Z)",
     "filterNoResults": "No regulation matches this filter.",
     "analyzeImpactButton": "Analyze impact",
+    "impactedProceduresToggle": "Impacted procedures ({count})",
+    "impactedProceduresHint": "Internal procedures the system matched to this requirement — proposed findings, to be validated by the Head of Compliance.",
     "analyzeSuccess": "✓ {count} mapping(s) created successfully.",
     "analyzeFailed": "Impact analysis failed. Please try again.",
     "searchByTitlePlaceholder": "Search a regulation (title, ID)…",

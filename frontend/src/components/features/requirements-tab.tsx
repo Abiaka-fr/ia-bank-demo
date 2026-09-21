@@ -290,15 +290,25 @@ export function RequirementsTab({
                       className={cn("size-4 transition-transform", isExpanded && "rotate-180")}
                       aria-hidden
                     />
-                    Findings ({related.length})
+                    {t("impactedProceduresToggle", { count: related.length })}
                   </button>
                   {isExpanded && (
                     <div className="space-y-1 pt-2">
+                      <p className="text-xs text-muted-foreground">{t("impactedProceduresHint")}</p>
                       {related.map((finding) => {
                         const canOpenRow = finding.procedure_id !== null && finding.procedure_id !== undefined;
                         const rowHref = canOpenRow
                           ? `/${locale}/findings/${finding.finding_id}?regulationId=${regulationId}&requirementId=${requirement.requirement_id}`
                           : undefined;
+                        // Nom de la procédure : porté par la preuve interne (`buildUntargetedInternalEvidence`
+                        // en mode réel, corpus MSW sinon) — l'identifiant seul ne parle pas à l'utilisateur.
+                        const procedureTitle =
+                          finding.internal_evidence[0]?.document_title ?? finding.procedure_id ?? "—";
+                        const explanation = pickLocalizedText(
+                          locale,
+                          finding.explanation,
+                          finding.explanation_fr,
+                        );
 
                         return (
                           <button
@@ -309,19 +319,24 @@ export function RequirementsTab({
                             }}
                             disabled={!canOpenRow}
                             className={cn(
-                              "w-full flex items-center justify-between gap-3 border-l-2 border-muted-foreground/20 py-2 pl-3 rounded transition-colors",
+                              "w-full flex items-start justify-between gap-3 border-l-2 border-muted-foreground/20 py-2 pl-3 pr-2 rounded transition-colors",
                               canOpenRow && "hover:bg-accent cursor-pointer",
                               !canOpenRow && "text-muted-foreground cursor-default",
                             )}
                           >
-                            <div className="flex-1 min-w-0 text-left">
-                              <div className="text-xs font-medium truncate">
-                                {finding.procedure_id || "—"}
-                              </div>
-                              <div className="text-[11px] text-muted-foreground truncate">
-                                {finding.finding_id}
-                              </div>
-                            </div>
+                            <span className="min-w-0 flex-1 space-y-1 text-left">
+                              <span className="block text-sm font-medium">
+                                {procedureTitle}
+                              </span>
+                              <span className="block font-mono text-[11px] text-muted-foreground">
+                                {finding.procedure_id ?? "—"} · {finding.finding_id}
+                              </span>
+                              {explanation ? (
+                                <span className="line-clamp-2 text-xs text-muted-foreground">
+                                  {explanation}
+                                </span>
+                              ) : null}
+                            </span>
                             <div className="flex items-center gap-2 flex-shrink-0">
                               <AssessmentBadge assessment={finding.assessment} />
                               <HumanStatusBadge status={finding.human_status} />

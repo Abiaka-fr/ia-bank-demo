@@ -133,6 +133,8 @@
     "sortTitle": "Titre (A→Z)",
     "filterNoResults": "Aucune régulation ne correspond à ce filtre.",
     "analyzeImpactButton": "Analyser l'impact",
+    "impactedProceduresToggle": "Procédures impactées ({count})",
+    "impactedProceduresHint": "Procédures internes rapprochées de cette exigence par le système — constats proposés, à valider par le Responsable Conformité.",
     "analyzeSuccess": "✓ {count} correspondance(s) créée(s) avec succès.",
     "analyzeFailed": "L'analyse d'impact a échoué. Veuillez réessayer.",
     "searchByTitlePlaceholder": "Rechercher une régulation (titre, identifiant)…",
