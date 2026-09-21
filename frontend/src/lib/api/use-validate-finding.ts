@@ -25,7 +25,7 @@ export function useValidateFinding(regulationId: string) {
       findingId: string;
       body: ValidateFindingBody;
     }) => validateFinding(findingId, body),
-    onSuccess: async (updated) => {
+    onSuccess: async (updated, { findingId }) => {
       toast.success(t("saved"), {
         description: statusLabels(updated.human_status),
       });
@@ -41,8 +41,15 @@ export function useValidateFinding(regulationId: string) {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.regulationHistory(regulationId),
       });
+      // Page de détail du constat, et procédure : une acceptation en crée une nouvelle version.
+      await queryClient.invalidateQueries({ queryKey: queryKeys.findingDetail(findingId) });
+      if (updated.procedure_id) {
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.procedure(updated.procedure_id),
+        });
+      }
     },
-    onError: () => toast.error(t("saveFailed")),
+    onError: (error) => toast.error(t("saveFailed"), { description: error.message }),
   });
 
   function decide(

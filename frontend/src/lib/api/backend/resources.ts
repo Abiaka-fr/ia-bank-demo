@@ -415,10 +415,10 @@ export async function fetchMappingDetail(
  * - une exigence sans procédure associée (`assembleUnmappedFinding`, préfixe
  *   `NO-MAPPING-`) n'a pas de ligne `RequirementProcedureMap` côté backend : il n'y a
  *   rien à persister, l'appel échoue explicitement plutôt que de faire semblant ;
- * - **depuis le 2026-09-15** (`3f3f05b`), l'assignation d'un constat escaladé à une
- *   personne précise n'a plus de route serveur (`PUT /api/mappings/:id/assignee`
- *   supprimée) — `body.assignee_id` reste appliqué en optimiste sur le retour de
- *   cette fonction, jamais persisté.
+ * - `ACCEPTED` : le backend applique les modifications suggérées à la procédure et en
+ *   crée une nouvelle version (2026-09-21) ;
+ * - `ESCALATED` : `assignee` obligatoire, enregistré par le backend sur le document de la
+ *   procédure (`documents.assignee`), pas sur le constat — il n'est donc pas relu ici.
  */
 export async function validateMapping(
   mappingId: string,
@@ -436,17 +436,12 @@ export async function validateMapping(
     backendMappingSchema,
     {
       method: "PUT",
-      body: { human_status: adaptHumanStatusToBackend(body.human_status) },
+      body: {
+        human_status: adaptHumanStatusToBackend(body.human_status),
+        assignee: body.human_status === "ESCALATED" ? body.assignee_id : undefined,
+      },
     },
   );
-
-  // ⚠️ `PUT /api/mappings/:id/assignee` n'existe plus côté backend (Thư, 2026-09-15,
-  // `3f3f05b` — colonne `assignee` supprimée de `requirement_procedure_map`,
-  // remplacée par l'assignation au niveau document, voir `updateDocumentAssignee`).
-  // L'assignation d'un constat escaladé à une personne précise n'a donc plus
-  // d'équivalent serveur : `body.assignee_id` reste appliqué en optimiste sur le
-  // retour ci-dessous (l'écran l'affiche immédiatement) mais n'est plus persisté —
-  // il disparaît au rechargement. Documenté dans `docs/known-limitations.md`.
 
   // `priority` vit sur l'exigence (`risk_level`), pas sur le mapping : la valeur
   // exacte revient au prochain chargement de la liste, invalidé juste après par

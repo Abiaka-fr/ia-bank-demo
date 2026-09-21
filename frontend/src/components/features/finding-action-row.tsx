@@ -4,6 +4,7 @@ import { cn } from "cn";
 import { ArrowUpCircle, Check, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { AssessmentBadge } from "@/components/features/assessment-badge";
 import { AssigneeSelect } from "@/components/features/assignee-select";
@@ -76,6 +77,10 @@ export function FindingActionRow({
   }
 
   function handleDecide(humanStatus: "ACCEPTED" | "REJECTED" | "ESCALATED") {
+    if (humanStatus === "ESCALATED" && !assigneeId) {
+      toast.error(t("escalateNeedsAssignee"));
+      return;
+    }
     decide(finding.finding_id, humanStatus, {
       custom_action: customAction.trim() || undefined,
       assignee_id: humanStatus === "ESCALATED" ? assigneeId : undefined,
