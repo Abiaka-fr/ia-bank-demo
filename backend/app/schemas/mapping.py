@@ -161,11 +161,31 @@ class HumanStatusUpdate(BaseModel):
     human_status: str
     # Required for ESCALATE: user_id or email of the person the finding is escalated to.
     assignee: str | None = None
+    # Reviewer's chosen action, kept in the mapping history.
+    comment: str | None = None
 
     class Config:
         json_schema_extra = {
             "example": {"human_status": "ESCALATE", "assignee": "USR-0001"}
         }
+
+
+class MappingHistoryRead(BaseModel):
+    """One decision in a mapping's history."""
+
+    history_id: str
+    mapping_id: str
+    requirement_id: str
+    procedure_id: str | None = None
+    from_status: str | None = None
+    to_status: str
+    assignee: str | None = None
+    new_version_id: str | None = None
+    comment: str | None = None
+    actor: str | None = None
+    created_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
 
 
 class AnalyzeMappingsRequest(BaseModel):

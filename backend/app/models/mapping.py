@@ -1,6 +1,9 @@
 """Requirement to procedure mapping model."""
 
-from sqlalchemy import Column, String, Float, Text, ForeignKey, Index, JSON
+import uuid
+from datetime import datetime
+
+from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, Index, String, Text
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -32,3 +35,27 @@ class RequirementProcedureMap(Base):
     # Relationships
     requirement = relationship("RegulatoryRequirement", back_populates="mappings")
     procedure = relationship("Procedure", back_populates="mappings")
+
+
+class MappingHistory(Base):
+    """One row per human decision on a mapping: status change, assignee, applied version."""
+
+    __tablename__ = "mapping_history"
+
+    history_id = Column(String, primary_key=True, default=lambda: f"MHI-{uuid.uuid4().hex}")
+    mapping_id = Column(String, nullable=False)
+    # Denormalised so "every mapping linked to a requirement" is one indexed query.
+    requirement_id = Column(String, nullable=False)
+    procedure_id = Column(String)  # procedure document_id, as on the mapping
+    from_status = Column(String)
+    to_status = Column(String, nullable=False)
+    assignee = Column(String)  # ESCALATE: user_id or email escalated to
+    new_version_id = Column(String)  # ACCEPT: procedure version created
+    comment = Column(Text)  # reviewer's chosen action
+    actor = Column(String)  # user_id who decided
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_mapping_history_requirement_id", "requirement_id"),
+        Index("idx_mapping_history_mapping_id", "mapping_id"),
+    )

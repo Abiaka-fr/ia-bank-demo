@@ -253,6 +253,46 @@ POST /api/documents/EXT-EU-AML-001/update
 
 ---
 
+### List Document Versions
+
+#### `GET /api/documents/{document_id}/versions`
+All versions of a document (metadata only), oldest first. Content of one version:
+`GET /api/documents/content/{version_id}`.
+
+**Authentication** Required (Bearer token)
+
+**Response (200 OK)**
+```json
+[
+  {
+    "version_id": "VER-INT-EU-002-01",
+    "document_id": "INT-EU-002",
+    "version_no": "1.0",
+    "version_timestamp": "2026-09-21T04:03:36",
+    "status": "SUPERSEDED",
+    "file_path": "procedures/internal/INT-EU-002__v1_0__FR.md",
+    "sha256": null,
+    "created_by": "USR-8986…",
+    "change_reason": "Initial procedure ingestion"
+  },
+  {
+    "version_id": "VER-INT-EU-002-02",
+    "document_id": "INT-EU-002",
+    "version_no": "2.0",
+    "version_timestamp": "2026-09-21T06:41:10",
+    "status": "ACTIVE",
+    "file_path": null,
+    "sha256": "…",
+    "created_by": "USR-8986…",
+    "change_reason": "Accepted MAP-0005 (requirement REQ-0003)"
+  }
+]
+```
+
+**Response (404 Not Found)** — `{"detail": "Document not found"}`
+
+---
+
 ### Get Document Content by Version ID
 
 #### `GET /api/documents/content/{version_id}`
@@ -978,6 +1018,9 @@ Update the human review status of a requirement-procedure mapping.
     version if there are no suggested modifications or if the mapping is already `ACCEPT`.
   - `REJECT` — Rejected by human reviewer (status only)
 - `assignee` (required for `ESCALATE`, ignored otherwise): user_id or email
+- `comment` (optional): reviewer's chosen action, kept in the mapping history
+
+Every successful call is recorded in `mapping_history` (see `GET /api/mappings/history`).
 
 **Authentication** Required (Bearer token)
 
@@ -1036,6 +1079,37 @@ PUT /api/mappings/MAP-0001/human-status
 {
   "detail": "Procedure text changed since the analysis, re-run it: Original text no longer found in chunk 2: '...'"
 }
+```
+
+---
+
+### Mapping Decision History
+
+#### `GET /api/mappings/history`
+Decision history of every mapping linked to the given requirements, newest first.
+
+**Query Parameters**
+- `requirement_ids` (required, repeatable): e.g. `?requirement_ids=REQ-0001&requirement_ids=REQ-0002`
+
+**Authentication** Required (Bearer token)
+
+**Response (200 OK)**
+```json
+[
+  {
+    "history_id": "MHI-3f2c…",
+    "mapping_id": "MAP-0005",
+    "requirement_id": "REQ-0003",
+    "procedure_id": "INT-EU-002",
+    "from_status": "ESCALATE",
+    "to_status": "ACCEPT",
+    "assignee": null,
+    "new_version_id": "VER-INT-EU-002-02",
+    "comment": "Apply as proposed",
+    "actor": "USR-8986…",
+    "created_at": "2026-09-21T09:12:03"
+  }
+]
 ```
 
 ---

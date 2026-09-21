@@ -2,8 +2,8 @@
 
 This document describes the complete PostgreSQL schema for the IA Bank Regulatory AI Copilot POC.
 
-**Last Updated:** 2026-09-15  
-**Total Tables:** 10  
+**Last Updated:** 2026-09-21  
+**Total Tables:** 11  
 **Total Relationships:** 12
 
 ---
@@ -292,6 +292,33 @@ Each modification in the array has this structure:
 
 ---
 
+### 9b. mapping_history
+**Primary Key:** `history_id` (String)
+
+One row per human decision on a mapping (`PUT /api/mappings/{id}/human-status`), read with
+`GET /api/mappings/history?requirement_ids=...`. No foreign keys: history outlives renamed or
+deleted mappings.
+
+| Column | Type | Nullable | Default | Notes |
+|--------|------|----------|---------|-------|
+| history_id | String | ✗ | `MHI-{uuid hex}` | PK |
+| mapping_id | String | ✗ | - | Mapping the decision was made on |
+| requirement_id | String | ✗ | - | Copied from the mapping: all history of a requirement in one indexed query |
+| procedure_id | String | ✓ | NULL | Procedure document_id, as on the mapping |
+| from_status | String | ✓ | NULL | human_status before the decision |
+| to_status | String | ✗ | - | PENDING_REVIEW, ACCEPT, REJECT, ESCALATE |
+| assignee | String | ✓ | NULL | ESCALATE only: user_id or email escalated to |
+| new_version_id | String | ✓ | NULL | ACCEPT only: procedure version created by applying the suggested modifications |
+| comment | Text | ✓ | NULL | Reviewer's chosen action ("Action chosen by the reviewer") |
+| actor | String | ✓ | NULL | user_id who made the decision |
+| created_at | DateTime | ✓ | now() | |
+
+**Indexes:**
+- idx_mapping_history_requirement_id (requirement_id)
+- idx_mapping_history_mapping_id (mapping_id)
+
+---
+
 ## Audit & Reference Tables
 
 ### 10. audit_history
@@ -483,5 +510,7 @@ Migrations are tracked in `alembic/versions/`:
 - **008:** Add summary & updated_at to documents
 - **009:** Add updated_at to documents
 - **010:** Add published_at to documents
+- **2026-09-21:** Create `mapping_history` (created on Neon from the model with
+  `MappingHistory.__table__.create(engine, checkfirst=True)`, no Alembic file)
 
 Run `alembic upgrade head` to apply all migrations.

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user
 from app.db import get_db
 from app.models.document import Document, DocumentChunk, DocumentVersion
-from app.models.mapping import RequirementProcedureMap
+from app.models.mapping import MappingHistory, RequirementProcedureMap
 from app.models.requirement import RegulatoryRequirement
 from app.models.user import User
 from app.schemas.document import DocumentChunkInput
@@ -16,6 +16,7 @@ from app.schemas.mapping import (
     HumanStatusEnum,
     HumanStatusUpdate,
     MappingDetailResponse,
+    MappingHistoryRead,
     MappingListResponse,
     MappingRead,
     NestedMappingResponse,
@@ -263,6 +264,26 @@ def list_mappings(
     )
 
 
+@router.get("/history", response_model=list[MappingHistoryRead])
+def list_mapping_history(
+    requirement_ids: list[str] = Query(..., description="Requirement IDs (repeatable)"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[MappingHistoryRead]:
+    """
+    Decision history of every mapping linked to the given requirements, newest first.
+
+    **Example:** `GET /api/mappings/history?requirement_ids=REQ-0001&requirement_ids=REQ-0002`
+    """
+    rows = (
+        db.query(MappingHistory)
+        .filter(MappingHistory.requirement_id.in_(requirement_ids))
+        .order_by(MappingHistory.created_at.desc())
+        .all()
+    )
+    return [MappingHistoryRead.model_validate(row) for row in rows]
+
+
 @router.get("/{mapping_id}", response_model=MappingDetailResponse)
 def get_mapping_detail(
     mapping_id: str,
@@ -384,6 +405,7 @@ def update_mapping_human_status(
     if mapping is None:
         raise HTTPException(status_code=404, detail="Mapping not found")
 
+    new_version_id = None
     if payload.human_status == HumanStatusEnum.ESCALATE:
         if not payload.assignee:
             raise HTTPException(status_code=400, detail="assignee is required to escalate")
@@ -391,8 +413,21 @@ def update_mapping_human_status(
         # it also overwrites the uploader kept there until a created_by column exists.
         _procedure_document(db, mapping).assignee = payload.assignee
     elif payload.human_status == HumanStatusEnum.ACCEPT and mapping.human_status != HumanStatusEnum.ACCEPT:
-        _apply_suggested_modifications(db, mapping, created_by=current_user.user_id)
+        new_version_id = _apply_suggested_modifications(db, mapping, created_by=current_user.user_id)
 
+    db.add(
+        MappingHistory(
+            mapping_id=mapping.mapping_id,
+            requirement_id=mapping.requirement_id,
+            procedure_id=mapping.procedure_id,
+            from_status=mapping.human_status,
+            to_status=payload.human_status,
+            assignee=payload.assignee if payload.human_status == HumanStatusEnum.ESCALATE else None,
+            new_version_id=new_version_id,
+            comment=payload.comment,
+            actor=current_user.user_id,
+        )
+    )
     mapping.human_status = payload.human_status
     db.commit()
     db.refresh(mapping)
@@ -410,11 +445,14 @@ def _procedure_document(db: Session, mapping: RequirementProcedureMap) -> Docume
 
 def _apply_suggested_modifications(
     db: Session, mapping: RequirementProcedureMap, created_by: str
-) -> None:
-    """Accepting a finding applies its suggested modifications as a new procedure version."""
+) -> str | None:
+    """Accepting a finding applies its suggested modifications as a new procedure version.
+
+    Returns the new version_id, or None when there was nothing to apply.
+    """
     modifications = MappingRead.model_validate(mapping).suggested_modifications
     if not modifications:
-        return  # Nothing to change in the procedure text: no identical new version.
+        return None  # Nothing to change in the procedure text: no identical new version.
 
     document = _procedure_document(db, mapping)
     active_version = (
@@ -432,15 +470,18 @@ def _apply_suggested_modifications(
         .all()
     )
 
+    current = {c.chunk_no: c.content or "" for c in chunks}
     try:
-        contents = apply_modifications({c.chunk_no: c.content or "" for c in chunks}, modifications)
+        contents = apply_modifications(current, modifications)
     except ValueError as e:
         raise HTTPException(
             status_code=409,
             detail=f"Procedure text changed since the analysis, re-run it: {e}",
         ) from e
+    if contents == current:
+        return None  # Already in the procedure (accepted before): no identical version.
 
-    create_document_version(
+    new_version, _ = create_document_version(
         db,
         document,
         [
@@ -456,6 +497,7 @@ def _apply_suggested_modifications(
         created_by=created_by,
         change_reason=f"Accepted {mapping.mapping_id} (requirement {mapping.requirement_id})",
     )
+    return new_version.version_id
 
 
 @router.post("/analyze", status_code=201)

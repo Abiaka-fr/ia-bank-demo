@@ -98,6 +98,8 @@ def apply_modifications(
         text = result.get(chunk_no)
         if text is None:
             raise ValueError(f"Chunk {chunk_no} not found in the current procedure version")
+        if mod.new_text and mod.new_text in text:
+            continue  # Already applied (finding accepted before): never apply twice.
         start, end = mod.location.start_offset, mod.location.end_offset
         if text[start:end] != mod.original_text:
             # ponytail: first occurrence only; ambiguous if the same sentence appears twice.

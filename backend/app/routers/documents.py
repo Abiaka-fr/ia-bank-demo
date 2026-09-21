@@ -146,6 +146,28 @@ def update_document_content(
     )
 
 
+@router.get("/{document_id}/versions", response_model=list[DocumentVersionRead])
+def list_document_versions(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[DocumentVersionRead]:
+    """All versions of a document (metadata incl. change_reason), oldest first.
+
+    Content of one version: `GET /api/documents/content/{version_id}`.
+    """
+    if db.get(Document, document_id) is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+    versions = (
+        db.query(DocumentVersion)
+        .filter(DocumentVersion.document_id == document_id)
+        # ponytail: ids are VER-{doc}-{NN}, so this sorts correctly up to v99.
+        .order_by(DocumentVersion.version_id.asc())
+        .all()
+    )
+    return [DocumentVersionRead.model_validate(v) for v in versions]
+
+
 @router.get("/{document_id}", response_model=DocumentRead)
 def get_document(
     document_id: str,
