@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { AssessmentBadge } from "@/components/features/assessment-badge";
 import { EmptyState } from "@/components/features/query-state";
 import { HumanStatusBadge } from "@/components/features/human-status-badge";
+import { ImpactedProcedureSummary } from "@/components/features/impacted-procedure-summary";
 import { ReviewProgressBar } from "@/components/features/review-progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -300,15 +301,6 @@ export function RequirementsTab({
                         const rowHref = canOpenRow
                           ? `/${locale}/findings/${finding.finding_id}?regulationId=${regulationId}&requirementId=${requirement.requirement_id}`
                           : undefined;
-                        // Nom de la procédure : porté par la preuve interne (`buildUntargetedInternalEvidence`
-                        // en mode réel, corpus MSW sinon) — l'identifiant seul ne parle pas à l'utilisateur.
-                        const procedureTitle =
-                          finding.internal_evidence[0]?.document_title ?? finding.procedure_id ?? "—";
-                        const explanation = pickLocalizedText(
-                          locale,
-                          finding.explanation,
-                          finding.explanation_fr,
-                        );
 
                         return (
                           <button
@@ -324,19 +316,7 @@ export function RequirementsTab({
                               !canOpenRow && "text-muted-foreground cursor-default",
                             )}
                           >
-                            <span className="min-w-0 flex-1 space-y-1 text-left">
-                              <span className="block text-sm font-medium">
-                                {procedureTitle}
-                              </span>
-                              <span className="block font-mono text-[11px] text-muted-foreground">
-                                {finding.procedure_id ?? "—"} · {finding.finding_id}
-                              </span>
-                              {explanation ? (
-                                <span className="line-clamp-2 text-xs text-muted-foreground">
-                                  {explanation}
-                                </span>
-                              ) : null}
-                            </span>
+                            <ImpactedProcedureSummary finding={finding} className="flex-1" />
                             <div className="flex items-center gap-2 flex-shrink-0">
                               <AssessmentBadge assessment={finding.assessment} />
                               <HumanStatusBadge status={finding.human_status} />

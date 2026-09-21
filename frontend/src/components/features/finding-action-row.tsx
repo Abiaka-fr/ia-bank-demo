@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { AssessmentBadge } from "@/components/features/assessment-badge";
 import { AssigneeSelect } from "@/components/features/assignee-select";
 import { HumanStatusBadge } from "@/components/features/human-status-badge";
+import { ImpactedProcedureSummary } from "@/components/features/impacted-procedure-summary";
 import { PriorityBadge } from "@/components/features/priority-badge";
 import { useSession } from "@/components/providers/session-provider";
 import { Badge } from "@/components/ui/badge";
@@ -140,9 +141,7 @@ export function FindingActionRow({
           onClick={handleOpenFinding}
         >
           {finding.procedure_id ? (
-            <Badge variant="outline" className="font-mono text-[11px]">
-              {finding.procedure_id}
-            </Badge>
+            <ImpactedProcedureSummary finding={finding} />
           ) : (
             <span className="text-muted-foreground">—</span>
           )}

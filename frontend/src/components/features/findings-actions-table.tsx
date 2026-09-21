@@ -196,11 +196,11 @@ export function FindingsActionsTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[26%] min-w-[15rem]">
+                <TableHead className="w-[22%] min-w-[15rem]">
                   {t("columnRequirement")}
                 </TableHead>
-                <TableHead className="w-[12%]">{t("columnProcedure")}</TableHead>
-                <TableHead className="w-[22%]">{t("columnRecommended")}</TableHead>
+                <TableHead className="w-[18%] min-w-[12rem]">{t("columnProcedure")}</TableHead>
+                <TableHead className="w-[20%]">{t("columnRecommended")}</TableHead>
                 <TableHead className="w-[22%] whitespace-normal">
                   {t("columnCustom")}
                   <span className="block text-[11px] font-normal text-muted-foreground">
