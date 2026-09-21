@@ -5,10 +5,11 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.db import get_db
-from app.models.document import Document
+from app.models.document import Document, DocumentChunk, DocumentVersion
 from app.models.mapping import RequirementProcedureMap
 from app.models.requirement import RegulatoryRequirement
 from app.models.user import User
+from app.schemas.document import DocumentChunkInput
 from app.schemas.mapping import (
     AnalyzeMappingsRequest,
     DocumentRead,
@@ -24,6 +25,7 @@ from app.schemas.mapping import (
     RequirementRead,
     RequirementWithProceduresRead,
 )
+from app.services.document_versioning import apply_modifications, create_document_version
 from app.services.requirement_procedure_mapping import RequirementProcedureMappingService
 
 router = APIRouter(prefix="/api/mappings", tags=["mappings"])
@@ -352,12 +354,16 @@ def update_mapping_human_status(
 
     **Request Body:**
     - `human_status` (required): One of PENDING_REVIEW, ESCALATE, ACCEPT, REJECT
+    - `assignee` (required for ESCALATE): user_id or email of the person escalated to
 
     **Allowed Values:**
     - `PENDING_REVIEW` — Awaiting human review (default)
-    - `ESCALATE` — Escalate to senior review/approval
-    - `ACCEPT` — Approved by human reviewer
-    - `REJECT` — Rejected by human reviewer
+    - `ESCALATE` — Escalate to senior review/approval; `assignee` is saved on the
+      procedure document (`documents.assignee`)
+    - `ACCEPT` — Approved by human reviewer; the mapping's `suggested_modifications` are
+      applied to the procedure as a new version (documents.current_version bumped).
+      409 if the procedure text no longer contains the original text.
+    - `REJECT` — Rejected by human reviewer (status only)
 
     **Example URLs:**
     - `PUT /api/mappings/MAP-0001/human-status`
@@ -378,11 +384,78 @@ def update_mapping_human_status(
     if mapping is None:
         raise HTTPException(status_code=404, detail="Mapping not found")
 
+    if payload.human_status == HumanStatusEnum.ESCALATE:
+        if not payload.assignee:
+            raise HTTPException(status_code=400, detail="assignee is required to escalate")
+        # ponytail: stored on the procedure document (no assignee column on the mapping);
+        # it also overwrites the uploader kept there until a created_by column exists.
+        _procedure_document(db, mapping).assignee = payload.assignee
+    elif payload.human_status == HumanStatusEnum.ACCEPT and mapping.human_status != HumanStatusEnum.ACCEPT:
+        _apply_suggested_modifications(db, mapping, created_by=current_user.user_id)
+
     mapping.human_status = payload.human_status
     db.commit()
     db.refresh(mapping)
 
     return MappingRead.model_validate(mapping)
+
+
+def _procedure_document(db: Session, mapping: RequirementProcedureMap) -> Document:
+    """`mapping.procedure_id` holds the procedure's document_id."""
+    document = db.get(Document, mapping.procedure_id)
+    if document is None:
+        raise HTTPException(status_code=404, detail="Procedure document not found")
+    return document
+
+
+def _apply_suggested_modifications(
+    db: Session, mapping: RequirementProcedureMap, created_by: str
+) -> None:
+    """Accepting a finding applies its suggested modifications as a new procedure version."""
+    modifications = MappingRead.model_validate(mapping).suggested_modifications
+    if not modifications:
+        return  # Nothing to change in the procedure text: no identical new version.
+
+    document = _procedure_document(db, mapping)
+    active_version = (
+        db.query(DocumentVersion)
+        .filter(DocumentVersion.document_id == document.document_id, DocumentVersion.status == "ACTIVE")
+        .order_by(DocumentVersion.version_timestamp.desc())
+        .first()
+    )
+    if active_version is None:
+        raise HTTPException(status_code=409, detail="Procedure has no active version")
+    chunks = (
+        db.query(DocumentChunk)
+        .filter(DocumentChunk.version_id == active_version.version_id)
+        .order_by(DocumentChunk.chunk_no.asc())
+        .all()
+    )
+
+    try:
+        contents = apply_modifications({c.chunk_no: c.content or "" for c in chunks}, modifications)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Procedure text changed since the analysis, re-run it: {e}",
+        ) from e
+
+    create_document_version(
+        db,
+        document,
+        [
+            DocumentChunkInput(
+                chunk_no=c.chunk_no,
+                section_title=c.section_title or "",
+                content=contents[c.chunk_no],
+                language=c.language or "",
+                domain=c.domain or "",
+            )
+            for c in chunks
+        ],
+        created_by=created_by,
+        change_reason=f"Accepted {mapping.mapping_id} (requirement {mapping.requirement_id})",
+    )
 
 
 @router.post("/analyze", status_code=201)

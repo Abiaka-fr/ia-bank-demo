@@ -309,6 +309,10 @@ class RequirementProcedureMappingService:
                         suggested_modifications=modifications_dict,
                     )
                     db.add(mapping)
+                    # The session does not autoflush: without this, the next
+                    # generate_mapping_id() in this loop does not see this row and
+                    # reuses the same ID (MAP-0004 was duplicated this way).
+                    db.flush()
                     created_mapping_ids.append(mapping_id)
 
                 except Exception as e:

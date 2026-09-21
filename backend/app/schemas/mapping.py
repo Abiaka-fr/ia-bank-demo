@@ -159,10 +159,12 @@ class HumanStatusUpdate(BaseModel):
     """Update human review status of a mapping."""
 
     human_status: str
+    # Required for ESCALATE: user_id or email of the person the finding is escalated to.
+    assignee: str | None = None
 
     class Config:
         json_schema_extra = {
-            "example": {"human_status": "ACCEPT"}
+            "example": {"human_status": "ESCALATE", "assignee": "USR-0001"}
         }
 
 

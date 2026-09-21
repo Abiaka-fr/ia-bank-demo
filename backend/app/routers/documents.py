@@ -1,8 +1,5 @@
 """Document endpoints."""
 
-import hashlib
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -22,6 +19,7 @@ from app.schemas.document import (
     IngestDocumentRequest,
 )
 from app.services.document_ingestion import DocumentIngestionService
+from app.services.document_versioning import create_document_version
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -106,7 +104,7 @@ def update_document_content(
     Returns the newly created version with all chunks (HTTP 201)
 
     **Notes:**
-    - A new version_id is generated automatically (VER-{doc_id}-{version_no})
+    - A new version_id is generated automatically (VER-{doc_id}-{major version on 2 digits}, e.g. VER-X-02)
     - version_no is auto-incremented (e.g., 1.0 → 2.0)
     - Previous versions are marked as SUPERSEDED
     - Document.current_version is updated to point to new version
@@ -124,66 +122,14 @@ def update_document_content(
     if chunk_nos != list(range(1, len(chunk_nos) + 1)):
         raise HTTPException(status_code=400, detail="Chunks must be numbered sequentially starting from 1")
 
-    # Calculate SHA256 hash from combined chunk content
-    chunk_content = "\n\n".join([c.content for c in payload.chunks])
-    sha256_hash = hashlib.sha256(chunk_content.encode("utf-8")).hexdigest()
-
-    # Parse current version and increment
-    try:
-        current_ver_str = doc.current_version or "0.0"
-        major, minor = map(int, current_ver_str.split("."))
-        new_version_no = f"{major + 1}.0"
-    except (ValueError, AttributeError):
-        new_version_no = "2.0"
-
-    # Generate new version_id
-    version_num_padded = new_version_no.replace(".", "").zfill(2)
-    new_version_id = f"VER-{document_id}-{version_num_padded}"
-
-    # Mark old versions as SUPERSEDED
-    old_versions = db.query(DocumentVersion).filter(
-        DocumentVersion.document_id == document_id,
-        DocumentVersion.status == "ACTIVE"
-    ).all()
-    for old_ver in old_versions:
-        old_ver.status = "SUPERSEDED"
-
-    # Create new version with auto-calculated SHA256
-    new_version = DocumentVersion(
-        version_id=new_version_id,
-        document_id=document_id,
-        version_no=new_version_no,
-        version_timestamp=datetime.utcnow(),
-        status="ACTIVE",
-        file_path=payload.file_path,
-        sha256=sha256_hash,  # Auto-calculated from chunks
+    new_version, chunks_created = create_document_version(
+        db,
+        doc,
+        payload.chunks,
         created_by=payload.created_by,
         change_reason=payload.change_reason,
+        file_path=payload.file_path,
     )
-    db.add(new_version)
-    db.flush()
-
-    # Create new chunks with auto-generated chunk_ids
-    chunks_created = []
-    for chunk_input in payload.chunks:
-        chunk_id = f"CHK-{document_id}-{version_num_padded}-{str(chunk_input.chunk_no).zfill(3)}"
-        new_chunk = DocumentChunk(
-            chunk_id=chunk_id,
-            document_id=document_id,
-            version_id=new_version_id,
-            chunk_no=chunk_input.chunk_no,
-            section_title=chunk_input.section_title,
-            content=chunk_input.content,
-            language=chunk_input.language,
-            domain=chunk_input.domain,
-        )
-        db.add(new_chunk)
-        chunks_created.append(new_chunk)
-
-    # Update document's current_version and file_path
-    doc.current_version = new_version_no
-    if payload.file_path:
-        doc.current_file_path = payload.file_path
 
     db.commit()
     db.refresh(new_version)

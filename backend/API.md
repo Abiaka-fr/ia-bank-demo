@@ -970,9 +970,14 @@ Update the human review status of a requirement-procedure mapping.
 **Request Body**
 - `human_status` (required): One of the following:
   - `PENDING_REVIEW` — Awaiting human review (default)
-  - `ESCALATE` — Escalate to senior review/approval
-  - `ACCEPT` — Approved by human reviewer
-  - `REJECT` — Rejected by human reviewer
+  - `ESCALATE` — Escalate to senior review/approval. **`assignee` is required** and is saved
+    on the procedure document (`documents.assignee`, same field as `PUT /api/documents/{id}/assignee`)
+  - `ACCEPT` — Approved by human reviewer. The mapping's `suggested_modifications` are applied
+    to the procedure's active version and saved as a **new version** (`VER-{doc}-{NN}`, previous
+    one SUPERSEDED, `documents.current_version` bumped, `created_by` = current user). No new
+    version if there are no suggested modifications or if the mapping is already `ACCEPT`.
+  - `REJECT` — Rejected by human reviewer (status only)
+- `assignee` (required for `ESCALATE`, ignored otherwise): user_id or email
 
 **Authentication** Required (Bearer token)
 
@@ -982,7 +987,7 @@ PUT /api/mappings/MAP-0001/human-status
 {"human_status": "ACCEPT"}
 
 PUT /api/mappings/MAP-0001/human-status
-{"human_status": "ESCALATE"}
+{"human_status": "ESCALATE", "assignee": "USR-0001"}
 
 PUT /api/mappings/MAP-0001/human-status
 {"human_status": "REJECT"}
@@ -1012,10 +1017,24 @@ PUT /api/mappings/MAP-0001/human-status
 }
 ```
 
+**Response (400 Bad Request)** — `ESCALATE` without `assignee`
+```json
+{
+  "detail": "assignee is required to escalate"
+}
+```
+
 **Response (404 Not Found)**
 ```json
 {
   "detail": "Mapping not found"
+}
+```
+
+**Response (409 Conflict)** — `ACCEPT` when the procedure text changed since the analysis
+```json
+{
+  "detail": "Procedure text changed since the analysis, re-run it: Original text no longer found in chunk 2: '...'"
 }
 ```
 
