@@ -97,12 +97,16 @@ export function FindingPageView({ findingId }: { findingId: string }) {
   const { finding, requirementSummary, regulationDocument, suggestedModifications } =
     mappingDetail;
 
-  // Synthetic evidence from suggested modifications for highlighting
+  // Une décision acceptée ou rejetée est close : plus de bloc « Décision ».
+  const isDecided = finding.human_status === "ACCEPTED" || finding.human_status === "REJECTED";
+
+  // Synthetic evidence from suggested modifications for highlighting. Once accepted, the
+  // procedure shown is the new version: highlight the text that was put in, not the old one.
   const syntheticEvidence = suggestedModifications.map((mod) => ({
     document_id: procedureId ?? "",
     document_title: mappingDetail.procedure.name ?? mappingDetail.procedure.procedureId,
     section_reference: mod.chunkNo ? `chunk ${mod.chunkNo}` : "suggested modification",
-    excerpt: mod.originalText,
+    excerpt: finding.human_status === "ACCEPTED" ? mod.newText : mod.originalText,
     language: requirementSummary.language as "FR" | "EN",
   }));
 
@@ -316,69 +320,71 @@ export function FindingPageView({ findingId }: { findingId: string }) {
       </Card>
 
       {/* Decision section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">{t("decision")}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {canValidate ? (
-            <>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 block">
-                  {actionsT("customAction")}
-                </label>
-                <Textarea
-                  value={customAction}
-                  onChange={(e) => setCustomAction(e.target.value)}
-                  placeholder={actionsT("customActionPlaceholder")}
-                  rows={3}
-                  className="text-sm"
+      {!isDecided && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">{t("decision")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {canValidate ? (
+              <>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 block">
+                    {actionsT("customAction")}
+                  </label>
+                  <Textarea
+                    value={customAction}
+                    onChange={(e) => setCustomAction(e.target.value)}
+                    placeholder={actionsT("customActionPlaceholder")}
+                    rows={3}
+                    className="text-sm"
+                    disabled={isPending}
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant={finding.human_status === "ACCEPTED" ? "default" : "outline"}
+                    disabled={isPending}
+                    onClick={() => handleDecide("ACCEPTED")}
+                  >
+                    <Check aria-hidden />
+                    {actionsT("accept")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={finding.human_status === "REJECTED" ? "default" : "outline"}
+                    disabled={isPending}
+                    onClick={() => handleDecide("REJECTED")}
+                  >
+                    <X aria-hidden />
+                    {actionsT("reject")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={finding.human_status === "ESCALATED" ? "default" : "outline"}
+                    disabled={isPending}
+                    onClick={() => handleDecide("ESCALATED")}
+                  >
+                    <ArrowUpCircle aria-hidden />
+                    {actionsT("escalate")}
+                  </Button>
+                </div>
+
+                <AssigneeSelect
+                  value={assigneeId}
+                  onChange={setAssigneeId}
                   disabled={isPending}
+                  className="w-full"
                 />
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant={finding.human_status === "ACCEPTED" ? "default" : "outline"}
-                  disabled={isPending}
-                  onClick={() => handleDecide("ACCEPTED")}
-                >
-                  <Check aria-hidden />
-                  {actionsT("accept")}
-                </Button>
-                <Button
-                  size="sm"
-                  variant={finding.human_status === "REJECTED" ? "default" : "outline"}
-                  disabled={isPending}
-                  onClick={() => handleDecide("REJECTED")}
-                >
-                  <X aria-hidden />
-                  {actionsT("reject")}
-                </Button>
-                <Button
-                  size="sm"
-                  variant={finding.human_status === "ESCALATED" ? "default" : "outline"}
-                  disabled={isPending}
-                  onClick={() => handleDecide("ESCALATED")}
-                >
-                  <ArrowUpCircle aria-hidden />
-                  {actionsT("escalate")}
-                </Button>
-              </div>
-
-              <AssigneeSelect
-                value={assigneeId}
-                onChange={setAssigneeId}
-                disabled={isPending}
-                className="w-full"
-              />
-            </>
-          ) : (
-            <p className="text-xs text-muted-foreground">{actionsT("readOnlyNotice")}</p>
-          )}
-        </CardContent>
-      </Card>
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground">{actionsT("readOnlyNotice")}</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Regulation document modal */}
       {regulationDocument && (
