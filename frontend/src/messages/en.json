@@ -419,5 +419,20 @@
     "columnProcedure": "Procedure",
     "columnComment": "Comment",
     "noComment": "—"
+  },
+  "findingPage": {
+    "findingDetail": "Finding review",
+    "overview": "Overview",
+    "requirement": "Requirement",
+    "regulationDocument": "Regulation document",
+    "viewDocument": "View document",
+    "recommendedAction": "Recommended action",
+    "impactedProcedure": "Impacted procedure",
+    "suggestedModifications": "Suggested modifications",
+    "original": "Original",
+    "proposed": "Proposed",
+    "noSuggestedModifications": "No suggested modifications.",
+    "decision": "Decision",
+    "demoModeUnavailable": "Finding detail review is only available with a live backend connection. This feature requires real-time access to requirement-procedure mapping data."
   }
 }

@@ -419,5 +419,20 @@
     "columnProcedure": "Procédure",
     "columnComment": "Commentaire",
     "noComment": "—"
+  },
+  "findingPage": {
+    "findingDetail": "Revue du constat",
+    "overview": "Aperçu",
+    "requirement": "Exigence",
+    "regulationDocument": "Document réglementaire",
+    "viewDocument": "Afficher le document",
+    "recommendedAction": "Action recommandée",
+    "impactedProcedure": "Procédure impactée",
+    "suggestedModifications": "Modifications suggérées",
+    "original": "Original",
+    "proposed": "Proposé",
+    "noSuggestedModifications": "Aucune modification suggérée.",
+    "decision": "Décision",
+    "demoModeUnavailable": "La revue détaillée d'un constat n'est disponible qu'avec une connexion à un serveur réel. Cette fonctionnalité nécessite un accès temps réel aux données de mappage exigence × procédure."
   }
 }

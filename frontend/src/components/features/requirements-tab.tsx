@@ -8,11 +8,9 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AssessmentBadge } from "@/components/features/assessment-badge";
-import { FindingDetailDialog } from "@/components/features/finding-detail-dialog";
 import { EmptyState } from "@/components/features/query-state";
 import { HumanStatusBadge } from "@/components/features/human-status-badge";
 import { ReviewProgressBar } from "@/components/features/review-progress";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,6 +26,7 @@ import { humanStatusValues } from "@/lib/assessment";
 import { pickLocalizedText } from "@/lib/localized-text";
 import { analyzeMappings } from "@/lib/api/regulations";
 import { queryKeys } from "@/lib/api/query-keys";
+import { openInNewTabWithSession } from "@/lib/open-in-new-tab";
 import type { Finding, Requirement } from "@/types/api";
 
 const ALL_DOMAINS = "ALL";
@@ -56,13 +55,10 @@ export function RequirementsTab({
   const actionsT = useTranslations("actions");
   const locale = useLocale();
   const queryClient = useQueryClient();
-  const [openDetail, setOpenDetail] = useState<{
-    finding: Finding;
-    requirement: Requirement;
-  } | null>(null);
 
   const [search, setSearch] = useState("");
   const [domain, setDomain] = useState<string>(ALL_DOMAINS);
+  const [expandedFindings, setExpandedFindings] = useState<Set<string>>(new Set());
 
   const analyzeMutation = useMutation({
     mutationFn: (requirementId: string) => analyzeMappings([requirementId]),
@@ -176,7 +172,17 @@ export function RequirementsTab({
         const focusHref = firstFinding
           ? `/regulations/${regulationId}?tab=actions&focus=${requirement.requirement_id}`
           : undefined;
-        const [expandFindings, setExpandFindings] = useState(false);
+
+        const isExpanded = expandedFindings.has(requirement.requirement_id);
+        const toggleExpand = () => {
+          const newExpanded = new Set(expandedFindings);
+          if (newExpanded.has(requirement.requirement_id)) {
+            newExpanded.delete(requirement.requirement_id);
+          } else {
+            newExpanded.add(requirement.requirement_id);
+          }
+          setExpandedFindings(newExpanded);
+        };
 
         // v1.9 — variantes françaises (Thư, `be74658`) : la langue d'origine du corpus
         // reste `requirement.language`, l'interface choisit la variante à afficher
@@ -196,8 +202,16 @@ export function RequirementsTab({
             ? "fr"
             : requirement.language.toLowerCase();
 
+        // Build new-tab href for the first finding if available
+        const canOpenFinding = firstFinding && firstFinding.procedure_id;
+        const newTabHref = canOpenFinding
+          ? `/${locale}/findings/${firstFinding.finding_id}?regulationId=${regulationId}&requirementId=${requirement.requirement_id}`
+          : undefined;
+
         function openFindingDetail() {
-          if (firstFinding) setOpenDetail({ finding: firstFinding, requirement });
+          if (newTabHref) {
+            openInNewTabWithSession(newTabHref);
+          }
         }
 
         return (
@@ -268,34 +282,53 @@ export function RequirementsTab({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setExpandFindings(!expandFindings);
+                      toggleExpand();
                     }}
                     className="flex w-full items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
                   >
                     <ChevronDown
-                      className={cn("size-4 transition-transform", expandFindings && "rotate-180")}
+                      className={cn("size-4 transition-transform", isExpanded && "rotate-180")}
                       aria-hidden
                     />
                     Findings ({related.length})
                   </button>
-                  {expandFindings && (
+                  {isExpanded && (
                     <div className="space-y-1 pt-2">
-                      {related.map((finding) => (
-                        <div key={finding.finding_id} className="flex items-center justify-between gap-3 border-l-2 border-muted-foreground/20 py-2 pl-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-medium truncate">
-                              {finding.procedure_id || "—"}
+                      {related.map((finding) => {
+                        const canOpenRow = finding.procedure_id !== null && finding.procedure_id !== undefined;
+                        const rowHref = canOpenRow
+                          ? `/${locale}/findings/${finding.finding_id}?regulationId=${regulationId}&requirementId=${requirement.requirement_id}`
+                          : undefined;
+
+                        return (
+                          <button
+                            key={finding.finding_id}
+                            type="button"
+                            onClick={() => {
+                              if (rowHref) openInNewTabWithSession(rowHref);
+                            }}
+                            disabled={!canOpenRow}
+                            className={cn(
+                              "w-full flex items-center justify-between gap-3 border-l-2 border-muted-foreground/20 py-2 pl-3 rounded transition-colors",
+                              canOpenRow && "hover:bg-accent cursor-pointer",
+                              !canOpenRow && "text-muted-foreground cursor-default",
+                            )}
+                          >
+                            <div className="flex-1 min-w-0 text-left">
+                              <div className="text-xs font-medium truncate">
+                                {finding.procedure_id || "—"}
+                              </div>
+                              <div className="text-[11px] text-muted-foreground truncate">
+                                {finding.finding_id}
+                              </div>
                             </div>
-                            <div className="text-[11px] text-muted-foreground truncate">
-                              {finding.finding_id}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <AssessmentBadge assessment={finding.assessment} />
+                              <HumanStatusBadge status={finding.human_status} />
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <AssessmentBadge assessment={finding.assessment} />
-                            <HumanStatusBadge status={finding.human_status} />
-                          </div>
-                        </div>
-                      ))}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -304,18 +337,6 @@ export function RequirementsTab({
           </Card>
         );
       })}
-
-      {openDetail ? (
-        <FindingDetailDialog
-          finding={openDetail.finding}
-          requirement={openDetail.requirement}
-          isOpen
-          onOpenChange={(open) => {
-            if (!open) setOpenDetail(null);
-          }}
-          regulationId={regulationId}
-        />
-      ) : null}
     </div>
   );
 }

@@ -51,12 +51,14 @@ import {
   backendExtractRequirementsSchema,
   backendDocumentListSchema,
   backendDocumentSchema,
+  backendMappingDetailSchema,
   backendMappingSchema,
   backendRequirementListSchema,
   backendRequirementsToProceduresSchema,
   backendTokenSchema,
   backendUserListSchema,
   backendUserSchema,
+  type BackendMappingDetail,
   type BackendProcedureMinimal,
 } from "./schemas";
 
@@ -350,6 +352,19 @@ export async function updateUserRole(
     { method: "PUT", body: { role: body.role } },
   );
   return adaptUser(response);
+}
+
+/**
+ * Get complete details of a specific mapping with nested requirement and procedure data.
+ * Endpoint: `GET /api/mappings/{mapping_id}`
+ */
+export async function fetchMappingDetail(
+  mappingId: string,
+): Promise<BackendMappingDetail> {
+  return backendFetch(
+    `/api/mappings/${encodeURIComponent(mappingId)}`,
+    backendMappingDetailSchema,
+  );
 }
 
 // --- Validation humaine ---------------------------------------------------------

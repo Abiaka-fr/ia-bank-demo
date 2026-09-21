@@ -137,23 +137,40 @@ export const backendRequirementListSchema = paginated(
  * exactement au `Finding` du contrat v1.1 : c'est la matière brute qui manquait pour
  * remplir les onglets « Vue d'ensemble » et « Analyse d'impact » (voir `finding-adapt.ts`).
  */
-export const backendMappingSchema = z.object({
-  mapping_id: z.string(),
-  requirement_id: z.string(),
-  procedure_id: z.string(),
-  assessment: z.string().nullable().optional(),
-  confidence: z.number().nullable().optional(),
-  explanation: z.string().nullable().optional(),
-  recommended_action: z.string().nullable().optional(),
-  // Ajoutés par Thư le 2026-09-09 soir (`ea02f49`, « Add French for explanation and
-  // recommendation ») — variantes françaises, absentes sur les couples plus anciens.
-  explanation_lang_fr: z.string().nullable().optional(),
-  recommended_action_lang_fr: z.string().nullable().optional(),
-  human_status: z.string().nullable().optional(),
-  // Ajouté par Thư le 2026-09-07 après-midi (`PUT .../assignee`), sans migration —
-  // absent d'une base non synchronisée. Optionnel ici pour la même raison.
-  assignee: z.string().nullable().optional(),
+export const backendSuggestedModificationSchema = z.object({
+  location: z
+    .object({
+      chunk_no: z.number().nullable().optional(),
+      start_offset: z.number().nullable().optional(),
+      end_offset: z.number().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+  original_text: z.string(),
+  new_text: z.string(),
 });
+
+export const backendMappingSchema = z
+  .object({
+    mapping_id: z.string(),
+    requirement_id: z.string(),
+    procedure_id: z.string(),
+    assessment: z.string().nullable().optional(),
+    confidence: z.number().nullable().optional(),
+    explanation: z.string().nullable().optional(),
+    recommended_action: z.string().nullable().optional(),
+    // Ajoutés par Thư le 2026-09-09 soir (`ea02f49`, « Add French for explanation and
+    // recommendation ») — variantes françaises, absentes sur les couples plus anciens.
+    explanation_lang_fr: z.string().nullable().optional(),
+    recommended_action_lang_fr: z.string().nullable().optional(),
+    human_status: z.string().nullable().optional(),
+    // Ajouté par Thư le 2026-09-07 après-midi (`PUT .../assignee`), sans migration —
+    // absent d'une base non synchronisée. Optionnel ici pour la même raison.
+    assignee: z.string().nullable().optional(),
+    // Suggested modifications for the impacted procedure (e.g., from GET /api/mappings/{id})
+    suggested_modifications: z.array(backendSuggestedModificationSchema).nullable().optional(),
+  })
+  .passthrough();
 
 export const backendMappingListSchema = paginated(backendMappingSchema);
 
@@ -221,4 +238,32 @@ export type BackendMapping = z.infer<typeof backendMappingSchema>;
 export type BackendProcedureMinimal = z.infer<typeof backendProcedureMinimalSchema>;
 export type BackendRequirementWithProcedures = z.infer<
   typeof backendRequirementWithProceduresSchema
+>;
+export type BackendSuggestedModification = z.infer<
+  typeof backendSuggestedModificationSchema
+>;
+
+// Nested response from GET /api/mappings/{mapping_id}
+export const backendMappingDetailRequirementSchema = backendRequirementMinimalSchema.extend({
+  evidence: z.string().nullable().optional(),
+});
+
+export const backendMappingDetailProcedureSchema = backendProcedureMinimalSchema.extend({
+  created_at: z.string().nullable().optional(),
+  updated_at: z.string().nullable().optional(),
+});
+
+export const backendMappingDetailSchema = z.object({
+  mapping: backendMappingSchema,
+  requirement: backendMappingDetailRequirementSchema,
+  requirement_source_document: backendDocumentSchema,
+  procedure: backendMappingDetailProcedureSchema,
+});
+
+export type BackendMappingDetail = z.infer<typeof backendMappingDetailSchema>;
+export type BackendMappingDetailRequirement = z.infer<
+  typeof backendMappingDetailRequirementSchema
+>;
+export type BackendMappingDetailProcedure = z.infer<
+  typeof backendMappingDetailProcedureSchema
 >;

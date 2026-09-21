@@ -4,6 +4,9 @@ import { findingSchema, type ValidateFindingBody } from "@/types/api";
 
 import { isBackendLive } from "./backend/config";
 import * as backend from "./backend/resources";
+import type { MappingDetail } from "./backend/mapping-detail-adapt";
+import { adaptMappingDetail } from "./backend/mapping-detail-adapt";
+import { BackendGapError } from "./backend/client";
 import { apiFetch } from "./client";
 
 /**
@@ -28,6 +31,20 @@ export function fetchFindingsByRequirement(requirementId: string) {
     `/api/requirements/${requirementId}/findings`,
     z.array(findingSchema),
   );
+}
+
+/**
+ * Get complete details of a specific mapping (requirement × procedure impact).
+ * Backend-only — no MSW mock; when the backend is not live, this throws immediately.
+ */
+export function fetchFindingDetail(findingId: string): Promise<MappingDetail> {
+  if (!isBackendLive) {
+    throw new BackendGapError(
+      "Finding detail page is only available with a live backend. " +
+        "Set NEXT_PUBLIC_BACKEND_URL to enable this feature.",
+    );
+  }
+  return backend.fetchMappingDetail(findingId).then(adaptMappingDetail);
 }
 
 /**

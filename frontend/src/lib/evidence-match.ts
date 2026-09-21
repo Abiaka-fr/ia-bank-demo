@@ -8,6 +8,13 @@
  * inversement.
  */
 
+import type { EvidenceRef } from "@/types/api";
+
+export type HighlightSegment = {
+  text: string;
+  isMatch: boolean;
+};
+
 /** En dessous, un fragment est trop court pour distinguer deux passages. */
 const MIN_FRAGMENT_LENGTH = 25;
 /** Longueur du début de chaîne utilisée comme sonde de correspondance. */
@@ -65,4 +72,79 @@ export function findQuotedLineIndexes(
   });
 
   return matched;
+}
+
+/**
+ * Highlight evidence excerpts in content via substring matching.
+ * Returns segments with match flags for rendering.
+ */
+export function highlightSegments(
+  content: string,
+  evidence: readonly EvidenceRef[],
+): HighlightSegment[] {
+  if (!content || evidence.length === 0) {
+    return [{ text: content, isMatch: false }];
+  }
+
+  const excerptMap = new Map<string, EvidenceRef>();
+  evidence.forEach((ref) => {
+    if (ref.excerpt?.trim()) {
+      excerptMap.set(ref.excerpt.trim().toLowerCase(), ref);
+    }
+  });
+
+  if (excerptMap.size === 0) {
+    return [{ text: content, isMatch: false }];
+  }
+
+  const segments: HighlightSegment[] = [];
+  let lastIndex = 0;
+
+  const sortedExcerpts = Array.from(excerptMap.keys()).sort(
+    (a, b) => b.length - a.length,
+  );
+
+  const contentLower = content.toLowerCase();
+  const replacements: Array<{ start: number; end: number }> = [];
+
+  sortedExcerpts.forEach((excerpt) => {
+    let index = 0;
+    while ((index = contentLower.indexOf(excerpt, index)) !== -1) {
+      const overlaps = replacements.some(
+        (r) => index < r.end && index + excerpt.length > r.start,
+      );
+      if (!overlaps) {
+        replacements.push({
+          start: index,
+          end: index + excerpt.length,
+        });
+      }
+      index += 1;
+    }
+  });
+
+  replacements.sort((a, b) => a.start - b.start);
+
+  replacements.forEach((replacement) => {
+    if (lastIndex < replacement.start) {
+      segments.push({
+        text: content.substring(lastIndex, replacement.start),
+        isMatch: false,
+      });
+    }
+    segments.push({
+      text: content.substring(replacement.start, replacement.end),
+      isMatch: true,
+    });
+    lastIndex = replacement.end;
+  });
+
+  if (lastIndex < content.length) {
+    segments.push({
+      text: content.substring(lastIndex),
+      isMatch: false,
+    });
+  }
+
+  return segments.length > 0 ? segments : [{ text: content, isMatch: false }];
 }

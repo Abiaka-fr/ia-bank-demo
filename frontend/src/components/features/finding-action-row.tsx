@@ -1,15 +1,12 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
 import { ArrowUpCircle, Check, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 
 import { AssessmentBadge } from "@/components/features/assessment-badge";
 import { AssigneeSelect } from "@/components/features/assignee-select";
-import { FindingDetailDialog } from "@/components/features/finding-detail-dialog";
 import { HumanStatusBadge } from "@/components/features/human-status-badge";
 import { PriorityBadge } from "@/components/features/priority-badge";
 import { useSession } from "@/components/providers/session-provider";
@@ -18,10 +15,10 @@ import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { accessProfileForUser, canValidateFindings } from "@/lib/access-profile";
-import { validateFinding } from "@/lib/api/findings";
-import { queryKeys } from "@/lib/api/query-keys";
 import { pickLocalizedText } from "@/lib/localized-text";
-import type { Finding, HumanStatus, Requirement } from "@/types/api";
+import { useValidateFinding } from "@/lib/api/use-validate-finding";
+import { openInNewTabWithSession } from "@/lib/open-in-new-tab";
+import type { Finding, Requirement } from "@/types/api";
 
 /**
  * Une ligne = un couple (exigence × procédure) — contrat v1.1.
@@ -48,13 +45,10 @@ export function FindingActionRow({
   isFirstFocused?: boolean;
 }) {
   const t = useTranslations("actions");
-  const statusLabels = useTranslations("humanStatus");
-  const queryClient = useQueryClient();
   const { user } = useSession();
   const locale = useLocale();
   const canValidate = canValidateFindings(accessProfileForUser(user));
 
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const rowRef = useRef<HTMLTableRowElement | null>(null);
 
   useEffect(() => {
@@ -62,48 +56,31 @@ export function FindingActionRow({
       rowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
     }
   }, [isFirstFocused]);
+
   const [customAction, setCustomAction] = useState(finding.custom_action ?? "");
   const [assigneeId, setAssigneeId] = useState(finding.assignee_id);
 
-  const mutation = useMutation({
-    mutationFn: (humanStatus: HumanStatus) =>
-      validateFinding(finding.finding_id, {
-        human_status: humanStatus,
-        custom_action: customAction.trim() || undefined,
-        assignee_id: humanStatus === "ESCALATED" ? assigneeId : undefined,
-        // Toujours renseigné : la garde de session interdit d'atteindre cet écran
-        // sans utilisateur connecté.
-        actor_id: user?.user_id ?? "",
-      }),
-    onSuccess: async (updated) => {
-      toast.success(t("saved"), {
-        description: statusLabels(updated.human_status),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.findings(regulationId),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.dashboardSummary(regulationId),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.portfolioSummary(),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.regulationHistory(regulationId),
-      });
-    },
-    onError: () => toast.error(t("saveFailed")),
-  });
+  const { decide, isPending } = useValidateFinding(regulationId);
 
-  function decide(humanStatus: HumanStatus) {
-    if (humanStatus === "ESCALATED" && !assigneeId) {
-      toast.error(t("escalateNeedsAssignee"));
-      return;
+  // Build the new-tab href for this finding — can only open if procedure exists
+  const canOpenFinding = finding.procedure_id !== null && finding.procedure_id !== undefined;
+  const newTabHref = canOpenFinding
+    ? `/${locale}/findings/${finding.finding_id}?regulationId=${regulationId}&requirementId=${finding.requirement_id}`
+    : undefined;
+
+  function handleOpenFinding() {
+    if (newTabHref) {
+      openInNewTabWithSession(newTabHref);
     }
-    mutation.mutate(humanStatus);
   }
 
-  const isPending = mutation.isPending;
+  function handleDecide(humanStatus: "ACCEPTED" | "REJECTED" | "ESCALATED") {
+    decide(finding.finding_id, humanStatus, {
+      custom_action: customAction.trim() || undefined,
+      assignee_id: humanStatus === "ESCALATED" ? assigneeId : undefined,
+      actor_id: user?.user_id ?? "",
+    });
+  }
   const recommendedAction = pickLocalizedText(
     locale,
     finding.recommended_action,
@@ -121,20 +98,22 @@ export function FindingActionRow({
         )}
       >
         <TableCell
-          className="cursor-pointer whitespace-normal py-3"
-          onClick={() => setIsDetailOpen(true)}
+          className={cn("whitespace-normal py-3", canOpenFinding && "cursor-pointer")}
+          onClick={handleOpenFinding}
         >
           <div className="flex flex-wrap items-center gap-1.5">
             <button
               type="button"
-              // Empêche le second déclenchement par le `onClick` de la cellule :
-              // sans lui, cliquer précisément sur le bouton ouvrirait deux fois la
-              // fenêtre (sans effet visible, mais deux appels pour rien).
               onClick={(event) => {
                 event.stopPropagation();
-                setIsDetailOpen(true);
+                handleOpenFinding();
               }}
-              className="inline-flex items-center gap-1 rounded font-mono text-xs font-medium hover:underline"
+              disabled={!canOpenFinding}
+              className={cn(
+                "inline-flex items-center gap-1 rounded font-mono text-xs font-medium",
+                canOpenFinding && "hover:underline cursor-pointer",
+                !canOpenFinding && "text-muted-foreground cursor-default",
+              )}
             >
               {finding.requirement_id}
             </button>
@@ -157,8 +136,8 @@ export function FindingActionRow({
         </TableCell>
 
         <TableCell
-          className="cursor-pointer whitespace-normal"
-          onClick={() => setIsDetailOpen(true)}
+          className={cn("whitespace-normal", canOpenFinding && "cursor-pointer")}
+          onClick={handleOpenFinding}
         >
           {finding.procedure_id ? (
             <Badge variant="outline" className="font-mono text-[11px]">
@@ -172,10 +151,7 @@ export function FindingActionRow({
           </div>
         </TableCell>
 
-        <TableCell
-          className="cursor-pointer whitespace-normal"
-          onClick={() => setIsDetailOpen(true)}
-        >
+        <TableCell className="whitespace-normal">
           <p className="max-w-xs text-sm">{recommendedAction}</p>
         </TableCell>
 
@@ -201,7 +177,7 @@ export function FindingActionRow({
                     size="sm"
                     variant={finding.human_status === "ACCEPTED" ? "default" : "outline"}
                     disabled={isPending}
-                    onClick={() => decide("ACCEPTED")}
+                    onClick={() => handleDecide("ACCEPTED")}
                   >
                     <Check aria-hidden />
                     {t("accept")}
@@ -210,7 +186,7 @@ export function FindingActionRow({
                     size="sm"
                     variant={finding.human_status === "REJECTED" ? "default" : "outline"}
                     disabled={isPending}
-                    onClick={() => decide("REJECTED")}
+                    onClick={() => handleDecide("REJECTED")}
                   >
                     <X aria-hidden />
                     {t("reject")}
@@ -219,7 +195,7 @@ export function FindingActionRow({
                     size="sm"
                     variant={finding.human_status === "ESCALATED" ? "default" : "outline"}
                     disabled={isPending}
-                    onClick={() => decide("ESCALATED")}
+                    onClick={() => handleDecide("ESCALATED")}
                   >
                     <ArrowUpCircle aria-hidden />
                     {t("escalate")}
@@ -240,14 +216,6 @@ export function FindingActionRow({
           </div>
         </TableCell>
       </TableRow>
-
-      <FindingDetailDialog
-        finding={finding}
-        requirement={requirement}
-        isOpen={isDetailOpen}
-        onOpenChange={setIsDetailOpen}
-        regulationId={regulationId}
-      />
     </>
   );
 }

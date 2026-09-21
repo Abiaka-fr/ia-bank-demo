@@ -10,6 +10,7 @@ export const queryKeys = {
   requirementFindings: (requirementId: string) =>
     ["requirements", requirementId, "findings"] as const,
   findings: (regulationId?: string) => ["findings", regulationId ?? null] as const,
+  findingDetail: (id: string) => ["findings", "detail", id] as const,
   dashboardSummary: (regulationId?: string) =>
     ["dashboard", "summary", regulationId ?? null] as const,
   portfolioSummary: () => ["dashboard", "overview"] as const,
