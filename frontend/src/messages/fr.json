@@ -310,7 +310,13 @@
     "uploading": "Import en cours…",
     "succeeded": "Régulation importée",
     "failed": "L'import a échoué.",
-    "wrongFormat": "Seuls les fichiers Word (.docx) ou Excel (.xlsx) sont acceptés."
+    "wrongFormat": "Seuls les fichiers Word (.docx) ou Excel (.xlsx) sont acceptés.",
+    "titleLabel": "Titre",
+    "domainPlaceholder": "Choisir un domaine",
+    "languageFR": "Français",
+    "languageEN": "Anglais",
+    "summaryLabel": "Résumé (facultatif)",
+    "publishedAtLabel": "Date de publication (facultatif)"
   },
   "procedures": {
     "title": "Procédures",

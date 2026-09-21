@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import type { ExtractedChunk } from "@/lib/file-extract";
 import {
   analyzeProcedureResponseSchema,
   documentDetailSchema,
@@ -34,33 +33,6 @@ export function fetchProcedure(id: string) {
     return backend.fetchDocumentDetail(id);
   }
   return apiFetch(`/api/procedures/${id}`, documentDetailSchema);
-}
-
-/**
- * Upload — v1.8, non couvert par le backend (aucune route `POST /api/procedures`,
- * `docs/api-requests.md` #2/#8), toujours servi par MSW. Même règle que
- * `uploadRegulation` : `.docx`/`.xlsx` uniquement.
- */
-export function uploadProcedure(input: {
-  file: File;
-  assigneeId?: string;
-  uploadedById?: string;
-  /** Contenu extrait côté client (demande de Thư, 2026-09-14) — voir `lib/file-extract.ts`. */
-  chunks?: readonly ExtractedChunk[];
-}) {
-  const formData = new FormData();
-  formData.append("file", input.file);
-  formData.append("file_name", input.file.name);
-  if (input.assigneeId) formData.append("assignee_id", input.assigneeId);
-  if (input.uploadedById) formData.append("uploaded_by_id", input.uploadedById);
-  if (input.chunks?.length) {
-    formData.append("extracted_chunks", JSON.stringify(input.chunks));
-  }
-
-  return apiFetch("/api/procedures", documentMetaSchema, {
-    method: "POST",
-    formData,
-  });
 }
 
 /**

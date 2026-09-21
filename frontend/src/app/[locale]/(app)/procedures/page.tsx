@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { ProceduresView } from "@/components/features/procedures-view";
-import { UploadProcedureDialog } from "@/components/features/upload-procedure-dialog";
+import { UploadDocumentDialog } from "@/components/features/upload-document-dialog";
 import { PageHeader } from "@/components/layout/page-header";
 
 /** Liste + upload des procédures internes — Phase 6 § 2.2 / Phase 7 Jour 0. */
@@ -19,7 +19,7 @@ export default async function ProceduresPage({
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}
-        actions={<UploadProcedureDialog />}
+        actions={<UploadDocumentDialog kind="procedure" />}
       />
       <ProceduresView />
     </div>

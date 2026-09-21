@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { RegulationsView } from "@/components/features/regulations-view";
-import { UploadRegulationDialog } from "@/components/features/upload-regulation-dialog";
+import { UploadDocumentDialog } from "@/components/features/upload-document-dialog";
 import { PageHeader } from "@/components/layout/page-header";
 
 export default async function RegulationsPage({
@@ -18,7 +18,7 @@ export default async function RegulationsPage({
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}
-        actions={<UploadRegulationDialog />}
+        actions={<UploadDocumentDialog kind="regulation" />}
       />
       <RegulationsView />
     </div>

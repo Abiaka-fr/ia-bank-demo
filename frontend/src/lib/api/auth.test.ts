@@ -5,13 +5,27 @@ import { DEMO_PASSWORD } from "@/lib/mocks/data/users";
 import { login, signUp } from "./auth";
 import { fetchUsers } from "./users";
 import { ApiError } from "./client";
-import {
-  fetchRegulations,
-  updateRegulationAssignee,
-  uploadRegulation,
-} from "./regulations";
+import { fetchRegulations, updateRegulationAssignee } from "./regulations";
+import { uploadDocument, type DocumentMetadata } from "./upload";
 
 const KNOWN_EMAIL = "marie.lefevre@iabank.fr";
+
+const METADATA: DocumentMetadata = {
+  title: "Instruction test",
+  domain: "KYC",
+  language: "EN",
+  summary: "",
+  publishedDate: "2026-09-16",
+};
+
+function uploadRegulation(input: { file: File; assigneeId?: string; uploadedById?: string }) {
+  return uploadDocument("regulation", {
+    chunks: [{ chunk_no: 1, section_title: "Article 1", content: "Texte" }],
+    metadata: METADATA,
+    uploadedById: "USR-001",
+    ...input,
+  });
+}
 
 function docx(name = "Instruction_test.docx") {
   return new File(["contenu factice"], name, {
@@ -109,6 +123,11 @@ describe("upload d'une régulation (v1.1)", () => {
     expect(created.status).toBe("NOT_ANALYZED");
     expect(created.assignee_id).toBe("USR-003");
     expect(created.uploaded_by_id).toBe("USR-001");
+    // Métadonnées saisies dans la modale, pas dérivées du nom de fichier.
+    expect(created.title).toBe("Instruction test");
+    expect(created.domain).toEqual(["KYC"]);
+    expect(created.language).toBe("EN");
+    expect(created.published_at).toBe("2026-09-16T00:00:00");
 
     const all = await fetchRegulations();
     expect(all.some((r) => r.document_id === created.document_id)).toBe(true);

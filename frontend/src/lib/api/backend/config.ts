@@ -16,7 +16,7 @@
  *
  * Ce que le backend couvre aujourd'hui (voir `docs/backend-integration.md`) :
  * authentification, documents, exigences. Ce qu'il ne couvre pas et qui reste sur MSW :
- * constats, tableau de bord, upload, validation humaine, liste des utilisateurs.
+ * constats, tableau de bord, validation humaine, liste des utilisateurs.
  */
 const RAW_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
 

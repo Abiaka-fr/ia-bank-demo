@@ -7,7 +7,7 @@ import { extractFileChunks, type ExtractedChunk } from "@/lib/file-extract";
 export type FileExtractionStatus = "idle" | "extracting" | "done" | "error";
 
 /**
- * État partagé par `UploadRegulationDialog`/`UploadProcedureDialog` : un fichier déjà
+ * État partagé par `UploadDocumentDialog` : un fichier déjà
  * validé (extension acceptée, vérifiée par l'appelant) est extrait côté client
  * (demande de Thư, 2026-09-14 — voir `lib/file-extract.ts`) avant tout appel réseau.
  * Un seul hook plutôt qu'une logique dupliquée dans les deux dialogues (règle

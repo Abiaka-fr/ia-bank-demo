@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import type { ExtractedChunk } from "@/lib/file-extract";
 import {
   documentDetailSchema,
   documentMetaSchema,
@@ -55,41 +54,6 @@ export function fetchRegulationRequirements(
         )
       : requirements,
   );
-}
-
-/**
- * Upload — non couvert par le backend (aucune route `POST /api/regulations`,
- * `docs/api-requests.md` #2/#8), donc toujours servi par MSW. `.docx`/`.xlsx`
- * uniquement, validé aussi côté serveur.
- */
-export function uploadRegulation(input: {
-  file: File;
-  assigneeId?: string;
-  uploadedById?: string;
-  /**
-   * Contenu extrait côté client avant l'appel (demande de Thư, 2026-09-14 — voir
-   * `lib/file-extract.ts`). Envoyé en JSON dans le multipart : pas de route réelle
-   * pour valider la forme exacte qu'elle attendra, donc pas de nouveau schéma Zod
-   * inventé ici — seul le mock MSW le lit pour l'instant.
-   */
-  chunks?: readonly ExtractedChunk[];
-}) {
-  const formData = new FormData();
-  formData.append("file", input.file);
-  // Nom envoyé explicitement : certains runtimes ne conservent pas le nom du
-  // fichier dans la partie multipart, ce qui rendrait le contrôle d'extension
-  // silencieusement faux.
-  formData.append("file_name", input.file.name);
-  if (input.assigneeId) formData.append("assignee_id", input.assigneeId);
-  if (input.uploadedById) formData.append("uploaded_by_id", input.uploadedById);
-  if (input.chunks?.length) {
-    formData.append("extracted_chunks", JSON.stringify(input.chunks));
-  }
-
-  return apiFetch("/api/regulations", documentMetaSchema, {
-    method: "POST",
-    formData,
-  });
 }
 
 /**

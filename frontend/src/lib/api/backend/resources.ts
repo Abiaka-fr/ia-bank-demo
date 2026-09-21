@@ -11,8 +11,9 @@
  * utilisateurs (`GET /api/users`, 2026-09-07 ; `PUT /api/users/:id/role`, 2026-09-09 soir)
  * et validation humaine (`PUT /api/mappings/:id/human-status`+`/assignee`,
  * 2026-09-07 après-midi).
+ * Import de documents (`POST /api/documents/regulation-ingest`, `/api/procedures/ingest`).
  * Non couvert par le backend et donc absent de ce fichier — cela reste sur MSW :
- * tableau de bord global, upload. L'onglet Historique reste sur MSW lui aussi même en
+ * tableau de bord global. L'onglet Historique reste sur MSW lui aussi même en
  * mode backend réel : le backend persiste une décision mais ne dit toujours pas qui
  * l'a prise (pas d'`actor_id`) — voir `docs/known-limitations.md` point 2.
  */
@@ -20,6 +21,7 @@ import type {
   DocumentDetail,
   DocumentMeta,
   Finding,
+  Language,
   LoginBody,
   LoginResponse,
   Requirement,
@@ -143,6 +145,39 @@ export async function updateDocumentAssignee(
     { method: "PUT", body: { assignee } },
   );
   return adaptDocument(response);
+}
+
+/** Corps commun aux deux routes d'ingestion (`backend/API.md` § 3). */
+export type IngestDocumentBody = {
+  text: string;
+  title: string;
+  domain: string;
+  language: Language;
+  summary?: string;
+  created_by: string;
+  published_at?: string;
+};
+
+/**
+ * `POST /api/documents/regulation-ingest` ou `POST /api/procedures/ingest`. Le backend
+ * pose `assignee = created_by` : une autre personne en charge demande un second appel.
+ * Si celui-ci échoue, le document est déjà créé — on ne le fait pas passer pour un
+ * import raté (l'assignation reste modifiable sur la carte).
+ */
+export async function ingestDocument(
+  path: "/api/documents/regulation-ingest" | "/api/procedures/ingest",
+  body: IngestDocumentBody,
+  assigneeId?: string,
+): Promise<DocumentMeta> {
+  const created = adaptDocument(
+    await backendFetch(path, backendDocumentSchema, { method: "POST", body }),
+  );
+  if (!assigneeId || assigneeId === body.created_by) return created;
+
+  return updateDocumentAssignee(created.document_id, assigneeId).catch((error) => {
+    console.error(`Assignation de ${created.document_id} non enregistrée`, error);
+    return created;
+  });
 }
 
 export async function fetchDocumentDetail(id: string): Promise<DocumentDetail> {

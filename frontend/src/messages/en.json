@@ -310,7 +310,13 @@
     "uploading": "Uploading…",
     "succeeded": "Regulation uploaded",
     "failed": "The upload failed.",
-    "wrongFormat": "Only Word (.docx) or Excel (.xlsx) files are accepted."
+    "wrongFormat": "Only Word (.docx) or Excel (.xlsx) files are accepted.",
+    "titleLabel": "Title",
+    "domainPlaceholder": "Choose a domain",
+    "languageFR": "French",
+    "languageEN": "English",
+    "summaryLabel": "Summary (optional)",
+    "publishedAtLabel": "Publication date (optional)"
   },
   "procedures": {
     "title": "Procedures",

@@ -1767,3 +1767,37 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   fichier réel donne 4 sections / 5 142 caractères, accents corrects, « Article premier »/« Article 2 »
   en titres dans le texte source ; docx ordinaire inchangé ; 165 tests, typecheck, lint verts.
   Limite : dans les listes EUR-Lex en tableau, le numéro « (4) »/« a) » reste sur sa propre ligne.
+
+- **2026-09-21 (Claude Code — upload branché sur les routes d'ingestion réelles de Thư)** : demande
+  de Thư (Slack) : brancher l'upload sur `POST /api/documents/regulation-ingest` et
+  `POST /api/procedures/ingest` (`backend/API.md` § 3) et ajouter à la modale les métadonnées que
+  ces routes exigent.
+  **Fait :** les deux modales quasi identiques (`upload-regulation-dialog.tsx`,
+  `upload-procedure-dialog.tsx`) remplacées par une seule, `upload-document-dialog.tsx`
+  (`kind="regulation" | "procedure"`). Nouveaux champs : Titre (pré-rempli depuis le nom du
+  fichier), Domaine (liste des 9 valeurs de `API.md`), Langue (FR/EN), Résumé et Date de
+  publication (facultatifs). `lib/api/upload.ts::uploadDocument` remplace
+  `uploadRegulation`/`uploadProcedure` : en mode backend, `text` = chunks extraits aplatis
+  (`chunksToText`), `created_by` = `user_id` connecté ; si une autre personne en charge est choisie,
+  `PUT /api/documents/{id}/assignee` juste après (le backend pose `assignee = created_by`). Mode
+  MSW conservé, les handlers lisent maintenant ces métadonnées. Corrigé au passage : Annuler vide
+  désormais la modale (point « non corrigé » de l'entrée précédente). `docs/api-requests.md` #11.
+  **Vérifié :** typecheck, lint (0 erreur ; 17 avertissements préexistants dans d'autres fichiers),
+  165 tests (test d'upload mis à jour : titre/domaine/langue/date issus du formulaire). En mode mock
+  dans le navigateur : les deux modales, extraction, bouton bloqué tant que le domaine manque, import
+  puis redirection vers le détail avec domaine et date de publication affichés.
+  **Testé contre le vrai backend (même jour, base Neon de Thư) :** backend lancé depuis
+  `.venv-backend/` avec `uvicorn --env-file backend/.env` (config `backend` de
+  `.claude/launch.json`, local, non committé) ; `psycopg2-binary` ajouté à ce venv local car le
+  `DATABASE_URL` reste en `postgresql://` (driver par défaut de SQLAlchemy = psycopg2 ; le backend ne
+  déclare que psycopg v3). Régulation `EXT-EU-002` et procédure `INT-EU-002` créées par la modale :
+  201 sur les deux routes d'ingestion, domaine/langue/résumé/date de publication bien en base, texte
+  source relu via `VER-{id}-01`, `PUT /api/documents/INT-EU-002/assignee` enchaîné quand une autre
+  personne en charge est choisie. **Ces deux documents `[TEST FE]` sont à supprimer par Thư** (aucune
+  route de suppression). Corrigé après ce test : la modale restait 5 à 9 s sur « Import en cours… »
+  après le succès (attente du rechargement du portefeuille) — invalidation désormais non attendue.
+  **Reste :** trois questions non bloquantes pour Thư dans `docs/api-requests.md` #11 (assignee dans
+  le corps d'ingestion ?, extraction des exigences automatique après upload ?, contradiction
+  « heuristique » / « fourni par le client » dans `API.md`). Limite préexistante vue en test, hors
+  périmètre : sur un document du backend, « Importé par » affiche « Non assigné » (le backend
+  n'expose pas `created_by` sur `DocumentRead`). Pas de commit.

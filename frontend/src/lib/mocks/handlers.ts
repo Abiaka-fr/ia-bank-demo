@@ -38,6 +38,7 @@ import {
 import { chunksToText, isAcceptedUploadFile, stripAcceptedExtension } from "@/lib/file-extract";
 import {
   analyzeProcedureBodySchema,
+  languageSchema,
   signupBodySchema,
   updateUserRoleBodySchema,
   validateFindingBodySchema,
@@ -77,6 +78,23 @@ function extractedTextFromForm(form: FormData): string {
   } catch {
     return "";
   }
+}
+
+/** Métadonnées saisies dans la modale d'import ; le titre retombe sur le nom du fichier. */
+function metadataFromForm(form: FormData, fileName: string) {
+  const field = (key: string) => {
+    const value = form.get(key);
+    return typeof value === "string" && value ? value : undefined;
+  };
+  const domain = field("domain");
+  const language = languageSchema.safeParse(field("language"));
+  return {
+    title: field("title") ?? stripAcceptedExtension(fileName),
+    domain: domain ? [domain] : [],
+    language: language.success ? language.data : "FR",
+    summary: field("summary"),
+    published_at: field("published_at"),
+  };
 }
 
 /** Seule la régulation ACPR du corpus de démo dispose de constats. */
@@ -211,11 +229,9 @@ export const handlers = [
     // ses seules métadonnées, en NOT_ANALYZED. Aucune exigence n'est inventée.
     const uploaded: DocumentDetail = {
       document_id: `${REGULATION_UPLOAD_ID_PREFIX}${Date.now()}`,
-      title: stripAcceptedExtension(fileName),
       document_type: "REGULATION",
       authority_or_owner: "—",
-      domain: [],
-      language: "FR",
+      ...metadataFromForm(form, fileName),
       version: "1.0",
       status: "NOT_ANALYZED",
       uploaded_by_id: typeof uploadedById === "string" ? uploadedById : undefined,
@@ -402,11 +418,9 @@ export const handlers = [
     // la procédure démarre en NOT_ANALYZED (v1.8).
     const uploaded: DocumentDetail = {
       document_id: `${PROCEDURE_UPLOAD_ID_PREFIX}${Date.now()}`,
-      title: stripAcceptedExtension(fileName),
       document_type: "INTERNAL_PROCEDURE",
       authority_or_owner: "—",
-      domain: [],
-      language: "FR",
+      ...metadataFromForm(form, fileName),
       version: "1.0",
       status: "NOT_ANALYZED",
       uploaded_by_id: typeof uploadedById === "string" ? uploadedById : undefined,

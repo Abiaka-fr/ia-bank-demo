@@ -111,11 +111,31 @@ banner at its top) and is no longer the thing to check before calling an endpoin
    These replace the frontend-invented `GET /api/procedures`, `GET /api/procedures/:id` in
    `docs/api-contract.md` v1.6/v1.8. **Superseded by item 12 above (2026-09-15)** — a real,
    purpose-built `/api/procedures` now exists; whether to migrate onto it is an open decision, not
-   settled by this item anymore. Note: there is still no real **upload** endpoint for procedures
-   (or regulations) — uploads stay simulated in MSW until Thư builds one (see item 2, which the
-   upload flow is downstream of).
+   settled by this item anymore. Note (2026-09-21): uploads now have real routes — see item 11.
 
-## New — client-side content extraction, ready for whenever the create-document route exists
+## Shipped by Thư (2026-09-21) — upload / ingestion, wired in
+
+11. **Document ingestion — ✅ shipped and wired frontend-side (2026-09-21).**
+    `POST /api/documents/regulation-ingest` and `POST /api/procedures/ingest` (same body/response,
+    `backend/API.md` § 3). One dialog now serves both (`components/features/upload-document-dialog.tsx`,
+    replaces the two near-duplicate dialogs), calling `lib/api/upload.ts::uploadDocument`:
+    `text` = the client-side extracted chunks flattened by `chunksToText` (item 9), user-entered
+    `title` (prefilled from the file name), `domain` (select of the 9 values listed in API.md),
+    `language` (FR/EN), optional `summary` and `published_at` (date input → `YYYY-MM-DDT00:00:00`),
+    `created_by` = the signed-in user's `user_id`. MSW mode keeps the multipart mock, which now
+    reads the same metadata.
+    **Questions for Thư (non-blocking, defaults taken):**
+    - The services set `assignee = created_by`. The dialog still lets the user pick another
+      assignee → the frontend calls `PUT /api/documents/{id}/assignee` right after ingest when it
+      differs. OK, or should `assignee` be an optional field of the ingest body instead?
+    - Ingest does not extract requirements. The frontend does **not** chain
+      `POST /api/requirements/extract` automatically — the existing button on the regulation detail
+      page is used. Should upload trigger it?
+    - `backend/API.md` § 3 says "Extracts metadata heuristically" in the intro but "Metadata must be
+      provided by the client — no automatic extraction" in the notes. The frontend follows the notes
+      (and the Pydantic schema: `title`/`domain`/`language`/`created_by` required).
+
+## Client-side content extraction (now sent to the ingestion routes, see item 11)
 
 9. **Frontend now extracts file content client-side before upload** (Thư's request, 2026-09-14) —
    `frontend/src/lib/file-extract.ts`. On the two upload dialogs (regulation, procedure), selecting
@@ -129,11 +149,8 @@ banner at its top) and is no longer the thing to check before calling an endpoin
    exists, the frontend should be able to send these chunks directly — no format renegotiation
    needed, just wiring the call.
 
-   Currently sent as `extracted_chunks` (JSON string) in the same multipart body as the file, but
-   **only the MSW mock reads it** (`lib/mocks/handlers.ts`, sets the created document's
-   `extracted_text` from it) — no real route exists yet to send it to. This is scaffolding, not a
-   request for Thư to build anything new right now; item 2 (trigger/create endpoint) remains the
-   actual blocker for wiring this end-to-end.
+   **Update 2026-09-21:** in backend mode the chunks are flattened to `text` and sent to the
+   ingestion routes (item 11). The multipart `extracted_chunks` field is now MSW-only.
 
 ---
 *Maintained by the frontend session. Thư: cross off / move to "Resolved" whatever you ship, or
