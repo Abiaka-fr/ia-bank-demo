@@ -294,14 +294,14 @@ export function RequirementsTab({
                 {displayedSourceText}
               </blockquote>
               {related.length > 0 && (
-                <div className="space-y-2 border-t pt-3">
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-3 mt-3">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleExpand();
                     }}
-                    className="flex w-full items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                    className="flex w-full items-center gap-2 text-sm font-bold text-blue-900 dark:text-blue-100 hover:text-blue-700 dark:hover:text-blue-200"
                   >
                     <ChevronDown
                       className={cn("size-4 transition-transform", isExpanded && "rotate-180")}
@@ -310,8 +310,8 @@ export function RequirementsTab({
                     {t("impactedProceduresToggle", { count: related.length })}
                   </button>
                   {isExpanded && (
-                    <div className="space-y-1 pt-2">
-                      <p className="text-xs text-muted-foreground">{t("impactedProceduresHint")}</p>
+                    <div className="space-y-2 pt-2">
+                      <p className="text-xs text-blue-700 dark:text-blue-200">{t("impactedProceduresHint")}</p>
                       {related.map((finding) => {
                         const canOpenRow = finding.procedure_id !== null && finding.procedure_id !== undefined;
                         const rowHref = canOpenRow
@@ -327,9 +327,9 @@ export function RequirementsTab({
                             }}
                             disabled={!canOpenRow}
                             className={cn(
-                              "w-full flex items-start justify-between gap-3 border-l-2 border-muted-foreground/20 py-2 pl-3 pr-2 rounded transition-colors",
-                              canOpenRow && "hover:bg-accent cursor-pointer",
-                              !canOpenRow && "text-muted-foreground cursor-default",
+                              "w-full flex items-start justify-between gap-3 border-l-4 border-blue-400 dark:border-blue-600 bg-white dark:bg-slate-950 py-2 pl-3 pr-2 rounded transition-colors",
+                              canOpenRow && "hover:bg-blue-100/50 dark:hover:bg-blue-900/30 cursor-pointer",
+                              !canOpenRow && "text-muted-foreground cursor-default opacity-60",
                             )}
                           >
                             <ImpactedProcedureSummary finding={finding} className="flex-1" />
