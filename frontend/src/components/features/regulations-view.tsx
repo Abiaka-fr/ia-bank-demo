@@ -218,12 +218,14 @@ export function RegulationsView() {
 
             <CardContent className="flex flex-1 flex-col gap-4">
               {/* Résumé court demandé par Francis (« I don't know what is about this
-                  document ») — aucun champ résumé n'existe dans le corpus, badge
-                  « en attente » plutôt qu'un texte inventé ou un silence total. */}
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span>{t("summaryLabel")} :</span>
-                <dd>{regulation.summary}</dd>
-              </div>
+                  document »). Libellé au-dessus du texte : sur une ligne avec « : », le
+                  résumé se coupait mal. */}
+              {regulation.summary ? (
+                <div className="space-y-0.5 text-xs text-muted-foreground">
+                  <p className="font-medium">{t("summaryLabel")}</p>
+                  <p className="line-clamp-3">{regulation.summary}</p>
+                </div>
+              ) : null}
 
               <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                 <div>
@@ -235,14 +237,6 @@ export function RegulationsView() {
                     {common("effectiveDate")}
                   </dt>
                   <dd>{formatDateDDMMYYYY(regulation.published_at) ?? common("notAvailable")}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">
-                    {t("uploadedBy")}
-                  </dt>
-                  <dd>
-                    <AssigneeName userId={regulation.uploaded_by_id} />
-                  </dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">
@@ -277,26 +271,6 @@ export function RegulationsView() {
                 </div>
               ) : null}
 
-              <div className="relative z-10 space-y-1.5">
-                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <UserRoundCheck className="size-3.5" aria-hidden />
-                  {assigneeT("label")}
-                </p>
-                {/* Modifiable directement sur la carte : l'assignation faite à
-                    l'upload n'est pas définitive. */}
-                <AssigneeSelect
-                  value={regulation.assignee_id}
-                  disabled={assignMutation.isPending}
-                  onChange={(assigneeId) =>
-                    assignMutation.mutate({
-                      regulationId: regulation.document_id,
-                      assigneeId,
-                    })
-                  }
-                  className="w-full"
-                />
-              </div>
-
               {escalatedAssigneeIds.length ? (
                 <div className="space-y-1 rounded-md border border-dashed p-2">
                   <p className="text-xs text-muted-foreground">
@@ -314,9 +288,30 @@ export function RegulationsView() {
                 </div>
               ) : null}
 
-              <p className="mt-auto pt-1 text-xs text-muted-foreground">
-                {t("openCardHint")}
-              </p>
+              {/* `mt-auto` : collé en bas de la carte, donc aligné d'une carte à l'autre
+                  qu'il y ait une barre de progression ou non. */}
+              <div className="mt-auto space-y-3">
+                <div className="relative z-10 space-y-1.5">
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <UserRoundCheck className="size-3.5" aria-hidden />
+                    {assigneeT("label")}
+                  </p>
+                  {/* Modifiable directement sur la carte : l'assignation faite à
+                      l'upload n'est pas définitive. */}
+                  <AssigneeSelect
+                    value={regulation.assignee_id}
+                    disabled={assignMutation.isPending}
+                    onChange={(assigneeId) =>
+                      assignMutation.mutate({
+                        regulationId: regulation.document_id,
+                        assigneeId,
+                      })
+                    }
+                    className="w-full"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">{t("openCardHint")}</p>
+              </div>
             </CardContent>
           </Card>
         );

@@ -88,6 +88,20 @@ export const backendDocumentVersionSchema = z.object({
   change_reason: z.string().nullable().optional(),
 });
 
+export const backendMappingHistorySchema = z.object({
+  history_id: z.string(),
+  mapping_id: z.string(),
+  requirement_id: z.string(),
+  procedure_id: z.string().nullable().optional(),
+  from_status: z.string().nullable().optional(),
+  to_status: z.string(),
+  assignee: z.string().nullable().optional(),
+  new_version_id: z.string().nullable().optional(),
+  comment: z.string().nullable().optional(),
+  actor: z.string().nullable().optional(),
+  created_at: z.string().nullable().optional(),
+});
+
 export const backendDocumentChunkSchema = z.object({
   chunk_id: z.string(),
   document_id: z.string(),
@@ -233,6 +247,7 @@ export const backendErrorSchema = z.object({
 export type BackendUser = z.infer<typeof backendUserSchema>;
 export type BackendDocument = z.infer<typeof backendDocumentSchema>;
 export type BackendDocumentContent = z.infer<typeof backendDocumentContentSchema>;
+export type BackendDocumentVersion = z.infer<typeof backendDocumentVersionSchema>;
 export type BackendRequirement = z.infer<typeof backendRequirementSchema>;
 export type BackendMapping = z.infer<typeof backendMappingSchema>;
 export type BackendProcedureMinimal = z.infer<typeof backendProcedureMinimalSchema>;

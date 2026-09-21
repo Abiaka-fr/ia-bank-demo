@@ -36,6 +36,8 @@ type SortOrder = "newest" | "oldest" | "title";
 export function ProceduresView() {
   const t = useTranslations("procedures");
   const common = useTranslations("common");
+  // Mêmes libellés de dates que les cartes de régulation.
+  const regulationsT = useTranslations("regulations");
 
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortOrder>("newest");
@@ -55,8 +57,8 @@ export function ProceduresView() {
     );
     return [...filtered].sort((a, b) => {
       if (sort === "title") return a.title.localeCompare(b.title);
-      const dateA = a.uploaded_at ?? "";
-      const dateB = b.uploaded_at ?? "";
+      const dateA = a.created_at ?? a.uploaded_at ?? "";
+      const dateB = b.created_at ?? b.uploaded_at ?? "";
       return sort === "newest" ? dateB.localeCompare(dateA) : dateA.localeCompare(dateB);
     });
   }, [proceduresQuery.data, search, sort]);
@@ -139,9 +141,9 @@ export function ProceduresView() {
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">
-                    {common("effectiveDate")}
+                    {common("publicationDate")}
                   </dt>
-                  <dd>{formatDateDDMMYYYY(procedure.effective_date) ?? common("notAvailable")}</dd>
+                  <dd>{formatDateDDMMYYYY(procedure.published_at) ?? common("notAvailable")}</dd>
                 </div>
                 {procedure.uploaded_by_id ? (
                   <div>
@@ -155,9 +157,15 @@ export function ProceduresView() {
                 ) : null}
                 <div>
                   <dt className="text-xs text-muted-foreground">
-                    {t("uploadedAtLabel")}
+                    {regulationsT("createdDateLabel")}
                   </dt>
-                  <dd>{formatDateDDMMYYYY(procedure.uploaded_at) ?? common("notAvailable")}</dd>
+                  <dd>{formatDateDDMMYYYY(procedure.created_at) ?? common("notAvailable")}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">
+                    {regulationsT("lastUpdatedLabel")}
+                  </dt>
+                  <dd>{formatDateDDMMYYYY(procedure.updated_at) ?? common("notAvailable")}</dd>
                 </div>
               </dl>
 

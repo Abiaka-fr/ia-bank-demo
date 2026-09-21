@@ -19,6 +19,9 @@ export const queryKeys = {
   users: () => ["users"] as const,
   procedures: () => ["procedures"] as const,
   procedure: (id: string) => ["procedures", id] as const,
+  // Sous `procedure(id)` : invalidé avec elle quand une acceptation crée une version.
+  procedureVersions: (id: string) => ["procedures", id, "versions"] as const,
+  documentVersionText: (versionId: string) => ["document-versions", versionId] as const,
   euSearch: (params: EuSearchParams) => ["eu-search", params] as const,
   euDocument: (celex: string, lang: string) => ["eu-document", celex, lang] as const,
 } as const;

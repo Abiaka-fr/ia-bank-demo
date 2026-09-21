@@ -389,6 +389,12 @@ export const auditHistoryEntrySchema = z.object({
   custom_action: z.string().optional(),
   reviewer_comment: z.string().optional(),
   created_at: z.string(),
+  /** Backend réel (`mapping_history`, 2026-09-21) — statut avant la décision. */
+  previous_status: humanStatusSchema.optional(),
+  /** Escalade : à qui le constat a été confié. */
+  assignee_id: z.string().optional(),
+  /** Acceptation : version de la procédure créée par les modifications appliquées. */
+  new_version_id: z.string().optional(),
 });
 
 export type AuditHistoryEntry = z.infer<typeof auditHistoryEntrySchema>;

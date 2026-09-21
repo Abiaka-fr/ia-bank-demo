@@ -35,6 +35,10 @@ export function fetchProcedure(id: string) {
   return apiFetch(`/api/procedures/${id}`, documentDetailSchema);
 }
 
+/** Versions d'une procédure et texte d'une version (backend réel uniquement). */
+export const fetchProcedureVersions = backend.fetchDocumentVersions;
+export const fetchProcedureVersionText = backend.fetchDocumentVersionText;
+
 /**
  * v1.7/v1.8 — analyse Bank-first, Europe additive. Non couvert par le backend, servi
  * par MSW : un échec du service européen ne doit jamais faire échouer l'analyse Bank

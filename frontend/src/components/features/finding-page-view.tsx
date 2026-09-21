@@ -13,6 +13,7 @@ import { HighlightedText } from "@/components/features/document-viewer-with-high
 import { PriorityBadge } from "@/components/features/priority-badge";
 import { HumanStatusBadge } from "@/components/features/human-status-badge";
 import { RegulationDocumentDialog } from "@/components/features/regulation-document-dialog";
+import { RegulationHistoryTab } from "@/components/features/regulation-history-tab";
 import { ErrorState, EmptyState, LoadingState } from "@/components/features/query-state";
 import { BreadcrumbTrail } from "@/components/layout/breadcrumb-trail";
 import { useSession } from "@/components/providers/session-provider";
@@ -38,6 +39,7 @@ export function FindingPageView({ findingId }: { findingId: string }) {
   const common = useTranslations("common");
   const actionsT = useTranslations("actions");
   const dialogT = useTranslations("procedureDialog");
+  const historyT = useTranslations("history");
   const searchParams = useSearchParams();
   const { user } = useSession();
 
@@ -385,6 +387,18 @@ export function FindingPageView({ findingId }: { findingId: string }) {
           </CardContent>
         </Card>
       )}
+
+      {/* Historique de tous les couples rattachés à cette exigence (`mapping_history`). */}
+      {regulationId && requirementId ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">{historyT("requirementTitle")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RegulationHistoryTab regulationId={regulationId} requirementId={requirementId} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Regulation document modal */}
       {regulationDocument && (

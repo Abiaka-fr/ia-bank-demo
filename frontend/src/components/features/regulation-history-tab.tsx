@@ -24,8 +24,15 @@ import { queryKeys } from "@/lib/api/query-keys";
 /**
  * Onglet « Historique » : qui a pris quelle décision, sur quelle exigence, quand.
  * `PENDING` n'y apparaît jamais — ce n'est pas une décision (voir `lib/mocks/store.ts`).
+ * `requirementId` restreint aux couples d'une exigence (page d'un constat).
  */
-export function RegulationHistoryTab({ regulationId }: { regulationId: string }) {
+export function RegulationHistoryTab({
+  regulationId,
+  requirementId,
+}: {
+  regulationId: string;
+  requirementId?: string;
+}) {
   const t = useTranslations("history");
 
   const { data, isPending, isError, error, refetch } = useQuery({
@@ -35,7 +42,10 @@ export function RegulationHistoryTab({ regulationId }: { regulationId: string })
 
   if (isPending) return <LoadingState rows={4} />;
   if (isError) return <ErrorState error={error} onRetry={() => void refetch()} />;
-  if (data.length === 0) return <EmptyState message={t("empty")} />;
+  const entries = requirementId
+    ? data.filter((entry) => entry.requirement_id === requirementId)
+    : data;
+  if (entries.length === 0) return <EmptyState message={t("empty")} />;
 
   return (
     <div className="rounded-lg border bg-card shadow-sm shadow-foreground/10">
@@ -51,7 +61,7 @@ export function RegulationHistoryTab({ regulationId }: { regulationId: string })
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((entry) => (
+          {entries.map((entry) => (
             <TableRow key={entry.entry_id}>
               <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground">
                 {entry.created_at.slice(0, 16).replace("T", " ")}
@@ -60,16 +70,35 @@ export function RegulationHistoryTab({ regulationId }: { regulationId: string })
                 <AssigneeName userId={entry.actor_id} />
               </TableCell>
               <TableCell>
-                <HumanStatusBadge status={entry.action} />
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {entry.previous_status && entry.previous_status !== entry.action ? (
+                    <>
+                      <HumanStatusBadge status={entry.previous_status} />
+                      <span aria-hidden>→</span>
+                    </>
+                  ) : null}
+                  <HumanStatusBadge status={entry.action} />
+                </div>
+                {entry.assignee_id ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t("assignedTo")} <AssigneeName userId={entry.assignee_id} />
+                  </p>
+                ) : null}
               </TableCell>
               <TableCell className="font-mono text-xs">
                 {entry.requirement_id}
               </TableCell>
               <TableCell className="font-mono text-xs text-muted-foreground">
                 {entry.procedure_id ?? "—"}
+                <span className="block text-[11px]">{entry.finding_id}</span>
               </TableCell>
               <TableCell className="whitespace-normal text-sm text-muted-foreground">
                 {entry.custom_action || entry.reviewer_comment || t("noComment")}
+                {entry.new_version_id ? (
+                  <span className="mt-1 block font-mono text-xs">
+                    {t("newVersion", { version: entry.new_version_id })}
+                  </span>
+                ) : null}
               </TableCell>
             </TableRow>
           ))}

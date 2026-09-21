@@ -17,9 +17,23 @@ import { useSession } from "@/components/providers/session-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { accessProfileForUser, canAnalyzeProcedures, canPrint } from "@/lib/access-profile";
-import { analyzeProcedure, fetchProcedure } from "@/lib/api/procedures";
+import { isBackendLive } from "@/lib/api/backend/config";
+import {
+  analyzeProcedure,
+  fetchProcedure,
+  fetchProcedureVersions,
+  fetchProcedureVersionText,
+} from "@/lib/api/procedures";
 import { queryKeys } from "@/lib/api/query-keys";
+import { formatDateDDMMYYYY } from "@/lib/format-date";
 import type { AnalyzeProcedureResponse, RegulatoryScope } from "@/types/api";
 
 /**
@@ -50,6 +64,23 @@ export function ProcedurePageView({ procedureId }: { procedureId: string }) {
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.procedure(procedureId),
     queryFn: () => fetchProcedure(procedureId),
+  });
+
+  // Versions : backend réel uniquement (le corpus MSW n'a qu'une version par document).
+  const [selectedVersionId, setSelectedVersionId] = useState<string>();
+  const versionsQuery = useQuery({
+    queryKey: queryKeys.procedureVersions(procedureId),
+    queryFn: () => fetchProcedureVersions(procedureId),
+    enabled: isBackendLive,
+  });
+  const versions = versionsQuery.data ?? [];
+  const activeVersion = versions.find((v) => v.status === "ACTIVE") ?? versions.at(-1);
+  const shownVersion = versions.find((v) => v.version_id === selectedVersionId) ?? activeVersion;
+  const isOldVersion = shownVersion !== undefined && shownVersion !== activeVersion;
+  const oldVersionText = useQuery({
+    queryKey: queryKeys.documentVersionText(shownVersion?.version_id ?? ""),
+    queryFn: () => fetchProcedureVersionText(shownVersion?.version_id ?? ""),
+    enabled: isOldVersion,
   });
 
   const analyzeMutation = useMutation({
@@ -99,6 +130,9 @@ export function ProcedurePageView({ procedureId }: { procedureId: string }) {
               {procedureId}
             </Badge>
             {data.title}
+            <Badge variant="outline" className="text-xs">
+              {t("currentVersion", { version: data.version })}
+            </Badge>
           </h1>
           {section ? (
             <p className="mt-1 text-sm text-muted-foreground">
@@ -192,7 +226,44 @@ export function ProcedurePageView({ procedureId }: { procedureId: string }) {
         </Card>
       ) : null} */}
 
-      <ProcedureBody text={data.extracted_text} excerpt={excerpt} language={data.language} />
+      {shownVersion ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-3 text-sm print:hidden">
+          <Select value={shownVersion.version_id} onValueChange={setSelectedVersionId}>
+            <SelectTrigger size="sm" className="w-56" aria-label={t("versionSelectLabel")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {versions.map((version) => (
+                <SelectItem key={version.version_id} value={version.version_id}>
+                  {t("versionOption", { version: version.version_no ?? version.version_id })}
+                  {version === activeVersion ? ` ${t("currentSuffix")}` : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-muted-foreground">
+              {t("changeReason")}
+              {shownVersion.version_timestamp
+                ? ` · ${formatDateDDMMYYYY(shownVersion.version_timestamp)}`
+                : ""}
+            </p>
+            <p>{shownVersion.change_reason || common("notAvailable")}</p>
+          </div>
+        </div>
+      ) : null}
+
+      {isOldVersion && oldVersionText.isPending ? (
+        <LoadingState rows={4} />
+      ) : isOldVersion && oldVersionText.isError ? (
+        <ErrorState error={oldVersionText.error} onRetry={() => void oldVersionText.refetch()} />
+      ) : (
+        <ProcedureBody
+          text={isOldVersion ? (oldVersionText.data ?? "") : data.extracted_text}
+          excerpt={excerpt}
+          language={data.language}
+        />
+      )}
     </div>
   );
 }

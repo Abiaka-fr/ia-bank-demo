@@ -326,7 +326,6 @@
     "empty": "No procedure in the indexed corpus.",
     "owner": "Owner",
     "uploadedBy": "Uploaded by",
-    "uploadedAtLabel": "Uploaded on",
     "openCardHint": "Click the card to open the detail",
     "searchByTitlePlaceholder": "Search a procedure (title, ID)…",
     "sortLabel": "Sort by",
@@ -400,7 +399,12 @@
     "noHighlight": "The cited passage could not be located automatically in the document; the full text is shown below.",
     "sourceNote": "Internal text shown in its original language, untranslated.",
     "openInNewTab": "Open in a new tab",
-    "backToFinding": "Back to finding {requirement}"
+    "backToFinding": "Back to finding {requirement}",
+    "currentVersion": "Version {version}",
+    "versionSelectLabel": "Displayed version",
+    "versionOption": "Version {version}",
+    "currentSuffix": "(current)",
+    "changeReason": "Change reason"
   },
   "progress": {
     "label": "Review progress",
@@ -425,7 +429,10 @@
     "columnRequirement": "Requirement",
     "columnProcedure": "Procedure",
     "columnComment": "Comment",
-    "noComment": "—"
+    "noComment": "—",
+    "requirementTitle": "Decision history for this requirement",
+    "assignedTo": "Assigned to",
+    "newVersion": "New version: {version}"
   },
   "findingPage": {
     "findingDetail": "Finding review",

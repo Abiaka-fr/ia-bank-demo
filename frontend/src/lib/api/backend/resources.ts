@@ -11,13 +11,15 @@
  * utilisateurs (`GET /api/users`, 2026-09-07 ; `PUT /api/users/:id/role`, 2026-09-09 soir)
  * et validation humaine (`PUT /api/mappings/:id/human-status`+`/assignee`,
  * 2026-09-07 après-midi).
- * Import de documents (`POST /api/documents/regulation-ingest`, `/api/procedures/ingest`).
+ * Import de documents (`POST /api/documents/regulation-ingest`, `/api/procedures/ingest`),
+ * versions d'un document, historique des décisions (`GET /api/mappings/history`).
  * Non couvert par le backend et donc absent de ce fichier — cela reste sur MSW :
- * tableau de bord global. L'onglet Historique reste sur MSW lui aussi même en
- * mode backend réel : le backend persiste une décision mais ne dit toujours pas qui
- * l'a prise (pas d'`actor_id`) — voir `docs/known-limitations.md` point 2.
+ * tableau de bord global.
  */
+import { z } from "zod";
+
 import type {
+  AuditHistoryEntry,
   DocumentDetail,
   DocumentMeta,
   Finding,
@@ -36,6 +38,7 @@ import { ApiError } from "../client";
 import {
   adaptDocument,
   adaptDocumentDetail,
+  adaptExtractedText,
   adaptRequirement,
   adaptUser,
 } from "./adapt";
@@ -53,13 +56,16 @@ import {
   backendExtractRequirementsSchema,
   backendDocumentListSchema,
   backendDocumentSchema,
+  backendDocumentVersionSchema,
   backendMappingDetailSchema,
+  backendMappingHistorySchema,
   backendMappingSchema,
   backendRequirementListSchema,
   backendRequirementsToProceduresSchema,
   backendTokenSchema,
   backendUserListSchema,
   backendUserSchema,
+  type BackendDocumentVersion,
   type BackendMappingDetail,
   type BackendProcedureMinimal,
 } from "./schemas";
@@ -208,6 +214,23 @@ export async function fetchDocumentDetail(id: string): Promise<DocumentDetail> {
     }
     throw error;
   }
+}
+
+/** `GET /api/documents/{id}/versions` (2026-09-21) — métadonnées, plus ancienne d'abord. */
+export function fetchDocumentVersions(documentId: string): Promise<BackendDocumentVersion[]> {
+  return backendFetch(
+    `/api/documents/${encodeURIComponent(documentId)}/versions`,
+    z.array(backendDocumentVersionSchema),
+  );
+}
+
+/** Texte d'une version précise (`GET /api/documents/content/{version_id}`). */
+export async function fetchDocumentVersionText(versionId: string): Promise<string> {
+  const content = await backendFetch(
+    `/api/documents/content/${encodeURIComponent(versionId)}`,
+    backendDocumentContentSchema,
+  );
+  return adaptExtractedText(content);
 }
 
 // --- Exigences --------------------------------------------------------------
@@ -439,6 +462,7 @@ export async function validateMapping(
       body: {
         human_status: adaptHumanStatusToBackend(body.human_status),
         assignee: body.human_status === "ESCALATED" ? body.assignee_id : undefined,
+        comment: body.custom_action,
       },
     },
   );
@@ -484,4 +508,39 @@ export async function extractRequirementsFromBackend(
       body: { document_id: documentId },
     },
   );
+}
+
+/**
+ * Historique des décisions (`GET /api/mappings/history`, table `mapping_history`,
+ * 2026-09-21) sur les couples des exigences d'une régulation. Les remises à
+ * « En attente » sont écartées : l'onglet ne montre que des décisions.
+ */
+export async function fetchMappingHistory(regulationId: string): Promise<AuditHistoryEntry[]> {
+  const requirements = await fetchRequirements(regulationId);
+  if (requirements.length === 0) return [];
+
+  const rows = await backendFetch("/api/mappings/history", z.array(backendMappingHistorySchema), {
+    searchParams: { requirement_ids: requirements.map((r) => r.requirement_id) },
+  });
+
+  return rows.flatMap((row): AuditHistoryEntry[] => {
+    const action = adaptHumanStatus(row.to_status);
+    if (action === "PENDING") return [];
+    return [
+      {
+        entry_id: row.history_id,
+        regulation_id: regulationId,
+        requirement_id: row.requirement_id,
+        finding_id: row.mapping_id,
+        procedure_id: row.procedure_id ?? null,
+        action,
+        actor_id: row.actor ?? "",
+        custom_action: row.comment ?? undefined,
+        created_at: row.created_at ?? "",
+        previous_status: row.from_status ? adaptHumanStatus(row.from_status) : undefined,
+        assignee_id: row.assignee ?? undefined,
+        new_version_id: row.new_version_id ?? undefined,
+      },
+    ];
+  });
 }

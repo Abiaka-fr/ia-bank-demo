@@ -326,7 +326,6 @@
     "empty": "Aucune procédure dans le corpus indexé.",
     "owner": "Propriétaire",
     "uploadedBy": "Importée par",
-    "uploadedAtLabel": "Importée le",
     "openCardHint": "Cliquer sur la carte pour ouvrir le détail",
     "searchByTitlePlaceholder": "Rechercher une procédure (titre, ID)…",
     "sortLabel": "Trier par",
@@ -400,7 +399,12 @@
     "noHighlight": "Le passage cité n'a pas pu être localisé automatiquement dans le document ; le texte intégral est affiché ci-dessous.",
     "sourceNote": "Texte interne affiché dans sa langue d'origine, sans traduction.",
     "openInNewTab": "Ouvrir dans un nouvel onglet",
-    "backToFinding": "Retour au constat {requirement}"
+    "backToFinding": "Retour au constat {requirement}",
+    "currentVersion": "Version {version}",
+    "versionSelectLabel": "Version affichée",
+    "versionOption": "Version {version}",
+    "currentSuffix": "(actuelle)",
+    "changeReason": "Motif du changement"
   },
   "progress": {
     "label": "Progression de la revue",
@@ -425,7 +429,10 @@
     "columnRequirement": "Exigence",
     "columnProcedure": "Procédure",
     "columnComment": "Commentaire",
-    "noComment": "—"
+    "noComment": "—",
+    "requirementTitle": "Historique des décisions sur cette exigence",
+    "assignedTo": "Confié à",
+    "newVersion": "Nouvelle version : {version}"
   },
   "findingPage": {
     "findingDetail": "Revue du constat",
