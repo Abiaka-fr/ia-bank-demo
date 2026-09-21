@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
 import { ChevronDown, ChevronRight, Search, Zap } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AssessmentBadge } from "@/components/features/assessment-badge";
@@ -22,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Link } from "@/i18n/navigation";
 import { humanStatusValues } from "@/lib/assessment";
 import { pickLocalizedText } from "@/lib/localized-text";
 import { analyzeMappings } from "@/lib/api/regulations";
@@ -37,20 +36,21 @@ const ALL_DOMAINS = "ALL";
  * de traitement de ses constats. Recherche plein texte (identifiant, référence, texte
  * normalisé et source) et filtre par domaine, en local sur les exigences déjà chargées.
  *
- * Cliquer sur une exigence à **un seul** constat (une seule procédure touchée) ouvre
- * directement son détail (`FindingDetailDialog`) — pas la peine de changer d'onglet
- * pour une seule ligne. Une exigence à **plusieurs** constats (plusieurs procédures)
- * bascule vers l'onglet « Analyse d'impact » positionné sur ses lignes : un seul
- * dialogue ne peut pas représenter plusieurs couples exigence × procédure à la fois.
+ * Le titre et le bouton « Traiter » ouvrent (nouvel onglet) la page du premier constat ;
+ * chaque ligne de « Procédures impactées » ouvre celle de son propre constat.
+ * `focus` (`?tab=requirements&focus=REQ-…`, liens de la carte mentale et des pages de
+ * constat/procédure) met l'exigence en avant, dépliée.
  */
 export function RequirementsTab({
   requirements,
   findings,
   regulationId,
+  focus,
 }: {
   requirements: readonly Requirement[];
   findings: readonly Finding[];
   regulationId: string;
+  focus?: string | null;
 }) {
   const t = useTranslations("regulations");
   const actionsT = useTranslations("actions");
@@ -59,7 +59,13 @@ export function RequirementsTab({
 
   const [search, setSearch] = useState("");
   const [domain, setDomain] = useState<string>(ALL_DOMAINS);
-  const [expandedFindings, setExpandedFindings] = useState<Set<string>>(new Set());
+  const [expandedFindings, setExpandedFindings] = useState<Set<string>>(
+    () => new Set(focus ? [focus] : []),
+  );
+
+  useEffect(() => {
+    if (focus) document.getElementById(`requirement-${focus}`)?.scrollIntoView({ block: "center" });
+  }, [focus]);
 
   const analyzeMutation = useMutation({
     mutationFn: (requirementId: string) => analyzeMappings([requirementId]),
@@ -168,11 +174,7 @@ export function RequirementsTab({
           count: related.filter((finding) => finding.human_status === human_status)
             .length,
         }));
-        // Open detail dialog with first finding when available
         const firstFinding = related.length > 0 ? related[0] : undefined;
-        const focusHref = firstFinding
-          ? `/regulations/${regulationId}?tab=actions&focus=${requirement.requirement_id}`
-          : undefined;
 
         const isExpanded = expandedFindings.has(requirement.requirement_id);
         const toggleExpand = () => {
@@ -218,18 +220,27 @@ export function RequirementsTab({
         return (
           <Card
             key={requirement.requirement_id}
+            id={`requirement-${requirement.requirement_id}`}
+            className={cn(
+              "scroll-mt-24",
+              // Teinte neutre : les couleurs de statut restent réservées à `assessment`.
+              focus === requirement.requirement_id && "ring-1 ring-foreground/25",
+            )}
           >
             <CardHeader>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-xs font-medium">
                   {requirement.requirement_id}
                 </span>
-                {firstFinding && focusHref ? (
-                  <Button asChild size="sm" variant="ghost" className="relative z-10 ml-auto">
-                    <Link href={focusHref}>
-                      {actionsT("goToRequirement")}
-                      <ChevronRight aria-hidden />
-                    </Link>
+                {canOpenFinding ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="relative z-10 ml-auto"
+                    onClick={openFindingDetail}
+                  >
+                    {actionsT("goToRequirement")}
+                    <ChevronRight aria-hidden />
                   </Button>
                 ) : (
                   <Button

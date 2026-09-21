@@ -97,7 +97,7 @@ export function RegulationMindmap({
         // disparaître (pas de 3e ligne disponible dans la largeur de colonne).
         sublabel: requirement.normalized_requirement,
         tooltip: requirement.source_reference,
-        href: `/regulations/${regulation.regulation_id}?tab=actions&focus=${requirement.requirement_id}`,
+        href: `/regulations/${regulation.regulation_id}?tab=requirements&focus=${requirement.requirement_id}`,
         children: requirement.procedures.map((procedure) => {
           assessmentOf.set(procedure.finding_id, procedure.assessment);
           return {
@@ -112,7 +112,7 @@ export function RegulationMindmap({
             awaitingBackendField: procedure.procedure_id
               ? "RegulationMapProcedure.procedure_title"
               : undefined,
-            href: `/regulations/${regulation.regulation_id}?tab=actions&focus=${procedure.finding_id}`,
+            href: `/regulations/${regulation.regulation_id}?tab=requirements&focus=${requirement.requirement_id}`,
           };
         }),
       })),

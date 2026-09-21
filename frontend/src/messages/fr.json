@@ -374,7 +374,6 @@
     "noFindings": "Aucun constat pour cette procédure dans le corpus indexé pour l'instant."
   },
   "actions": {
-    "tabLabel": "Analyse d'impact",
     "columnRequirement": "Exigence",
     "columnProcedure": "Procédure impactée",
     "columnRecommended": "Action recommandée",

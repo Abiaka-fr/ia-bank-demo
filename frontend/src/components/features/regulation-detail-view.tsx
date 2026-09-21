@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { AssigneeName } from "@/components/features/assignee-select";
 import { AwaitingBackendBadge } from "@/components/features/awaiting-backend-badge";
 import { DocumentStatusBadge } from "@/components/features/document-status-badge";
-import { FindingsActionsTable } from "@/components/features/findings-actions-table";
 import { MarkdownLine } from "@/components/features/markdown-line";
 import { RegulationHistoryTab } from "@/components/features/regulation-history-tab";
 import {
@@ -40,7 +39,6 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
   const t = useTranslations("regulations");
   const common = useTranslations("common");
   const assigneeT = useTranslations("assignee");
-  const actionsT = useTranslations("actions");
   const historyT = useTranslations("history");
 
   const regulationQuery = useQuery({
@@ -190,9 +188,6 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
           <TabsTrigger value="requirements">
             {t("requirementsHeading")} ({requirements.length})
           </TabsTrigger>
-          <TabsTrigger value="actions">
-            {actionsT("tabLabel")} ({findings.length})
-          </TabsTrigger>
           <TabsTrigger value="source">{t("sourceText")}</TabsTrigger>
           <TabsTrigger value="history">{historyT("tabLabel")}</TabsTrigger>
         </TabsList>
@@ -247,20 +242,6 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
             <RequirementsTab
               requirements={requirements}
               findings={findings}
-              regulationId={regulationId}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="actions" className="mt-4">
-          {findingsQuery.isPending ? (
-            <LoadingState rows={4} />
-          ) : findings.length === 0 ? (
-            <EmptyState message={t("requirementsEmpty")} />
-          ) : (
-            <FindingsActionsTable
-              findings={findings}
-              requirements={requirements}
               regulationId={regulationId}
               focus={focus}
             />

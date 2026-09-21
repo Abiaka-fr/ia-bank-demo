@@ -75,7 +75,7 @@ export function ProcedurePageView({ procedureId }: { procedureId: string }) {
             items={[
               {
                 label: t("backToFinding", { requirement: requirementId }),
-                href: `/regulations/${regulationId}?tab=actions&focus=${requirementId}`,
+                href: `/regulations/${regulationId}?tab=requirements&focus=${requirementId}`,
               },
               { label: data.title },
             ]}

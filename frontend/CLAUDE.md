@@ -95,7 +95,7 @@ frontend/src/
 │           ├── dashboard/      # tableau de bord consolidé (toutes régulations)
 │           ├── regulations/    # liste + upload
 │           │   └── [id]/       # détail : onglets Vue d'ensemble / Exigences /
-│           │                   #   Analyse d'impact / Texte source (?tab=…&focus=…)
+│           │                   #   Texte source / Historique (?tab=…&focus=…)
 │           └── copilot/        # P2, ne pas prioriser
 ├── components/
 │   ├── ui/                     # primitives shadcn/ui générées — ne pas éditer sauf besoin réel

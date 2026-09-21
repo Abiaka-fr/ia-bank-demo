@@ -130,7 +130,7 @@ export function FindingPageView({ findingId }: { findingId: string }) {
             items={[
               {
                 label: dialogT("backToFinding", { requirement: requirementId }),
-                href: `/regulations/${regulationId}?tab=actions&focus=${requirementId}`,
+                href: `/regulations/${regulationId}?tab=requirements&focus=${requirementId}`,
               },
               { label: t("findingDetail") },
             ]}

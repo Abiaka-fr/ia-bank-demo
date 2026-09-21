@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 const REGULATION_TABS = [
   "overview",
   "requirements",
-  "actions",
   "source",
   "history",
 ] as const;

@@ -374,7 +374,6 @@
     "noFindings": "No finding for this procedure in the indexed corpus yet."
   },
   "actions": {
-    "tabLabel": "Impact analysis",
     "columnRequirement": "Requirement",
     "columnProcedure": "Impacted procedure",
     "columnRecommended": "Recommended action",

@@ -40,7 +40,7 @@ const routes: readonly Route[] = [
   // les deux lignes doivent ressortir.
   {
     name: "fr-focus-requirement",
-    path: `/fr/regulations/${ACPR_ID}?tab=actions&focus=REQ-005`,
+    path: `/fr/regulations/${ACPR_ID}?tab=requirements&focus=REQ-005`,
   },
   {
     name: "fr-regulation-source",
