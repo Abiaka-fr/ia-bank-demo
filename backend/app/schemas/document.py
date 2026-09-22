@@ -189,3 +189,26 @@ class IngestDocumentRequest(BaseModel):
                 "published_at": "2026-09-16T10:00:00"
             }
         }
+
+
+class DocumentDeleteResponse(BaseModel):
+    """Response after deleting a document."""
+
+    document_id: str
+    message: str
+    deleted_counts: dict
+    """Counts of deleted records: versions, chunks, requirements, mappings."""
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "document_id": "EXT-EU-AML-001",
+                "message": "Document and all linked data deleted successfully",
+                "deleted_counts": {
+                    "document_versions": 3,
+                    "document_chunks": 15,
+                    "requirements": 5,
+                    "requirement_mappings": 12
+                }
+            }
+        }

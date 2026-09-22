@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.db import get_db
-from app.models.procedure import Procedure
+from app.models.document import Document
 from app.models.user import User
 from app.schemas.document import DocumentRead
 from app.schemas.mapping import ProcedureRead
@@ -46,7 +46,6 @@ class ProcedureListResponse(BaseModel):
 @router.get("", response_model=ProcedureListResponse)
 def list_procedures(
     domain: str | None = Query(None, description="Filter by domain (e.g., AML/CFT, KYC)"),
-    status: str | None = Query(None, description="Filter by status (ACTIVE, SUPERSEDED)"),
     limit: int = Query(50, ge=1, le=200, description="Max results per page"),
     offset: int = Query(0, ge=0, description="Number of results to skip"),
     current_user: User = Depends(get_current_user),
@@ -57,38 +56,34 @@ def list_procedures(
 
     **Query Parameters:**
     - `domain` (optional): Filter by domain (e.g., AML/CFT, KYC, DATA_PROTECTION)
-    - `status` (optional): Filter by status (ACTIVE, SUPERSEDED)
     - `limit`: Max results to return (default 50, max 200)
     - `offset`: Number of results to skip for pagination (default 0)
 
     **Example URLs:**
     - `/api/procedures`
     - `/api/procedures?domain=AML/CFT&limit=100`
-    - `/api/procedures?status=ACTIVE`
     - `/api/procedures?domain=KYC&limit=50`
     """
-    query = db.query(Procedure)
+    query = db.query(Document).filter(Document.document_type == "PROCEDURE")
 
     if domain:
-        query = query.filter(Procedure.domain == domain)
-    if status:
-        query = query.filter(Procedure.status == status)
+        query = query.filter(Document.domain == domain)
 
     total = query.count()
     items = query.offset(offset).limit(limit).all()
 
     items_with_docs = []
-    for proc in items:
-        doc_read = DocumentRead.model_validate(proc.document) if proc.document else None
+    for doc in items:
+        doc_read = DocumentRead.model_validate(doc)
         proc_data = {
-            "procedure_id": proc.procedure_id,
-            "name": proc.name,
-            "domain": proc.domain,
-            "owner": proc.owner,
-            "status": proc.status,
-            "current_version": proc.current_version,
-            "created_at": proc.created_at,
-            "updated_at": proc.updated_at,
+            "procedure_id": doc.document_id,
+            "name": doc.title,
+            "domain": doc.domain,
+            "owner": doc.assignee,
+            "status": None,
+            "current_version": doc.current_version,
+            "created_at": doc.created_at,
+            "updated_at": doc.updated_at,
             "document": doc_read,
         }
         items_with_docs.append(ProcedureWithDocumentRead(**proc_data))
@@ -108,11 +103,24 @@ def get_procedure(
     db: Session = Depends(get_db),
 ) -> ProcedureRead:
     """Get a single procedure by ID."""
-    proc = db.get(Procedure, procedure_id)
-    if proc is None:
+    doc = db.query(Document).filter(
+        Document.document_id == procedure_id,
+        Document.document_type == "PROCEDURE"
+    ).first()
+    if doc is None:
         raise HTTPException(status_code=404, detail="Procedure not found")
 
-    return ProcedureRead.model_validate(proc)
+    return ProcedureRead(
+        procedure_id=doc.document_id,
+        document_id=doc.document_id,
+        name=doc.title,
+        domain=doc.domain,
+        owner=doc.assignee,
+        status=None,
+        current_version=doc.current_version,
+        created_at=doc.created_at,
+        updated_at=doc.updated_at,
+    )
 
 
 @router.post("/ingest", response_model=IngestProcedureResponse, status_code=201)

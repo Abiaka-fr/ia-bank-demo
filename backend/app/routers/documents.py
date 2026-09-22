@@ -6,11 +6,14 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user
 from app.db import get_db
 from app.models.document import Document, DocumentChunk, DocumentVersion
+from app.models.mapping import RequirementProcedureMap
+from app.models.requirement import RegulatoryRequirement
 from app.models.user import User
 from app.schemas.document import (
     AssigneeUpdate,
     DocumentChunkRead,
     DocumentContentResponse,
+    DocumentDeleteResponse,
     DocumentListResponse,
     DocumentRead,
     DocumentUpdateRequest,
@@ -259,6 +262,119 @@ def update_document_assignee(
     db.refresh(doc)
 
     return DocumentRead.model_validate(doc)
+
+
+@router.delete("/{document_id}", response_model=DocumentDeleteResponse)
+def delete_document(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> DocumentDeleteResponse:
+    """
+    Delete a document and all linked data with cascading deletion.
+
+    This endpoint performs cascading deletion of:
+    1. All RequirementProcedureMap rows linking to requirements sourced from this document
+    2. All RegulatoryRequirement rows where source_document_id = document_id
+    3. All DocumentChunk rows linked to this document's versions
+    4. All DocumentVersion rows for this document
+    5. The Document itself
+
+    **Path Parameters:**
+    - `document_id`: The ID of the document to delete (e.g., EXT-EU-AML-001)
+
+    **Authentication** Required (Bearer token)
+
+    **Example URL:**
+    - `DELETE /api/documents/EXT-EU-AML-001`
+
+    **Response (200 OK)**
+    ```json
+    {
+      "document_id": "EXT-EU-AML-001",
+      "message": "Document and all linked data deleted successfully",
+      "deleted_counts": {
+        "document_versions": 3,
+        "document_chunks": 15,
+        "requirements": 5,
+        "requirement_mappings": 12
+      }
+    }
+    ```
+
+    **Notes:**
+    - This operation is irreversible
+    - All related requirements extracted from this document are deleted
+    - All mappings linking those requirements to procedures are deleted
+    - Use with caution
+    """
+    doc = db.get(Document, document_id)
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    deleted_counts = {
+        "document_versions": 0,
+        "document_chunks": 0,
+        "requirements": 0,
+        "requirement_mappings": 0,
+    }
+
+    # Step 1: Find all requirements sourced from this document
+    requirements = db.query(RegulatoryRequirement).filter(
+        RegulatoryRequirement.source_document_id == document_id
+    ).all()
+    requirement_ids = [req.requirement_id for req in requirements]
+
+    # Step 2: Delete RequirementProcedureMap rows linking to these requirements
+    if requirement_ids:
+        mappings_deleted = (
+            db.query(RequirementProcedureMap)
+            .filter(RequirementProcedureMap.requirement_id.in_(requirement_ids))
+            .delete(synchronize_session=False)
+        )
+        deleted_counts["requirement_mappings"] = mappings_deleted
+
+    # Step 3: Delete RegulatoryRequirement rows
+    if requirement_ids:
+        requirements_deleted = (
+            db.query(RegulatoryRequirement)
+            .filter(RegulatoryRequirement.source_document_id == document_id)
+            .delete(synchronize_session=False)
+        )
+        deleted_counts["requirements"] = requirements_deleted
+
+    # Step 4: Get all DocumentVersion IDs for this document
+    versions = db.query(DocumentVersion).filter(
+        DocumentVersion.document_id == document_id
+    ).all()
+    version_ids = [v.version_id for v in versions]
+
+    # Step 5: Delete DocumentChunk rows
+    if version_ids:
+        chunks_deleted = (
+            db.query(DocumentChunk)
+            .filter(DocumentChunk.version_id.in_(version_ids))
+            .delete(synchronize_session=False)
+        )
+        deleted_counts["document_chunks"] = chunks_deleted
+
+    # Step 6: Delete DocumentVersion rows
+    versions_deleted = (
+        db.query(DocumentVersion)
+        .filter(DocumentVersion.document_id == document_id)
+        .delete(synchronize_session=False)
+    )
+    deleted_counts["document_versions"] = versions_deleted
+
+    # Step 7: Delete Document
+    db.delete(doc)
+    db.commit()
+
+    return DocumentDeleteResponse(
+        document_id=document_id,
+        message="Document and all linked data deleted successfully",
+        deleted_counts=deleted_counts,
+    )
 
 
 @router.post("/regulation-ingest", status_code=201)

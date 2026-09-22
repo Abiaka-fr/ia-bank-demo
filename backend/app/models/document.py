@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Column, String, Text, DateTime, Integer, ForeignKey, Index
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -34,9 +34,6 @@ class Document(Base):
     versions = relationship("DocumentVersion", back_populates="document", cascade="all, delete-orphan")
     chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")
     requirements = relationship("RegulatoryRequirement", back_populates="document", cascade="all, delete-orphan")
-    procedures = relationship("Procedure", back_populates="document", cascade="all, delete-orphan")
-    controls = relationship("Control", back_populates="document", cascade="all, delete-orphan")
-    audit_history = relationship("AuditHistory", back_populates="document", cascade="all, delete-orphan")
 
 
 class DocumentVersion(Base):
@@ -62,8 +59,6 @@ class DocumentVersion(Base):
     # Relationships
     document = relationship("Document", back_populates="versions")
     chunks = relationship("DocumentChunk", back_populates="version", cascade="all, delete-orphan")
-    procedure_versions = relationship("ProcedureVersion", back_populates="document_version", cascade="all, delete-orphan")
-    audit_history = relationship("AuditHistory", back_populates="version", cascade="all, delete-orphan")
 
 
 class DocumentChunk(Base):

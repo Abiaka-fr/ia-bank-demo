@@ -1,7 +1,6 @@
 """Control model."""
 
-from sqlalchemy import Column, String, ForeignKey, Index
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, ForeignKey, Index, String
 
 from app.db.base import Base
 
@@ -24,5 +23,3 @@ class Control(Base):
         Index("idx_controls_document_id", "document_id"),
     )
 
-    # Relationships
-    document = relationship("Document", back_populates="controls")

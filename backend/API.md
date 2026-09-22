@@ -418,6 +418,55 @@ PUT /api/documents/EXT-EU-AML-001/assignee
 
 ---
 
+#### `DELETE /api/documents/{document_id}`
+Delete a document and all linked data (cascading deletion).
+
+This endpoint permanently deletes:
+1. All RequirementProcedureMap rows linking to requirements from this document
+2. All RegulatoryRequirement rows sourced from this document
+3. All DocumentChunk rows in all versions of this document
+4. All DocumentVersion rows for this document
+5. The Document itself
+
+**Path Parameters:**
+- `document_id`: The ID of the document to delete (e.g., EXT-EU-AML-001)
+
+**Authentication** Required (Bearer token)
+
+**Example URL:**
+```
+DELETE /api/documents/EXT-EU-AML-001
+```
+
+**Response (200 OK)**
+```json
+{
+  "document_id": "EXT-EU-AML-001",
+  "message": "Document and all linked data deleted successfully",
+  "deleted_counts": {
+    "document_versions": 3,
+    "document_chunks": 15,
+    "requirements": 5,
+    "requirement_mappings": 12
+  }
+}
+```
+
+**Response (404 Not Found)**
+```json
+{
+  "detail": "Document not found"
+}
+```
+
+**⚠️ Warning:** This operation is irreversible and permanently deletes:
+- The document and all its versions
+- All requirements extracted from this document
+- All mappings linking those requirements to procedures
+- Use with extreme caution
+
+---
+
 ## 3. Pipeline - Document Ingestion & Requirements Analysis
 
 ### Ingest Regulation Document

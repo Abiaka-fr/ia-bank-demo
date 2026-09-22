@@ -11,7 +11,6 @@ from app.models.audit import AuditHistory  # noqa: F401, E402
 from app.models.control import Control  # noqa: F401, E402
 from app.models.document import Document, DocumentChunk, DocumentVersion  # noqa: F401, E402
 from app.models.mapping import MappingHistory, RequirementProcedureMap  # noqa: F401, E402
-from app.models.procedure import Procedure, ProcedureVersion  # noqa: F401, E402
 from app.models.requirement import RegulatoryRequirement  # noqa: F401, E402
 from app.models.source import OfficialPublicSource  # noqa: F401, E402
 from app.models.user import User  # noqa: F401, E402
@@ -22,8 +21,6 @@ __all__ = [
     "DocumentVersion",
     "DocumentChunk",
     "RegulatoryRequirement",
-    "Procedure",
-    "ProcedureVersion",
     "Control",
     "RequirementProcedureMap",
     "MappingHistory",

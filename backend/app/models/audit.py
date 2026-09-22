@@ -2,8 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Index
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, DateTime, ForeignKey, Index, String, Text
 
 from app.db.base import Base
 
@@ -27,6 +26,3 @@ class AuditHistory(Base):
         Index("idx_audit_history_version_id", "version_id"),
     )
 
-    # Relationships
-    document = relationship("Document", back_populates="audit_history")
-    version = relationship("DocumentVersion", back_populates="audit_history")

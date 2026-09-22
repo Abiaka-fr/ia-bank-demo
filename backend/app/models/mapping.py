@@ -34,7 +34,6 @@ class RequirementProcedureMap(Base):
 
     # Relationships
     requirement = relationship("RegulatoryRequirement", back_populates="mappings")
-    procedure = relationship("Procedure", back_populates="mappings")
 
 
 class MappingHistory(Base):
