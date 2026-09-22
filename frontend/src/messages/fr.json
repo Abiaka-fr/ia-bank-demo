@@ -147,7 +147,13 @@
     "deleteConfirmTitle": "Supprimer la régulation",
     "deleteConfirmMessage": "Cette action supprimera définitivement cette régulation et toutes les données liées, y compris les exigences et les correspondances de procédures. Cette action ne peut pas être annulée.",
     "deleteSuccess": "Régulation supprimée avec succès",
-    "deleteFailed": "Échec de la suppression de la régulation. Veuillez réessayer."
+    "deleteFailed": "Échec de la suppression de la régulation. Veuillez réessayer.",
+    "requirementDetailsTitle": "Détails de l'exigence",
+    "requirementId": "Identifiant de l'exigence",
+    "requirement": "Exigence",
+    "sourceDocumentEvidence": "Preuve du document source",
+    "sourceEvidence": "Preuve source",
+    "loadFailed": "Échec du chargement du contenu du document."
   },
   "impact": {
     "filterAssessment": "Statut d'évaluation",

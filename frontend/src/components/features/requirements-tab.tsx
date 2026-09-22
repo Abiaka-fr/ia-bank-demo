@@ -1,8 +1,8 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
-import { ChevronDown, ChevronRight, Search, Trash2, Zap } from "lucide-react";
+import { ChevronDown, Search, Zap } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -17,8 +17,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -31,7 +29,8 @@ import {
 } from "@/components/ui/select";
 import { humanStatusValues } from "@/lib/assessment";
 import { pickLocalizedText } from "@/lib/localized-text";
-import { analyzeMappings, deleteDocument } from "@/lib/api/regulations";
+import { highlightSegments } from "@/lib/evidence-match";
+import { analyzeMappings, fetchRegulation } from "@/lib/api/regulations";
 import { queryKeys } from "@/lib/api/query-keys";
 import { openInNewTabWithSession } from "@/lib/open-in-new-tab";
 import type { Finding, Requirement } from "@/types/api";
@@ -63,7 +62,6 @@ export function RequirementsTab({
   findingsLoaded: boolean;
 }) {
   const t = useTranslations("regulations");
-  const actionsT = useTranslations("actions");
   const locale = useLocale();
   const queryClient = useQueryClient();
 
@@ -72,23 +70,19 @@ export function RequirementsTab({
   const [expandedFindings, setExpandedFindings] = useState<Set<string>>(
     () => new Set(focus ? [focus] : []),
   );
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [selectedRequirementId, setSelectedRequirementId] = useState<string | null>(null);
+
+  const selectedReq = requirements.find((req) => req.requirement_id === selectedRequirementId);
+
+  const regulationQuery = useQuery({
+    queryKey: queryKeys.regulation(regulationId),
+    queryFn: () => fetchRegulation(regulationId),
+    enabled: !!selectedRequirementId,
+  });
 
   useEffect(() => {
     if (focus) document.getElementById(`requirement-${focus}`)?.scrollIntoView({ block: "center" });
   }, [focus]);
-
-  const deleteMutation = useMutation({
-    mutationFn: (documentId: string) => deleteDocument(documentId),
-    onSuccess: async () => {
-      toast.success(t("deleteSuccess"));
-      setDeleteConfirmId(null);
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.findings(regulationId),
-      });
-    },
-    onError: () => toast.error(t("deleteFailed")),
-  });
 
   const analyzeMutation = useMutation({
     mutationFn: (requirementId: string) => analyzeMappings([requirementId]),
@@ -230,15 +224,6 @@ export function RequirementsTab({
 
         // Build new-tab href for the first finding if available
         const canOpenFinding = firstFinding && firstFinding.procedure_id;
-        const newTabHref = canOpenFinding
-          ? `/${locale}/findings/${firstFinding.finding_id}?regulationId=${regulationId}&requirementId=${requirement.requirement_id}`
-          : undefined;
-
-        function openFindingDetail() {
-          if (newTabHref) {
-            openInNewTabWithSession(newTabHref);
-          }
-        }
 
         return (
           <Card
@@ -283,10 +268,10 @@ export function RequirementsTab({
                 {firstFinding ? (
                   <button
                     type="button"
-                    onClick={openFindingDetail}
+                    onClick={() => setSelectedRequirementId(requirement.requirement_id)}
                     className="text-left hover:underline focus:outline-none"
                   >
-                    {displayedRequirementText}222
+                    {displayedRequirementText}
                   </button>
                 ) : (
                   displayedRequirementText
@@ -303,6 +288,13 @@ export function RequirementsTab({
               >
                 {displayedSourceText}
               </blockquote>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setSelectedRequirementId(requirement.requirement_id)}
+              >
+                {t("sourceEvidence")}
+              </Button>
               {related.length > 0 && (
                 <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-3 mt-3">
                   <button
@@ -358,6 +350,102 @@ export function RequirementsTab({
           </Card>
         );
       })}
+
+      {/* Requirement detail modal */}
+      {selectedRequirementId && selectedReq && (
+        <Dialog
+          open={!!selectedRequirementId}
+          onOpenChange={(open) => !open && setSelectedRequirementId(null)}
+        >
+          <DialogContent className="sm:max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogTitle>{t("requirementDetailsTitle")}</DialogTitle>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-medium">
+                  {t("requirementId")}
+                </p>
+                <p className="font-mono text-sm">{selectedReq.requirement_id}</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-medium">
+                  {t("requirement")}
+                </p>
+                <p className="text-sm">
+                  {pickLocalizedText(
+                    locale,
+                    selectedReq.normalized_requirement,
+                    selectedReq.normalized_requirement_fr,
+                  )}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-medium">
+                  {t("sourceDocumentEvidence")}
+                </p>
+                {regulationQuery.isPending ? (
+                  <p className="text-xs text-muted-foreground">{t("common.loading")}</p>
+                ) : regulationQuery.isError ? (
+                  <p className="text-xs text-destructive">{t("loadFailed")}</p>
+                ) : (
+                  <div className="bg-muted/30 p-4 rounded max-h-96 overflow-y-auto">
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {(() => {
+                        const docText = regulationQuery.data?.extracted_text || "";
+                        const evidenceRefs = [
+                          {
+                            document_id: regulationId,
+                            document_title: regulationQuery.data?.title || "",
+                            section_reference: selectedReq.source_reference || "",
+                            excerpt: pickLocalizedText(
+                              locale,
+                              selectedReq.source_text,
+                              selectedReq.source_text_fr,
+                            ),
+                            language: locale === "fr" ? ("FR" as const) : ("EN" as const),
+                          },
+                        ];
+                        const segments = highlightSegments(docText, evidenceRefs);
+                        return segments.map((segment, idx) =>
+                          segment.isMatch ? (
+                            <mark
+                              key={idx}
+                              className="bg-yellow-200 dark:bg-yellow-900/40 rounded px-0.5"
+                            >
+                              {segment.text}
+                            </mark>
+                          ) : (
+                            <span key={idx}>{segment.text}</span>
+                          ),
+                        );
+                      })()}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {selectedReq.domain.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground font-medium">
+                    {t("filterDomain")}
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedReq.domain.map((domain) => (
+                      <span
+                        key={domain}
+                        className="inline-block text-xs bg-muted px-2 py-1 rounded"
+                      >
+                        {domain}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

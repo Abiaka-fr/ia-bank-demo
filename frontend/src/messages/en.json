@@ -147,7 +147,13 @@
     "deleteConfirmTitle": "Delete regulation",
     "deleteConfirmMessage": "This action will permanently delete this regulation and all linked data including requirements and procedure mappings. This cannot be undone.",
     "deleteSuccess": "Regulation deleted successfully",
-    "deleteFailed": "Failed to delete regulation. Please try again."
+    "deleteFailed": "Failed to delete regulation. Please try again.",
+    "requirementDetailsTitle": "Requirement details",
+    "requirementId": "Requirement ID",
+    "requirement": "Requirement",
+    "sourceDocumentEvidence": "Source document evidence",
+    "sourceEvidence": "Source evidence",
+    "loadFailed": "Failed to load document content."
   },
   "impact": {
     "filterAssessment": "Assessment status",
