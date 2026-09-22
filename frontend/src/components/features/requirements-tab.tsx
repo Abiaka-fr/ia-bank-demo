@@ -255,17 +255,7 @@ export function RequirementsTab({
                 <span className="font-mono text-xs font-medium">
                   {requirement.requirement_id}
                 </span>
-                {canOpenFinding ? (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="relative z-10 ml-auto"
-                    onClick={openFindingDetail}
-                  >
-                    {actionsT("goToRequirement")}
-                    <ChevronRight aria-hidden />
-                  </Button>
-                ) : findingsLoaded ? (
+                {canOpenFinding ? null : findingsLoaded ? (
                   // Masqué pendant le chargement : un clic relançait l'analyse LLM d'une
                   // exigence déjà analysée et créait des mappings en double.
                   <Button
@@ -296,7 +286,7 @@ export function RequirementsTab({
                     onClick={openFindingDetail}
                     className="text-left hover:underline focus:outline-none"
                   >
-                    {displayedRequirementText}
+                    {displayedRequirementText}222
                   </button>
                 ) : (
                   displayedRequirementText
@@ -305,7 +295,7 @@ export function RequirementsTab({
             </CardHeader>
             <CardContent className="space-y-3">
               {related.length ? (
-                <ReviewProgressBar counts={counts} showBreakdown={false} />
+                <ReviewProgressBar counts={counts} showBreakdown={false} className="space-y-0.5" />
               ) : null}
               <blockquote
                 lang={sourceTextLang}

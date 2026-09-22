@@ -20,10 +20,10 @@ export type HumanStatusCount = { human_status: HumanStatus; count: number };
  * réservées à `assessment` (`docs/ui-guidelines.md`).
  */
 const segmentClass: Record<HumanStatus, string> = {
-  ACCEPTED: "bg-foreground/80",
-  REJECTED: "bg-foreground/45",
-  ESCALATED: "bg-foreground/25",
-  PENDING: "bg-foreground/10",
+  ACCEPTED: "bg-foreground/50",
+  REJECTED: "bg-foreground/30",
+  ESCALATED: "bg-foreground/15",
+  PENDING: "bg-foreground/8",
 };
 
 function toMap(counts: readonly HumanStatusCount[]) {
@@ -73,11 +73,10 @@ export function ReviewProgressBar({
         <span className={cn("font-medium", isComplete && "text-foreground")}>
           {isComplete ? t("complete") : t("handledOf", { handled, total })}
         </span>
-        <span className="tabular-nums text-muted-foreground">{percent}%</span>
       </div>
 
       <div
-        className="flex h-2 w-full overflow-hidden rounded-full bg-muted"
+        className="flex h-1 w-32 overflow-hidden rounded-full bg-muted"
         role="progressbar"
         aria-valuenow={percent}
         aria-valuemin={0}
