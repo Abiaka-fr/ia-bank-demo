@@ -16,7 +16,7 @@ class RequirementProcedureMap(Base):
 
     mapping_id = Column(String, primary_key=True)
     requirement_id = Column(String, ForeignKey("regulatory_requirements.requirement_id", ondelete="CASCADE"), nullable=False)
-    procedure_id = Column(String, ForeignKey("procedures.procedure_id", ondelete="CASCADE"), nullable=False)
+    procedure_id = Column(String, ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
     assessment = Column(String)  # COVERED, PARTIALLY_COVERED, POTENTIAL_GAP, HUMAN_REVIEW
     confidence = Column(Float)  # 0.0 - 1.0
     explanation = Column(Text)  # English explanation
