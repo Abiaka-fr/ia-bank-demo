@@ -1,8 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Search } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronRight, Search, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { useMemo, useState } from "react";
 
 import { AssigneeName } from "@/components/features/assignee-select";
@@ -12,7 +13,15 @@ import {
   LoadingState,
 } from "@/components/features/query-state";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -23,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Link } from "@/i18n/navigation";
 import { queryKeys } from "@/lib/api/query-keys";
+import { deleteDocument } from "@/lib/api/regulations";
 import { fetchProcedures } from "@/lib/api/procedures";
 import { formatDateDDMMYYYY } from "@/lib/format-date";
 
@@ -38,13 +48,25 @@ export function ProceduresView() {
   const common = useTranslations("common");
   // Mêmes libellés de dates que les cartes de régulation.
   const regulationsT = useTranslations("regulations");
+  const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortOrder>("newest");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const proceduresQuery = useQuery({
     queryKey: queryKeys.procedures(),
     queryFn: fetchProcedures,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (documentId: string) => deleteDocument(documentId),
+    onSuccess: async () => {
+      toast.success(t("deleteSuccess"));
+      setDeleteConfirmId(null);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.procedures() });
+    },
+    onError: () => toast.error(t("deleteFailed")),
   });
 
   const visibleProcedures = useMemo(() => {
@@ -118,8 +140,22 @@ export function ProceduresView() {
                 <Badge variant="secondary" className="font-mono text-[11px]">
                   {procedure.document_id}
                 </Badge>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="relative z-10 ml-auto h-6 w-6 text-muted-foreground hover:text-destructive"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setDeleteConfirmId(procedure.document_id);
+                  }}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="size-4" aria-hidden />
+                  <span className="sr-only">{t("delete")}</span>
+                </Button>
                 <ChevronRight
-                  className="ml-auto size-4 text-muted-foreground"
+                  className="size-4 text-muted-foreground"
                   aria-hidden
                 />
               </div>
@@ -186,6 +222,36 @@ export function ProceduresView() {
           </Card>
         ))}
       </div>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <DialogContent>
+          <DialogTitle>{t("deleteConfirmTitle")}</DialogTitle>
+          <DialogDescription>
+            {t("deleteConfirmMessage")}
+          </DialogDescription>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirmId(null)}
+              disabled={deleteMutation.isPending}
+            >
+              {common("cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleteConfirmId) {
+                  deleteMutation.mutate(deleteConfirmId);
+                }
+              }}
+              disabled={deleteMutation.isPending}
+            >
+              {t("delete")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

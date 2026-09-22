@@ -126,3 +126,24 @@ export function analyzeMappings(requirementIds: string[]) {
     },
   );
 }
+
+/**
+ * Delete a document and all linked data (cascading deletion).
+ * Endpoint: DELETE /api/documents/{document_id}
+ */
+export function deleteDocument(documentId: string) {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(documentId)}`,
+    z.object({
+      document_id: z.string(),
+      message: z.string(),
+      deleted_counts: z.object({
+        document_versions: z.number(),
+        document_chunks: z.number(),
+        requirements: z.number(),
+        requirement_mappings: z.number(),
+      }),
+    }),
+    { method: "DELETE" },
+  );
+}

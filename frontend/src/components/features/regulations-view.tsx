@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Search, UserRoundCheck } from "lucide-react";
+import { ChevronRight, Search, Trash2, UserRoundCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -16,7 +16,15 @@ import {
   LoadingState,
 } from "@/components/features/query-state";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -30,6 +38,7 @@ import { fetchPortfolioSummary } from "@/lib/api/dashboard";
 import { queryKeys } from "@/lib/api/query-keys";
 import { formatDateDDMMYYYY } from "@/lib/format-date";
 import {
+  deleteDocument,
   fetchRegulations,
   updateRegulationAssignee,
 } from "@/lib/api/regulations";
@@ -47,6 +56,7 @@ export function RegulationsView() {
   const [search, setSearch] = useState("");
   const [authority, setAuthority] = useState<string>(ALL_AUTHORITIES);
   const [sort, setSort] = useState<SortOrder>("newest");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const regulationsQuery = useQuery({
     queryKey: queryKeys.regulations(),
@@ -69,6 +79,17 @@ export function RegulationsView() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.portfolioSummary() });
     },
     onError: () => toast.error(assigneeT("updateFailed")),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (documentId: string) => deleteDocument(documentId),
+    onSuccess: async () => {
+      toast.success(t("deleteSuccess"));
+      setDeleteConfirmId(null);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.regulations() });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.portfolioSummary() });
+    },
+    onError: () => toast.error(t("deleteFailed")),
   });
 
   const authorities = useMemo(
@@ -201,8 +222,22 @@ export function RegulationsView() {
                 {!hasReview ? (
                   <DocumentStatusBadge status={regulation.status} />
                 ) : null}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="relative z-10 ml-auto h-6 w-6 text-muted-foreground hover:text-destructive"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setDeleteConfirmId(regulation.document_id);
+                  }}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="size-4" aria-hidden />
+                  <span className="sr-only">{t("delete")}</span>
+                </Button>
                 <ChevronRight
-                  className="ml-auto size-4 text-muted-foreground"
+                  className="size-4 text-muted-foreground"
                   aria-hidden
                 />
               </div>
@@ -317,6 +352,36 @@ export function RegulationsView() {
         );
       })}
       </div>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <DialogContent>
+          <DialogTitle>{t("deleteConfirmTitle")}</DialogTitle>
+          <DialogDescription>
+            {t("deleteConfirmMessage")}
+          </DialogDescription>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirmId(null)}
+              disabled={deleteMutation.isPending}
+            >
+              {common("cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleteConfirmId) {
+                  deleteMutation.mutate(deleteConfirmId);
+                }
+              }}
+              disabled={deleteMutation.isPending}
+            >
+              {t("delete")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

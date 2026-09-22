@@ -32,7 +32,7 @@ export class ApiContractError extends Error {
 }
 
 type RequestOptions = {
-  method?: "GET" | "POST" | "PATCH" | "PUT";
+  method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   body?: unknown;
   /** Envoyé tel quel : le navigateur pose lui-même le Content-Type multipart. */
   formData?: FormData;

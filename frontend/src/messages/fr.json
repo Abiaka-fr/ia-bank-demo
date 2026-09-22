@@ -142,7 +142,12 @@
     "createdDateLabel": "Date de création",
     "lastUpdatedLabel": "Dernière mise à jour",
     "filterClassification": "Classification",
-    "filterClassificationPlaceholder": "Bientôt disponible"
+    "filterClassificationPlaceholder": "Bientôt disponible",
+    "delete": "Supprimer",
+    "deleteConfirmTitle": "Supprimer la régulation",
+    "deleteConfirmMessage": "Cette action supprimera définitivement cette régulation et toutes les données liées, y compris les exigences et les correspondances de procédures. Cette action ne peut pas être annulée.",
+    "deleteSuccess": "Régulation supprimée avec succès",
+    "deleteFailed": "Échec de la suppression de la régulation. Veuillez réessayer."
   },
   "impact": {
     "filterAssessment": "Statut d'évaluation",
@@ -332,7 +337,12 @@
     "sortNewest": "Import le plus récent",
     "sortOldest": "Import le plus ancien",
     "sortTitle": "Titre (A→Z)",
-    "filterNoResults": "Aucune procédure ne correspond à cette recherche."
+    "filterNoResults": "Aucune procédure ne correspond à cette recherche.",
+    "delete": "Supprimer",
+    "deleteConfirmTitle": "Supprimer la procédure",
+    "deleteConfirmMessage": "Cette action supprimera définitivement cette procédure et toutes les données liées, y compris les résultats d'analyse d'impact. Cette action ne peut pas être annulée.",
+    "deleteSuccess": "Procédure supprimée avec succès",
+    "deleteFailed": "Échec de la suppression de la procédure. Veuillez réessayer."
   },
   "uploadProcedure": {
     "trigger": "Importer une procédure",

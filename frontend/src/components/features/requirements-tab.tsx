@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
-import { ChevronDown, ChevronRight, Search, Zap } from "lucide-react";
+import { ChevronDown, ChevronRight, Search, Trash2, Zap } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -14,6 +14,13 @@ import { ImpactedProcedureSummary } from "@/components/features/impacted-procedu
 import { ReviewProgressBar } from "@/components/features/review-progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -24,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { humanStatusValues } from "@/lib/assessment";
 import { pickLocalizedText } from "@/lib/localized-text";
-import { analyzeMappings } from "@/lib/api/regulations";
+import { analyzeMappings, deleteDocument } from "@/lib/api/regulations";
 import { queryKeys } from "@/lib/api/query-keys";
 import { openInNewTabWithSession } from "@/lib/open-in-new-tab";
 import type { Finding, Requirement } from "@/types/api";
@@ -65,10 +72,23 @@ export function RequirementsTab({
   const [expandedFindings, setExpandedFindings] = useState<Set<string>>(
     () => new Set(focus ? [focus] : []),
   );
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     if (focus) document.getElementById(`requirement-${focus}`)?.scrollIntoView({ block: "center" });
   }, [focus]);
+
+  const deleteMutation = useMutation({
+    mutationFn: (documentId: string) => deleteDocument(documentId),
+    onSuccess: async () => {
+      toast.success(t("deleteSuccess"));
+      setDeleteConfirmId(null);
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.findings(regulationId),
+      });
+    },
+    onError: () => toast.error(t("deleteFailed")),
+  });
 
   const analyzeMutation = useMutation({
     mutationFn: (requirementId: string) => analyzeMappings([requirementId]),

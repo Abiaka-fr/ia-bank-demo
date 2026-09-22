@@ -142,7 +142,12 @@
     "createdDateLabel": "Created date",
     "lastUpdatedLabel": "Last updated",
     "filterClassification": "Classification",
-    "filterClassificationPlaceholder": "Coming soon"
+    "filterClassificationPlaceholder": "Coming soon",
+    "delete": "Delete",
+    "deleteConfirmTitle": "Delete regulation",
+    "deleteConfirmMessage": "This action will permanently delete this regulation and all linked data including requirements and procedure mappings. This cannot be undone.",
+    "deleteSuccess": "Regulation deleted successfully",
+    "deleteFailed": "Failed to delete regulation. Please try again."
   },
   "impact": {
     "filterAssessment": "Assessment status",
@@ -332,7 +337,12 @@
     "sortNewest": "Most recently imported",
     "sortOldest": "Oldest import",
     "sortTitle": "Title (A→Z)",
-    "filterNoResults": "No procedure matches this search."
+    "filterNoResults": "No procedure matches this search.",
+    "delete": "Delete",
+    "deleteConfirmTitle": "Delete procedure",
+    "deleteConfirmMessage": "This action will permanently delete this procedure and all linked data including impact analysis results. This cannot be undone.",
+    "deleteSuccess": "Procedure deleted successfully",
+    "deleteFailed": "Failed to delete procedure. Please try again."
   },
   "uploadProcedure": {
     "trigger": "Upload a procedure",
