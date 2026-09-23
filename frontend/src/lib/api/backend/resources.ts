@@ -52,6 +52,8 @@ import {
   assembleUnmappedFinding,
 } from "./finding-adapt";
 import {
+  backendAnalyzeMappingsSchema,
+  backendDeleteDocumentSchema,
   backendDocumentContentSchema,
   backendExtractRequirementsSchema,
   backendDocumentListSchema,
@@ -507,6 +509,23 @@ export async function extractRequirementsFromBackend(
       method: "POST",
       body: { document_id: documentId },
     },
+  );
+}
+
+/** `POST /api/mappings/analyze` — analyse d'impact par LLM des exigences sur les procédures. */
+export function analyzeMappingsInBackend(requirementIds: string[]) {
+  return backendFetch("/api/mappings/analyze", backendAnalyzeMappingsSchema, {
+    method: "POST",
+    body: { requirement_ids: requirementIds },
+  });
+}
+
+/** `DELETE /api/documents/{id}` — suppression en cascade (versions, exigences, correspondances). */
+export function deleteDocumentFromBackend(documentId: string) {
+  return backendFetch(
+    `/api/documents/${encodeURIComponent(documentId)}`,
+    backendDeleteDocumentSchema,
+    { method: "DELETE" },
   );
 }
 

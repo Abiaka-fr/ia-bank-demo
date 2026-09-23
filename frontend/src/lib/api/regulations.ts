@@ -110,6 +110,8 @@ export function extractRequirements(documentId: string) {
  * Endpoint: POST /api/mappings/analyze
  */
 export function analyzeMappings(requirementIds: string[]) {
+  if (isBackendLive) return backend.analyzeMappingsInBackend(requirementIds);
+
   return apiFetch(
     "/api/mappings/analyze",
     z.array(
@@ -132,6 +134,8 @@ export function analyzeMappings(requirementIds: string[]) {
  * Endpoint: DELETE /api/documents/{document_id}
  */
 export function deleteDocument(documentId: string) {
+  if (isBackendLive) return backend.deleteDocumentFromBackend(documentId);
+
   return apiFetch(
     `/api/documents/${encodeURIComponent(documentId)}`,
     z.object({

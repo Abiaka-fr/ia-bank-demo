@@ -239,6 +239,28 @@ export const backendExtractRequirementsSchema = z.object({
   requirement_ids: z.array(z.string()),
 });
 
+/** Response from POST /api/mappings/analyze — one entry per requirement analysed. */
+export const backendAnalyzeMappingsSchema = z.array(
+  z.object({
+    requirement_id: z.string(),
+    mappings_created: z.number(),
+    mapping_ids: z.array(z.string()),
+    warnings: z.array(z.string()),
+  }),
+);
+
+/** Response from DELETE /api/documents/{document_id} — rows removed by the cascade. */
+export const backendDeleteDocumentSchema = z.object({
+  document_id: z.string(),
+  message: z.string(),
+  deleted_counts: z.object({
+    document_versions: z.number(),
+    document_chunks: z.number(),
+    requirements: z.number(),
+    requirement_mappings: z.number(),
+  }),
+});
+
 /** Format d'erreur du backend — `{detail}`, là où le contrat prévoit `{error:{code,message}}`. */
 export const backendErrorSchema = z.object({
   detail: z.union([z.string(), z.array(z.unknown()), z.record(z.string(), z.unknown())]),
