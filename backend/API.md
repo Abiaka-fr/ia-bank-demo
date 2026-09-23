@@ -416,6 +416,33 @@ PUT /api/documents/EXT-EU-AML-001/assignee
 }
 ```
 
+Every actual change (new value ≠ current value) is logged in `audit_history`
+(`event_type = "ASSIGNEE_CHANGED"`, `actor` = current user, `details` = `{"from": …, "to": …}`),
+readable with the route below.
+
+---
+
+### Document Assignee History
+
+#### `GET /api/documents/{document_id}/history`
+Assignee changes of a document, newest first. Empty list if none (or unknown document).
+
+**Authentication** Required (Bearer token)
+
+**Response (200 OK)**
+```json
+[
+  {
+    "audit_id": "AUD-3f2c…",
+    "document_id": "EXT-EU-001",
+    "from_assignee": "USR-0001",
+    "to_assignee": "USR-0002",
+    "actor": "USR-0003",
+    "event_timestamp": "2026-09-23T10:15:00"
+  }
+]
+```
+
 ---
 
 #### `DELETE /api/documents/{document_id}`

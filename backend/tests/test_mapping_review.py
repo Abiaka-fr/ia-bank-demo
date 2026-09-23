@@ -10,8 +10,9 @@ from sqlalchemy.orm import sessionmaker
 from app.db.base import Base
 from app.models.document import Document, DocumentChunk, DocumentVersion
 from app.models.mapping import MappingHistory, RequirementProcedureMap
-from app.routers.documents import list_document_versions
+from app.routers.documents import list_document_history, list_document_versions, update_document_assignee
 from app.routers.mappings import list_mapping_history, update_mapping_human_status
+from app.schemas.document import AssigneeUpdate
 from app.schemas.mapping import HumanStatusUpdate
 
 USER = SimpleNamespace(user_id="USR-REVIEWER")
@@ -98,7 +99,7 @@ def test_each_decision_is_recorded_in_history(db):
         decide(db, "ESCALATE")  # rejected request: nothing recorded
 
     # Sorted here: both rows can share a timestamp at this speed (newest-first is the API order).
-    history = sorted(list_mapping_history(["REQ-T-1"], USER, db), key=lambda h: h.to_status)
+    history = sorted(list_mapping_history(["REQ-T-1"], None, USER, db), key=lambda h: h.to_status)
     assert [(h.from_status, h.to_status) for h in history] == [
         ("ESCALATE", "ACCEPT"),
         ("PENDING_REVIEW", "ESCALATE"),
@@ -108,7 +109,7 @@ def test_each_decision_is_recorded_in_history(db):
         "USR-SENIOR", "Needs legal review", "USR-REVIEWER",
     )
     assert accept.new_version_id == "VER-INT-T-001-02"
-    assert list_mapping_history(["REQ-OTHER"], USER, db) == []
+    assert list_mapping_history(["REQ-OTHER"], None, USER, db) == []
     assert db.query(MappingHistory).count() == 2
 
 
@@ -120,3 +121,11 @@ def test_document_versions_are_listed_with_change_reason(db):
         ("VER-INT-T-001-02", "ACTIVE"),
     ]
     assert versions[1].change_reason == "Accepted MAP-T-1 (requirement REQ-T-1)"
+
+
+def test_assignee_change_is_logged_once(db):
+    update_document_assignee("INT-T-001", AssigneeUpdate(assignee="USR-B"), USER, db)
+    update_document_assignee("INT-T-001", AssigneeUpdate(assignee="USR-B"), USER, db)  # no change
+
+    [entry] = list_document_history("INT-T-001", USER, db)
+    assert (entry.from_assignee, entry.to_assignee, entry.actor) == ("USR-UPLOADER", "USR-B", "USR-REVIEWER")

@@ -1,15 +1,20 @@
 """Document endpoints."""
 
+import json
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.db import get_db
+from app.models.audit import AuditHistory
 from app.models.document import Document, DocumentChunk, DocumentVersion
 from app.models.mapping import RequirementProcedureMap
 from app.models.requirement import RegulatoryRequirement
 from app.models.user import User
 from app.schemas.document import (
+    AssigneeHistoryRead,
     AssigneeUpdate,
     DocumentChunkRead,
     DocumentContentResponse,
@@ -25,6 +30,8 @@ from app.services.document_ingestion import DocumentIngestionService
 from app.services.document_versioning import create_document_version
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
+
+ASSIGNEE_CHANGED = "ASSIGNEE_CHANGED"
 
 
 @router.get("", response_model=DocumentListResponse)
@@ -257,11 +264,50 @@ def update_document_assignee(
     if doc is None:
         raise HTTPException(status_code=404, detail="Document not found")
 
+    if doc.assignee != payload.assignee:
+        db.add(
+            AuditHistory(
+                audit_id=f"AUD-{uuid.uuid4().hex}",
+                document_id=document_id,
+                event_type=ASSIGNEE_CHANGED,
+                actor=current_user.user_id,
+                details=json.dumps({"from": doc.assignee, "to": payload.assignee}),
+            )
+        )
     doc.assignee = payload.assignee
     db.commit()
     db.refresh(doc)
 
     return DocumentRead.model_validate(doc)
+
+
+@router.get("/{document_id}/history", response_model=list[AssigneeHistoryRead])
+def list_document_history(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[AssigneeHistoryRead]:
+    """Assignee changes of a document (`PUT /{document_id}/assignee`), newest first."""
+    rows = (
+        db.query(AuditHistory)
+        .filter(AuditHistory.document_id == document_id, AuditHistory.event_type == ASSIGNEE_CHANGED)
+        .order_by(AuditHistory.event_timestamp.desc())
+        .all()
+    )
+    result = []
+    for row in rows:
+        details = json.loads(row.details or "{}")
+        result.append(
+            AssigneeHistoryRead(
+                audit_id=row.audit_id,
+                document_id=row.document_id,
+                from_assignee=details.get("from"),
+                to_assignee=details.get("to"),
+                actor=row.actor,
+                event_timestamp=row.event_timestamp,
+            )
+        )
+    return result
 
 
 @router.delete("/{document_id}", response_model=DocumentDeleteResponse)
@@ -366,7 +412,12 @@ def delete_document(
     )
     deleted_counts["document_versions"] = versions_deleted
 
-    # Step 7: Delete Document
+    # Step 7: Delete assignee history (no FK cascade on Neon, see DATABASE_DESC.md)
+    db.query(AuditHistory).filter(AuditHistory.document_id == document_id).delete(
+        synchronize_session=False
+    )
+
+    # Step 8: Delete Document
     db.delete(doc)
     db.commit()
 

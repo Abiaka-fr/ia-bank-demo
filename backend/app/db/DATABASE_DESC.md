@@ -512,5 +512,11 @@ Migrations are tracked in `alembic/versions/`:
 - **010:** Add published_at to documents
 - **2026-09-21:** Create `mapping_history` (created on Neon from the model with
   `MappingHistory.__table__.create(engine, checkfirst=True)`, no Alembic file)
+- **2026-09-24:** Create `audit_history` on Neon **without foreign keys** (plain
+  `CREATE TABLE IF NOT EXISTS` + the 2 indexes, no Alembic file): Neon's
+  `documents.document_id` has no PK/unique constraint, so Postgres rejects the model's FK.
+  `DELETE /api/documents/{id}` deletes the rows itself. First used by
+  `PUT /api/documents/{id}/assignee` (`event_type = ASSIGNEE_CHANGED`, `details` = JSON
+  `{"from", "to"}`)
 
 Run `alembic upgrade head` to apply all migrations.

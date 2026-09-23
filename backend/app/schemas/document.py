@@ -162,6 +162,17 @@ class AssigneeUpdate(BaseModel):
         }
 
 
+class AssigneeHistoryRead(BaseModel):
+    """One assignee change on a document (`audit_history`, event_type ASSIGNEE_CHANGED)."""
+
+    audit_id: str
+    document_id: str
+    from_assignee: str | None = None
+    to_assignee: str | None = None
+    actor: str | None = None
+    event_timestamp: datetime | None = None
+
+
 class IngestDocumentRequest(BaseModel):
     """Request to ingest and chunk a regulation document.
 
