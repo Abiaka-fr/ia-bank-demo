@@ -244,6 +244,13 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 - **Version de Node.** La machine de développement tourne sur Node 20.20.2 ; Vitest 5 et jsdom 30
   déclarent `engines: node >= 22`. `jsdom` a été épinglé en v26 pour que `pnpm test` passe sur
   Node 20. Un `.nvmrc` (22) a été ajouté : passer la machine en Node 22 permettra de dépingler.
+- **Backend hébergé sur Neon — en attente de Thư (2026-09-23).** Le frontend Vercel n'a aucun
+  backend public à appeler (Neon n'est que la base de données). Demande détaillée :
+  `docs/api-requests.md` item 12 (hébergement Render/Railway, `CORS_ORIGINS` avec le domaine
+  Vercel, dépendances `requests`/`tiktoken`). Côté frontend, une fois l'URL reçue : définir
+  `NEXT_PUBLIC_BACKEND_URL` (et garder `NEXT_PUBLIC_API_MOCKING=enabled`) dans les variables
+  d'environnement du projet Vercel, puis redéployer — les fichiers `.env*` sont gitignorés et
+  n'arrivent jamais sur Vercel.
 
 ## Notes de fin de session
 
@@ -1801,3 +1808,30 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   « heuristique » / « fourni par le client » dans `API.md`). Limite préexistante vue en test, hors
   périmètre : sur un document du backend, « Importé par » affiche « Non assigné » (le backend
   n'expose pas `created_by` sur `DocumentRead`). Pas de commit.
+- **2026-09-23 (exposition Internet de la démo)** : ajout de `scripts/local-dev/run-public.sh`
+  — backend (SQLite `.local/`, jamais la base Neon partagée) + frontend en build de production,
+  publiés via Tailscale Funnel : frontend `https://debian-01.taila5effd.ts.net`, backend
+  `https://debian-01.taila5effd.ts.net:8443`. CORS passé par variable d'environnement, secret JWT
+  aléatoire dans `.local/public-secret-key`. Node 22 + pnpm installés dans `~/.local/opt/node`.
+  Vérifié en local : build OK, `/health` OK, connexion OK, en-tête CORS OK.
+  Funnel activé sur le tailnet et opérateur `debuser` configuré (une fois pour toutes). Script lancé
+  et vérifié via les URL publiques : frontend 200, `/health` 200, CORS OK, `POST /api/auth/signin`
+  + `GET /api/auth/me` OK. Attention : ne lancer qu'une instance du script — une seconde échoue
+  (port 3000 pris) et son nettoyage coupe la config Funnel de la première. Après (ré)activation de
+  Funnel, le DNS public du nom `*.ts.net` met quelques minutes à apparaître : les tests depuis
+  cette machine passent par le tailnet et ne le détectent pas — vérifier avec
+  `dig +short @8.8.8.8 debian-01.taila5effd.ts.net`. Accès externe vérifié via l'IP publique Funnel.
+  **Base locale = copie de Neon (2026-09-23).** Nouveau script
+  `scripts/local-dev/clone_neon_to_sqlite.py` (lecture seule côté Neon, URL passée par
+  `NEON_DATABASE_URL`, jamais écrite sur disque ; schéma créé depuis les modèles du backend).
+  `.local/backend-dev.sqlite` contient désormais les données Neon (5 documents, 39 exigences,
+  10 correspondances, 3 utilisateurs dont `marie.lefevre@iabank.fr` / `demo1234`) ; l'ancienne base
+  de démo (32 documents) est gardée dans `.local/backend-dev.demo-backup.sqlite`. Vérifié : connexion
+  + documents/exigences/correspondances/utilisateurs en 200. `run-public.sh` accepte
+  `EXTRA_CORS_ORIGINS` pour autoriser le domaine Vercel. **Reste :** le projet Vercel IA Bank
+  n'est pas dans le compte Vercel connecté (déployé par Giang ailleurs ?) — y définir
+  `NEXT_PUBLIC_BACKEND_URL=https://debian-01.taila5effd.ts.net:8443` puis redéployer.
+  ⚠️ Le mot de passe Neon a été collé en clair dans une conversation : à changer (Neon → Roles).
+  **Blocage backend (pour Thư, non corrigé) :** `app/services/llm_client.py` importe `requests` et
+  `tiktoken`, absents de `backend/pyproject.toml` → le serveur ne démarre pas sans eux ; installés
+  à la main dans `.venv-backend/` (le script `setup-backend.sh` ne les installe pas non plus).

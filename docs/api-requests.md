@@ -46,6 +46,21 @@ banner at its top) and is no longer the thing to check before calling an endpoin
    "concerning head office"). **Needs an answer from Giang/Francis before Thư builds it** — listed
    here as blocked-on-us, not blocked-on-Thư.
 
+12. **Hosted backend on Neon, reachable by the Vercel frontend** (requested 2026-09-23). The Vercel
+    frontend has no backend to talk to: Neon is only the database, and the backend currently runs
+    on local machines only. Needed:
+    - `backend/` deployed to a public HTTPS host (plan in `PROGRESS.md`: Render or Railway) with
+      `DATABASE_URL` pointing to the Neon database, a strong `SECRET_KEY` (not the
+      `dev-secret-key-change-me` default) and `DEBUG=false`.
+    - `CORS_ORIGINS` including the Vercel production domain (Giang to send the exact
+      `https://….vercel.app` URL; preview deployments use other domains, so list those too if
+      needed).
+    - `requests` and `tiktoken` added to `backend/pyproject.toml`: `app/services/llm_client.py`
+      imports them, and a fresh install without them does not start.
+    - Send the public URL back (or add it to `backend/README.md`). The frontend then only sets
+      `NEXT_PUBLIC_BACKEND_URL=<that URL>` in the Vercel project settings and redeploys; no code
+      change is needed on the frontend side.
+
 ## Shipped by Thư (2026-09-13/14) — verified in `backend/API.md` and the models
 
 4. **Three distinct dates** — ✅ shipped. `Document` now has `created_at`, `updated_at`
