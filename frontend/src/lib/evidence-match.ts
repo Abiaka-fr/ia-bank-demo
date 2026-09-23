@@ -86,40 +86,37 @@ export function highlightSegments(
     return [{ text: content, isMatch: false }];
   }
 
-  const excerptMap = new Map<string, EvidenceRef>();
+  const excerpts = new Set<string>();
   evidence.forEach((ref) => {
-    if (ref.excerpt?.trim()) {
-      excerptMap.set(ref.excerpt.trim().toLowerCase(), ref);
-    }
+    if (ref.excerpt?.trim()) excerpts.add(ref.excerpt.trim());
   });
 
-  if (excerptMap.size === 0) {
+  if (excerpts.size === 0) {
     return [{ text: content, isMatch: false }];
   }
 
   const segments: HighlightSegment[] = [];
   let lastIndex = 0;
 
-  const sortedExcerpts = Array.from(excerptMap.keys()).sort(
-    (a, b) => b.length - a.length,
-  );
-
-  const contentLower = content.toLowerCase();
+  const sortedExcerpts = Array.from(excerpts).sort((a, b) => b.length - a.length);
   const replacements: Array<{ start: number; end: number }> = [];
 
+  // Tout blanc vaut tout blanc : le texte source vient souvent en `\r\n` (fichier
+  // Windows) alors que l'extrait est en `\n`, ou avec des espaces doublés.
   sortedExcerpts.forEach((excerpt) => {
-    let index = 0;
-    while ((index = contentLower.indexOf(excerpt, index)) !== -1) {
-      const overlaps = replacements.some(
-        (r) => index < r.end && index + excerpt.length > r.start,
-      );
-      if (!overlaps) {
-        replacements.push({
-          start: index,
-          end: index + excerpt.length,
-        });
+    const pattern = new RegExp(
+      excerpt
+        .split(/\s+/)
+        .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join("\\s+"),
+      "gi",
+    );
+    for (const match of content.matchAll(pattern)) {
+      const start = match.index;
+      const end = start + match[0].length;
+      if (!replacements.some((r) => start < r.end && end > r.start)) {
+        replacements.push({ start, end });
       }
-      index += 1;
     }
   });
 

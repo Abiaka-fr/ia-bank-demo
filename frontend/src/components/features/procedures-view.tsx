@@ -8,6 +8,11 @@ import { useMemo, useState } from "react";
 
 import { AssigneeName } from "@/components/features/assignee-select";
 import {
+  DocumentFilters,
+  matchesDocumentFilters,
+  NO_DOCUMENT_FILTER,
+} from "@/components/features/document-filters";
+import {
   EmptyState,
   ErrorState,
   LoadingState,
@@ -52,6 +57,7 @@ export function ProceduresView() {
 
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortOrder>("newest");
+  const [filters, setFilters] = useState(NO_DOCUMENT_FILTER);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const proceduresQuery = useQuery({
@@ -73,9 +79,10 @@ export function ProceduresView() {
     const query = search.trim().toLowerCase();
     const filtered = (proceduresQuery.data ?? []).filter(
       (procedure) =>
-        query === "" ||
-        procedure.title.toLowerCase().includes(query) ||
-        procedure.document_id.toLowerCase().includes(query),
+        (query === "" ||
+          procedure.title.toLowerCase().includes(query) ||
+          procedure.document_id.toLowerCase().includes(query)) &&
+        matchesDocumentFilters(procedure, filters),
     );
     return [...filtered].sort((a, b) => {
       if (sort === "title") return a.title.localeCompare(b.title);
@@ -83,7 +90,7 @@ export function ProceduresView() {
       const dateB = b.created_at ?? b.uploaded_at ?? "";
       return sort === "newest" ? dateB.localeCompare(dateA) : dateA.localeCompare(dateB);
     });
-  }, [proceduresQuery.data, search, sort]);
+  }, [proceduresQuery.data, search, sort, filters]);
 
   if (proceduresQuery.isPending) return <LoadingState rows={3} />;
   if (proceduresQuery.isError) {
@@ -123,6 +130,12 @@ export function ProceduresView() {
             <SelectItem value="title">{t("sortTitle")}</SelectItem>
           </SelectContent>
         </Select>
+
+        <DocumentFilters
+          documents={proceduresQuery.data}
+          value={filters}
+          onChange={setFilters}
+        />
       </div>
 
       {visibleProcedures.length === 0 ? (

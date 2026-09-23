@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { procedures } from "@/lib/mocks/data/documents";
 import { seedFindings } from "@/lib/mocks/data/findings";
 
-import { findQuotedLineIndexes } from "./evidence-match";
+import { findQuotedLineIndexes, highlightSegments } from "./evidence-match";
 
 function procedureText(procedureId: string): string {
   return (
@@ -62,5 +62,21 @@ describe("findQuotedLineIndexes", () => {
 
   it("ne renvoie rien pour un extrait trop court pour être discriminant", () => {
     expect(findQuotedLineIndexes(procedureText("KYC-004"), "La Banque").size).toBe(0);
+  });
+});
+
+describe("highlightSegments", () => {
+  it("surligne un extrait multi-lignes en \\n dans un texte source en \\r\\n", () => {
+    const content =
+      "2.2 Ongoing Transaction Monitoring\r\n\r\nHigh-risk customers shall be subject to enhanced transaction\r\nmonitoring.\r\n\r\n2.3 Next";
+    const excerpt =
+      "2.2 Ongoing Transaction Monitoring\n\nHigh-risk customers shall be subject to enhanced transaction\nmonitoring.";
+    const segments = highlightSegments(content, [
+      { document_id: "EXT", document_title: "", section_reference: "", excerpt, language: "EN" },
+    ]);
+    const matched = segments.filter((segment) => segment.isMatch);
+    expect(matched).toHaveLength(1);
+    expect(matched[0].text).toBe(content.slice(0, content.indexOf("\r\n\r\n2.3")));
+    expect(segments.map((segment) => segment.text).join("")).toBe(content);
   });
 });

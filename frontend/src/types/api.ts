@@ -383,16 +383,22 @@ export const auditHistoryEntrySchema = z.object({
   requirement_id: z.string(),
   finding_id: z.string(),
   procedure_id: z.string().nullable(),
-  /** PENDING n'est jamais journalisé : ce n'est pas une décision, c'est l'absence d'une. */
-  action: z.enum(["ACCEPTED", "REJECTED", "ESCALATED"]),
+  /**
+   * PENDING n'est jamais journalisé : ce n'est pas une décision, c'est l'absence d'une.
+   * `ASSIGNEE_CHANGED` : changement de la personne en charge de la régulation
+   * (`audit_history`, backend réel) — `requirement_id`/`finding_id` vides.
+   */
+  action: z.enum(["ACCEPTED", "REJECTED", "ESCALATED", "ASSIGNEE_CHANGED"]),
   actor_id: z.string(),
   custom_action: z.string().optional(),
   reviewer_comment: z.string().optional(),
   created_at: z.string(),
   /** Backend réel (`mapping_history`, 2026-09-21) — statut avant la décision. */
   previous_status: humanStatusSchema.optional(),
-  /** Escalade : à qui le constat a été confié. */
+  /** Escalade : à qui le constat a été confié. `ASSIGNEE_CHANGED` : nouvelle personne. */
   assignee_id: z.string().optional(),
+  /** `ASSIGNEE_CHANGED` : personne en charge avant le changement. */
+  previous_assignee_id: z.string().optional(),
   /** Acceptation : version de la procédure créée par les modifications appliquées. */
   new_version_id: z.string().optional(),
 });

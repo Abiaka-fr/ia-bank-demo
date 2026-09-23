@@ -77,23 +77,34 @@ export function RegulationHistoryTab({
                 <AssigneeName userId={entry.actor_id} />
               </TableCell>
               <TableCell>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {entry.previous_status && entry.previous_status !== entry.action ? (
-                    <>
-                      <HumanStatusBadge status={entry.previous_status} />
-                      <span aria-hidden>→</span>
-                    </>
-                  ) : null}
-                  <HumanStatusBadge status={entry.action} />
-                </div>
-                {entry.assignee_id ? (
+                {entry.action === "ASSIGNEE_CHANGED" ? (
+                  <div className="text-sm">
+                    <p className="font-medium">{t("assigneeChanged")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      <AssigneeName userId={entry.previous_assignee_id} />
+                      <span aria-hidden> → </span>
+                      <AssigneeName userId={entry.assignee_id} />
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {entry.previous_status && entry.previous_status !== entry.action ? (
+                      <>
+                        <HumanStatusBadge status={entry.previous_status} />
+                        <span aria-hidden>→</span>
+                      </>
+                    ) : null}
+                    <HumanStatusBadge status={entry.action} />
+                  </div>
+                )}
+                {entry.assignee_id && entry.action !== "ASSIGNEE_CHANGED" ? (
                   <p className="mt-1 text-xs text-muted-foreground">
                     {t("assignedTo")} <AssigneeName userId={entry.assignee_id} />
                   </p>
                 ) : null}
               </TableCell>
               <TableCell className="font-mono text-xs">
-                {entry.requirement_id}
+                {entry.requirement_id || "—"}
               </TableCell>
               <TableCell className="font-mono text-xs text-muted-foreground">
                 {entry.procedure_id ?? "—"}

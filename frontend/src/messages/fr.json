@@ -127,6 +127,7 @@
     "searchNoResults": "Aucune exigence ne correspond à cette recherche.",
     "filterAuthority": "Autorité",
     "filterAllAuthorities": "Toutes",
+    "filterAllAssignees": "Toutes",
     "sortLabel": "Trier par",
     "sortNewest": "Import le plus récent",
     "sortOldest": "Import le plus ancien",
@@ -141,8 +142,6 @@
     "summaryLabel": "Résumé",
     "createdDateLabel": "Date de création",
     "lastUpdatedLabel": "Dernière mise à jour",
-    "filterClassification": "Classification",
-    "filterClassificationPlaceholder": "Bientôt disponible",
     "delete": "Supprimer",
     "deleteConfirmTitle": "Supprimer la régulation",
     "deleteConfirmMessage": "Cette action supprimera définitivement cette régulation et toutes les données liées, y compris les exigences et les correspondances de procédures. Cette action ne peut pas être annulée.",
@@ -448,7 +447,8 @@
     "noComment": "—",
     "requirementTitle": "Historique des décisions sur cette exigence",
     "assignedTo": "Confié à",
-    "newVersion": "Nouvelle version : {version}"
+    "newVersion": "Nouvelle version : {version}",
+    "assigneeChanged": "Changement de personne en charge"
   },
   "findingPage": {
     "findingDetail": "Revue du constat",

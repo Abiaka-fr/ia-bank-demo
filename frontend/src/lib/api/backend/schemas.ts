@@ -102,6 +102,16 @@ export const backendMappingHistorySchema = z.object({
   created_at: z.string().nullable().optional(),
 });
 
+/** `GET /api/documents/{id}/history` — changements de personne en charge (`audit_history`). */
+export const backendAssigneeHistorySchema = z.object({
+  audit_id: z.string(),
+  document_id: z.string(),
+  from_assignee: z.string().nullable().optional(),
+  to_assignee: z.string().nullable().optional(),
+  actor: z.string().nullable().optional(),
+  event_timestamp: z.string().nullable().optional(),
+});
+
 export const backendDocumentChunkSchema = z.object({
   chunk_id: z.string(),
   document_id: z.string(),

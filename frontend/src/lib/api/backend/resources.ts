@@ -53,6 +53,7 @@ import {
 } from "./finding-adapt";
 import {
   backendAnalyzeMappingsSchema,
+  backendAssigneeHistorySchema,
   backendDeleteDocumentSchema,
   backendDocumentContentSchema,
   backendExtractRequirementsSchema,
@@ -530,11 +531,42 @@ export function deleteDocumentFromBackend(documentId: string) {
 }
 
 /**
- * Historique des décisions (`GET /api/mappings/history`, table `mapping_history`,
- * 2026-09-21) sur les couples des exigences d'une régulation. Les remises à
- * « En attente » sont écartées : l'onglet ne montre que des décisions.
+ * Historique d'une régulation : décisions sur les couples de ses exigences
+ * (`GET /api/mappings/history`, table `mapping_history`, 2026-09-21) + changements de
+ * personne en charge (`GET /api/documents/{id}/history`, `audit_history`), plus récent
+ * en premier. Les remises à « En attente » sont écartées : l'onglet ne montre que des
+ * décisions.
  */
 export async function fetchMappingHistory(regulationId: string): Promise<AuditHistoryEntry[]> {
+  const [decisions, assigneeChanges] = await Promise.all([
+    fetchDecisionHistory(regulationId),
+    fetchAssigneeHistory(regulationId),
+  ]);
+  return [...decisions, ...assigneeChanges].sort((a, b) =>
+    b.created_at.localeCompare(a.created_at),
+  );
+}
+
+async function fetchAssigneeHistory(documentId: string): Promise<AuditHistoryEntry[]> {
+  const rows = await backendFetch(
+    `/api/documents/${encodeURIComponent(documentId)}/history`,
+    z.array(backendAssigneeHistorySchema),
+  );
+  return rows.map((row) => ({
+    entry_id: row.audit_id,
+    regulation_id: documentId,
+    requirement_id: "",
+    finding_id: "",
+    procedure_id: null,
+    action: "ASSIGNEE_CHANGED",
+    actor_id: row.actor ?? "",
+    created_at: row.event_timestamp ?? "",
+    assignee_id: row.to_assignee ?? undefined,
+    previous_assignee_id: row.from_assignee ?? undefined,
+  }));
+}
+
+async function fetchDecisionHistory(regulationId: string): Promise<AuditHistoryEntry[]> {
   const requirements = await fetchRequirements(regulationId);
   if (requirements.length === 0) return [];
 

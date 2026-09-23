@@ -127,6 +127,7 @@
     "searchNoResults": "No requirement matches this search.",
     "filterAuthority": "Authority",
     "filterAllAuthorities": "All",
+    "filterAllAssignees": "All",
     "sortLabel": "Sort by",
     "sortNewest": "Most recently imported",
     "sortOldest": "Oldest import",
@@ -141,8 +142,6 @@
     "summaryLabel": "Summary",
     "createdDateLabel": "Created date",
     "lastUpdatedLabel": "Last updated",
-    "filterClassification": "Classification",
-    "filterClassificationPlaceholder": "Coming soon",
     "delete": "Delete",
     "deleteConfirmTitle": "Delete regulation",
     "deleteConfirmMessage": "This action will permanently delete this regulation and all linked data including requirements and procedure mappings. This cannot be undone.",
@@ -448,7 +447,8 @@
     "noComment": "—",
     "requirementTitle": "Decision history for this requirement",
     "assignedTo": "Assigned to",
-    "newVersion": "New version: {version}"
+    "newVersion": "New version: {version}",
+    "assigneeChanged": "Assignee changed"
   },
   "findingPage": {
     "findingDetail": "Finding review",

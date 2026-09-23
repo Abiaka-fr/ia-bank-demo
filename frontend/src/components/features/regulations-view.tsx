@@ -7,7 +7,11 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AssigneeName, AssigneeSelect } from "@/components/features/assignee-select";
-import { AwaitingBackendBadge } from "@/components/features/awaiting-backend-badge";
+import {
+  DocumentFilters,
+  matchesDocumentFilters,
+  NO_DOCUMENT_FILTER,
+} from "@/components/features/document-filters";
 import { DocumentStatusBadge } from "@/components/features/document-status-badge";
 import { ReviewProgressBar } from "@/components/features/review-progress";
 import {
@@ -56,6 +60,7 @@ export function RegulationsView() {
   const [search, setSearch] = useState("");
   const [authority, setAuthority] = useState<string>(ALL_AUTHORITIES);
   const [sort, setSort] = useState<SortOrder>("newest");
+  const [filters, setFilters] = useState(NO_DOCUMENT_FILTER);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const regulationsQuery = useQuery({
@@ -109,7 +114,7 @@ export function RegulationsView() {
         reg.document_id.toLowerCase().includes(query);
       const matchesAuthority =
         authority === ALL_AUTHORITIES || reg.authority_or_owner === authority;
-      return matchesSearch && matchesAuthority;
+      return matchesSearch && matchesAuthority && matchesDocumentFilters(reg, filters);
     });
     // Comparaison inversée pour "newest" : la date la plus récente en premier.
     // `uploaded_at` absent (aucun cas dans le corpus actuel) est traité comme le plus
@@ -121,7 +126,7 @@ export function RegulationsView() {
       const dateB = b.uploaded_at ?? "";
       return sort === "newest" ? dateB.localeCompare(dateA) : dateA.localeCompare(dateB);
     });
-  }, [regulationsQuery.data, search, authority, sort]);
+  }, [regulationsQuery.data, search, authority, sort, filters]);
 
   if (regulationsQuery.isPending) return <LoadingState rows={3} />;
   if (regulationsQuery.isError) {
@@ -182,21 +187,11 @@ export function RegulationsView() {
           </SelectContent>
         </Select>
 
-        {/* Filtre par classification métier demandé par Francis (« concerning
-            customer », « concerning head office »…) — aucune taxonomie de ce type
-            n'existe dans le corpus (backend ni mock), inventer les catégories aurait
-            été de la donnée fabriquée. L'emplacement reste visible, désactivé, avec
-            le badge « en attente » plutôt que disparaître silencieusement (décision
-            Giang, 2026-09-11, docs/ui-guidelines.md § « donnée en attente »). */}
-        <div className="flex items-center gap-1.5">
-          <Select disabled>
-            <SelectTrigger size="sm" aria-label={t("filterClassification")} className="w-48">
-              <SelectValue placeholder={`${t("filterClassification")}: ${t("filterClassificationPlaceholder")}`} />
-            </SelectTrigger>
-            <SelectContent />
-          </Select>
-          <AwaitingBackendBadge field="DocumentMeta.classification" />
-        </div>
+        <DocumentFilters
+          documents={regulationsQuery.data}
+          value={filters}
+          onChange={setFilters}
+        />
       </div>
 
       {visibleRegulations.length === 0 ? (
