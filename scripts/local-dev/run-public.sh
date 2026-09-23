@@ -22,6 +22,13 @@
 #   # Frontend déployé ailleurs (Vercel) qui appelle ce backend : autoriser son origine
 #   EXTRA_CORS_ORIGINS="https://mon-projet.vercel.app" ./scripts/local-dev/run-public.sh
 #
+# Garder la démo en ligne après déconnexion SSH, avec redémarrage auto (pm2 : npm i -g pm2).
+# --kill-timeout laisse au trap le temps de retirer Funnel (défaut pm2 : 1,6 s).
+#   pm2 start scripts/local-dev/run-public.sh --name ia-demo --interpreter bash --kill-timeout 10000
+#   pm2 logs ia-demo                 # URLs + logs
+#   pm2 stop ia-demo                 # arrêt propre ; `pm2 delete ia-demo` pour l'oublier
+#   pm2 save && pm2 startup          # (optionnel) relance au reboot — suivre la commande sudo affichée
+#
 # Données locales (DB_TARGET=local) : pour y recopier la base Neon (lecture seule) :
 #   scripts/local-dev/clone_neon_to_sqlite.py
 #

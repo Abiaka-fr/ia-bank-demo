@@ -1855,3 +1855,53 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   `backendFetch`), bascule `isBackendLive` comme `extractRequirements`. Typecheck OK, 165 tests OK,
   lint inchangé (17 avertissements préexistants). **Reste :** rebuild local (`run-public.sh` sans
   `SKIP_BUILD`) et redéploiement Vercel pour que le correctif soit en ligne. Non committé.
+
+- **2026-09-23 (Claude Code — perf connexion Neon, modification `backend/` autorisée en session)** :
+  la lenteur de la démo publique venait de la base, pas de Tailscale Funnel (`/health` ~0,5 s en
+  local comme via Funnel, ~1 ms sur SQLite). Cause : `poolclass=NullPool` dans
+  `backend/app/db/session.py` → nouvelle connexion TLS vers Neon (Singapour, RTT ~170 ms) à chaque
+  requête.
+
+  **Fait :** `NullPool` retiré (pool SQLAlchemy par défaut, `pool_pre_ping=True` conservé pour les
+  connexions fermées par Neon au repos/suspension). **Exception à la règle `backend/` en lecture
+  seule, accordée explicitement en session pour ce changement — ⚠️ Thư à prévenir.** Mesures (Neon) :
+  `/health` 0,50 s → 0,13 s ; `/api/documents` ~0,23 s, `/api/mappings/all` ~0,32 s,
+  `/api/requirements` ~0,28 s (signin + ces routes vérifiés 200). Ruff non installé dans
+  `.venv-backend`, lint non lancé ; import `event` déjà inutilisé avant ce changement, laissé tel quel.
+
+  **Reste :** chaque requête SQL coûte encore ~1 RTT vers Singapour ; pour une démo plus rapide,
+  `DB_TARGET=local` (SQLite). Alternatives à Funnel étudiées (ngrok, Cloudflare Tunnel) : pas
+  utiles tant que la base est le goulot.
+
+- **2026-09-23 (Claude Code — démo publique persistante via pm2)** : pour garder `run-public.sh`
+  en ligne après déconnexion SSH, pm2 installé globalement (`npm i -g pm2`, Node utilisateur, sans
+  sudo) ; commandes documentées en tête de `scripts/local-dev/run-public.sh`
+  (`pm2 start … --interpreter bash --kill-timeout 10000`). Vérifié sur un script factice : `pm2 stop`
+  laisse le trap de nettoyage s'exécuter (retrait Funnel). Démo réelle non lancée. **Reste
+  (optionnel) :** `pm2 save && pm2 startup` (sudo) pour relancer au reboot. Non committé.
+
+- **2026-09-24 (Claude Code — demandes du Google Doc de Thư, modification `backend/` autorisée en session)** :
+  2e liste du doc (dates procédures, version picker, carte régulation, historique des mappings) déjà
+  faite (`59e89e0`/`00398f5`). 1re liste traitée :
+  1. **Bug surlignage de la preuve (REQ-0002)** : le texte source en base est en `\r\n` (fichier
+     Windows), l'extrait en `\n` → `indexOf` exact échouait. `highlightSegments`
+     (`lib/evidence-match.ts`, partagé par la modale d'exigence et `document-viewer-with-highlights`)
+     compare désormais tout blanc à tout blanc (regex `\s+`). Test ajouté.
+  2. **Filtres Domaine + Personne en charge** sur `/regulations` et `/procedures` : composant partagé
+     `document-filters.tsx` (+ test). Le filtre « Classification » désactivé (badge en attente) est
+     retiré, clés i18n associées supprimées.
+  3. **Historique des changements de personne en charge d'une régulation** : `PUT
+     /api/documents/{id}/assignee` écrit une ligne `audit_history` (table existante, inutilisée
+     jusque-là ; `event_type=ASSIGNEE_CHANGED`, `details` JSON from/to) ; nouvelle route
+     `GET /api/documents/{id}/history` (`API.md`, `DATABASE_DESC.md`, test). L'onglet Historique
+     fusionne ces lignes avec les décisions. MSW : non journalisé (mode mock seulement).
+     Corrigé au passage : `test_each_decision_is_recorded_in_history` cassé par `9e4db8b`
+     (paramètre `mapping_id` ajouté en positionnel).
+  **Vérifié :** 7 tests backend, 167 tests frontend, typecheck, lint (0 erreur), check:i18n ;
+  captures Playwright (backend local SQLite) : filtres, historique, surlignage REQ-0002.
+  ⚠️ **Reste bloquant :** la table `audit_history` **n'existe pas sur Neon** → tant qu'elle n'est pas
+  créée, changer la personne en charge renvoie 500 en `DB_TARGET=cloud`. À lancer une fois :
+  `.venv-backend/bin/python .local/create_audit_history.py` (table **sans FK** : sur Neon,
+  `documents.document_id` n'a ni PK ni contrainte unique, Postgres refuse la FK du modèle ;
+  `DELETE /api/documents/{id}` supprime donc lui-même ces lignes).
+  Base locale : EXT-EU-001 réassignée à Thu Vo pendant le test. Non committé.
