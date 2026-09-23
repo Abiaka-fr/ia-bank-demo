@@ -3,7 +3,7 @@
 POC de 5 semaines pour ABIAKA : un outil d'aide à la décision qui analyse une nouvelle
 réglementation, identifie les procédures internes potentiellement impactées, met en évidence les
 écarts possibles avec preuves à l'appui, et laisse un Responsable Conformité valider chaque
-constat.
+constat....
 
 > Ce fichier est pour les humains. Pour le contexte destiné à un agent Claude Code, voir
 > [`CLAUDE.md`](./CLAUDE.md) — il est lu automatiquement à l'ouverture d'une session.
