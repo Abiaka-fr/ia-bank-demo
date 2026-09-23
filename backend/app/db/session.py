@@ -2,16 +2,15 @@
 
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import NullPool
 
 from app.config import settings
 
-# Create engine with connection pool
+# Pooled: with a remote DB (Neon), a fresh TLS connection per request costs ~500 ms
+# vs ~150 ms reused. pre_ping drops connections Neon closed while idle/suspended.
 engine = create_engine(
     settings.database_url,
     echo=settings.debug,
     pool_pre_ping=True,
-    poolclass=NullPool,  # Disable connection pooling for simplicity in development
 )
 
 # Create session factory
