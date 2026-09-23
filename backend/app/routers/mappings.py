@@ -266,21 +266,41 @@ def list_mappings(
 
 @router.get("/history", response_model=list[MappingHistoryRead])
 def list_mapping_history(
-    requirement_ids: list[str] = Query(..., description="Requirement IDs (repeatable)"),
+    requirement_ids: list[str] | None = Query(None, description="Requirement IDs (repeatable)"),
+    mapping_id: str | None = Query(None, description="Specific mapping ID"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[MappingHistoryRead]:
     """
-    Decision history of every mapping linked to the given requirements, newest first.
+    Get decision history for mappings.
 
-    **Example:** `GET /api/mappings/history?requirement_ids=REQ-0001&requirement_ids=REQ-0002`
+    Filter by either requirement_ids (get history for all mappings of those requirements)
+    or mapping_id (get history for a specific mapping).
+
+    **Query Parameters:**
+    - `requirement_ids` (optional, repeatable): Filter by requirement IDs
+    - `mapping_id` (optional): Filter by specific mapping ID
+
+    **Example URLs:**
+    - `GET /api/mappings/history?requirement_ids=REQ-0001&requirement_ids=REQ-0002`
+    - `GET /api/mappings/history?mapping_id=MAP-0001`
+
+    **Note:** At least one of requirement_ids or mapping_id must be provided.
     """
-    rows = (
-        db.query(MappingHistory)
-        .filter(MappingHistory.requirement_id.in_(requirement_ids))
-        .order_by(MappingHistory.created_at.desc())
-        .all()
-    )
+    if not requirement_ids and not mapping_id:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one of requirement_ids or mapping_id must be provided",
+        )
+
+    query = db.query(MappingHistory)
+
+    if mapping_id:
+        query = query.filter(MappingHistory.mapping_id == mapping_id)
+    elif requirement_ids:
+        query = query.filter(MappingHistory.requirement_id.in_(requirement_ids))
+
+    rows = query.order_by(MappingHistory.created_at.desc()).all()
     return [MappingHistoryRead.model_validate(row) for row in rows]
 
 

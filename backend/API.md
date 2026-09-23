@@ -1135,12 +1135,23 @@ PUT /api/mappings/MAP-0001/human-status
 ### Mapping Decision History
 
 #### `GET /api/mappings/history`
-Decision history of every mapping linked to the given requirements, newest first.
+Get decision history for mappings, filtered by requirement IDs or specific mapping ID.
+
+History records every human decision (accept, reject, escalate) made on a mapping, newest first.
 
 **Query Parameters**
-- `requirement_ids` (required, repeatable): e.g. `?requirement_ids=REQ-0001&requirement_ids=REQ-0002`
+- `requirement_ids` (optional, repeatable): Filter by requirement IDs (e.g., `?requirement_ids=REQ-0001&requirement_ids=REQ-0002`)
+- `mapping_id` (optional): Filter by specific mapping ID (e.g., `?mapping_id=MAP-0001`)
+
+**Note:** At least one of `requirement_ids` or `mapping_id` must be provided.
 
 **Authentication** Required (Bearer token)
+
+**Request Examples**
+```
+GET /api/mappings/history?requirement_ids=REQ-0001&requirement_ids=REQ-0002
+GET /api/mappings/history?mapping_id=MAP-0001
+```
 
 **Response (200 OK)**
 ```json
@@ -1159,6 +1170,13 @@ Decision history of every mapping linked to the given requirements, newest first
     "created_at": "2026-09-21T09:12:03"
   }
 ]
+```
+
+**Response (400 Bad Request)**
+```json
+{
+  "detail": "At least one of requirement_ids or mapping_id must be provided"
+}
 ```
 
 ---
