@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Démarre le backend de Thư en local sur la base SQLite de développement.
+# Démarre le backend de Thư en local, sur la base cloud Neon (défaut) ou sur la copie
+# SQLite de développement (DB_TARGET=local) — voir db-env.sh.
 #
 # `backend/` reste en lecture seule : rien n'est écrit sous cette arborescence. Le
 # paquet n'est pas installé, on ajoute simplement `backend/` au PYTHONPATH, et toute la
@@ -12,6 +13,7 @@
 # Usage :
 #   ./scripts/local-dev/run-backend.sh          # port 8000
 #   PORT=8010 ./scripts/local-dev/run-backend.sh
+#   DB_TARGET=local ./scripts/local-dev/run-backend.sh   # SQLite .local/backend-dev.sqlite
 
 set -euo pipefail
 
@@ -21,14 +23,14 @@ cd "$REPO_ROOT"
 VENV_PY="$REPO_ROOT/.venv-backend/bin/python"
 DEV_DB="$REPO_ROOT/.local/backend-dev.sqlite"
 
-if [ ! -x "$VENV_PY" ] || [ ! -f "$DEV_DB" ]; then
+if [ ! -x "$VENV_PY" ]; then
   echo "Environnement local absent. Lancer d'abord :" >&2
   echo "    ./scripts/local-dev/setup-backend.sh" >&2
   exit 1
 fi
 
 export PYTHONPATH="$REPO_ROOT/backend"
-export DATABASE_URL="sqlite:///$DEV_DB"
+source "$REPO_ROOT/scripts/local-dev/db-env.sh"
 
 # `echo=settings.debug` dans app/db/session.py : à `true`, SQLAlchemy journalise chaque
 # requête SQL et la console devient illisible.
@@ -45,7 +47,7 @@ PORT="${PORT:-8000}"
 
 echo "Backend    : http://localhost:$PORT"
 echo "Swagger    : http://localhost:$PORT/docs"
-echo "Base       : .local/backend-dev.sqlite (copie de travail, jamais la référence)"
+echo "Base       : $DB_LABEL"
 echo "Connexion  : marie.lefevre@iabank.fr / demo1234"
 echo
 

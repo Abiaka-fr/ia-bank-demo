@@ -1835,3 +1835,23 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   **Blocage backend (pour Thư, non corrigé) :** `app/services/llm_client.py` importe `requests` et
   `tiktoken`, absents de `backend/pyproject.toml` → le serveur ne démarre pas sans eux ; installés
   à la main dans `.venv-backend/` (le script `setup-backend.sh` ne les installe pas non plus).
+- **2026-09-23 (choix de la base du backend local)** : variable `DB_TARGET` (`cloud` par défaut /
+  `local`) pour `run-backend.sh` et `run-public.sh`, logique commune dans
+  `scripts/local-dev/db-env.sh`. `cloud` lit `DATABASE_URL` dans `backend/.env` (lecture seule ;
+  nécessaire car uvicorn tourne depuis la racine, où `env_file=".env"` ne trouve pas ce fichier) et
+  force le driver psycopg 3 ; `local` = `.local/backend-dev.sqlite` (comportement précédent).
+  `setup-backend.sh` installe désormais `psycopg[binary]`. Vérifié : `SELECT 1` OK sur les deux
+  bases (Neon : 3 utilisateurs, SQLite : 4), valeur invalide refusée. ⚠️ Changement de défaut :
+  `run-public.sh` expose désormais la base Neon partagée de Thư (comptes `demo1234` publics) —
+  utiliser `DB_TARGET=local` pour une démo publique. Instance en cours (PID 891563) toujours sur
+  SQLite jusqu'à son redémarrage. Pas de commit.
+  Complément : `POST /api/requirements/extract` répondait 400 (`OPENROUTER_API_KEY not configured`)
+  — même cause que `DATABASE_URL` (uvicorn lancé depuis la racine, `backend/.env` non chargé).
+  `db-env.sh` charge désormais aussi `OPENROUTER_API_KEY` depuis `backend/.env` (les deux modes).
+  **Bug FE corrigé :** `analyzeMappings` (`POST /api/mappings/analyze`) et `deleteDocument`
+  (`DELETE /api/documents/{id}`) appelaient `apiFetch` en relatif même backend branché → requête
+  envoyée au serveur Next (aucun handler MSW) au lieu du backend. Ajout de
+  `analyzeMappingsInBackend` / `deleteDocumentFromBackend` (+ schémas, `DELETE` autorisé dans
+  `backendFetch`), bascule `isBackendLive` comme `extractRequirements`. Typecheck OK, 165 tests OK,
+  lint inchangé (17 avertissements préexistants). **Reste :** rebuild local (`run-public.sh` sans
+  `SKIP_BUILD`) et redéploiement Vercel pour que le correctif soit en ligne. Non committé.

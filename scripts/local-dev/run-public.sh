@@ -5,8 +5,9 @@
 #   Frontend : https://<machine>.<tailnet>.ts.net          (port public 443  -> 127.0.0.1:3000)
 #   Backend  : https://<machine>.<tailnet>.ts.net:8443     (port public 8443 -> 127.0.0.1:8000)
 #
-# Comme run-backend.sh, rien n'est écrit sous `backend/` : le backend tourne sur la copie
-# SQLite `.local/backend-dev.sqlite`, jamais sur la base Neon partagée de Thư.
+# Comme run-backend.sh, rien n'est écrit sous `backend/`. Base : cloud Neon par défaut
+# (partagée avec Thư — les écritures faites pendant la démo y atterrissent), ou copie
+# SQLite `.local/backend-dev.sqlite` avec DB_TARGET=local — voir db-env.sh.
 #
 # Prérequis (une fois) :
 #   - ./scripts/local-dev/setup-backend.sh
@@ -17,10 +18,11 @@
 # Usage :
 #   ./scripts/local-dev/run-public.sh          # build + démarrage, Ctrl+C pour tout arrêter
 #   SKIP_BUILD=1 ./scripts/local-dev/run-public.sh
+#   DB_TARGET=local ./scripts/local-dev/run-public.sh   # SQLite .local/backend-dev.sqlite
 #   # Frontend déployé ailleurs (Vercel) qui appelle ce backend : autoriser son origine
 #   EXTRA_CORS_ORIGINS="https://mon-projet.vercel.app" ./scripts/local-dev/run-public.sh
 #
-# Données : `.local/backend-dev.sqlite`. Pour y recopier la base Neon (lecture seule) :
+# Données locales (DB_TARGET=local) : pour y recopier la base Neon (lecture seule) :
 #   scripts/local-dev/clone_neon_to_sqlite.py
 #
 # ⚠️ Les comptes de démo (mot de passe `demo1234`) deviennent utilisables par n'importe qui
@@ -37,10 +39,11 @@ FRONTEND_PORT=3000
 BACKEND_PORT=8000
 BACKEND_PUBLIC_PORT=8443
 
-if [ ! -x "$VENV_PY" ] || [ ! -f "$DEV_DB" ]; then
+if [ ! -x "$VENV_PY" ]; then
   echo "Environnement local absent. Lancer d'abord : ./scripts/local-dev/setup-backend.sh" >&2
   exit 1
 fi
+source "$REPO_ROOT/scripts/local-dev/db-env.sh"
 command -v pnpm >/dev/null || { echo "pnpm introuvable dans le PATH." >&2; exit 1; }
 
 # Une seconde instance échouerait au démarrage, et son nettoyage couperait la config Funnel
@@ -80,7 +83,6 @@ trap cleanup EXIT INT TERM
 
 # --- Backend ------------------------------------------------------------------
 PYTHONPATH="$REPO_ROOT/backend" \
-DATABASE_URL="sqlite:///$DEV_DB" \
 DEBUG="false" \
 SECRET_KEY="$(cat "$SECRET_FILE")" \
 CORS_ORIGINS="$(EXTRA="${EXTRA_CORS_ORIGINS:-}" "$VENV_PY" -c 'import json,os,sys; print(json.dumps(sys.argv[1:] + os.environ["EXTRA"].split()))' "$FRONTEND_URL" "http://localhost:$FRONTEND_PORT")" \
@@ -100,6 +102,7 @@ cat <<EOF
 
 Frontend : $FRONTEND_URL
 Backend  : $BACKEND_URL      (Swagger : $BACKEND_URL/docs)
+Base     : $DB_LABEL
 Connexion: marie.lefevre@iabank.fr / demo1234
 Ctrl+C pour tout arrêter.
 EOF

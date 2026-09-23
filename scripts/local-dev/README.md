@@ -22,9 +22,14 @@ Ces scripts contournent les deux problèmes **sans modifier une seule ligne sous
 ./scripts/local-dev/setup-backend.sh
 
 # À chaque session :
-./scripts/local-dev/run-backend.sh          # http://localhost:8000/docs
+./scripts/local-dev/run-backend.sh          # http://localhost:8000/docs — base cloud Neon (défaut)
+DB_TARGET=local ./scripts/local-dev/run-backend.sh   # base SQLite .local/backend-dev.sqlite
 cd frontend && pnpm dev                     # http://localhost:3000 (mode mock par défaut)
 ```
+
+`DB_TARGET` (`cloud` par défaut, ou `local`) vaut aussi pour `run-public.sh` ; la logique
+est dans `db-env.sh`. En mode `cloud`, l'URL est lue dans `backend/.env` (jamais recopiée) :
+les écritures atterrissent dans la base Neon **partagée avec Thư**.
 
 Connexion (identique aux comptes du corpus MSW du frontend) :
 `marie.lefevre@iabank.fr` / `demo1234`.

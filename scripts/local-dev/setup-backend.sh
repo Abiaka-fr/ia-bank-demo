@@ -74,8 +74,8 @@ VENV_PY="$VENV_DIR/bin/python"
 echo "Installation des dépendances backend …"
 "$VENV_PY" -m pip install --quiet --upgrade pip
 
-# Liste reprise de `backend/pyproject.toml`. `psycopg` est volontairement omis : on
-# tourne sur SQLite en local, et sa roue binaire est lourde à installer pour rien.
+# Liste reprise de `backend/pyproject.toml`. `psycopg` sert à la base cloud Neon
+# (DB_TARGET=cloud, défaut des scripts run-*.sh).
 # Le paquet backend n'est PAS installé en editable (`pip install -e backend/`) : cela
 # écrirait un `backend/*.egg-info/`, donc un fichier sous une zone en lecture seule.
 # `run-backend.sh` pose PYTHONPATH=backend à la place.
@@ -89,7 +89,8 @@ echo "Installation des dépendances backend …"
   "python-multipart>=0.0.6" \
   "email-validator>=2.0.0" \
   "bcrypt>=4.1.0" \
-  "pyjwt>=2.8.0"
+  "pyjwt>=2.8.0" \
+  "psycopg[binary]>=3.2.0"
 
 # --- 3. Copie de travail de la base de référence -----------------------------
 
