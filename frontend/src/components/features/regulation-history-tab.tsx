@@ -18,33 +18,40 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fetchRegulationHistory } from "@/lib/api/history";
+import { fetchRegulationHistory, fetchMappingHistoryById } from "@/lib/api/history";
 import { queryKeys } from "@/lib/api/query-keys";
 
 /**
- * Onglet « Historique » : qui a pris quelle décision, sur quelle exigence, quand.
- * `PENDING` n'y apparaît jamais — ce n'est pas une décision (voir `lib/mocks/store.ts`).
- * `requirementId` restreint aux couples d'une exigence (page d'un constat).
+ * Onglet « Historique » : qui a pris quelle décision, sur quel couple, quand.
+ * `PENDING` n'y apparaît jamais — ce n'est pas une décision.
+ * `mappingId` restreint à un couple spécifique (page d'un constat).
  */
 export function RegulationHistoryTab({
   regulationId,
+  mappingId,
   requirementId,
 }: {
-  regulationId: string;
+  regulationId?: string;
+  mappingId?: string;
   requirementId?: string;
 }) {
   const t = useTranslations("history");
 
   const { data, isPending, isError, error, refetch } = useQuery({
-    queryKey: queryKeys.regulationHistory(regulationId),
-    queryFn: () => fetchRegulationHistory(regulationId),
+    queryKey: mappingId
+      ? queryKeys.mappingHistory(mappingId)
+      : queryKeys.regulationHistory(regulationId || ""),
+    queryFn: () =>
+      mappingId
+        ? fetchMappingHistoryById(mappingId)
+        : fetchRegulationHistory(regulationId || ""),
+    enabled: !!mappingId || !!regulationId,
   });
 
   if (isPending) return <LoadingState rows={4} />;
   if (isError) return <ErrorState error={error} onRetry={() => void refetch()} />;
-  const entries = requirementId
-    ? data.filter((entry) => entry.requirement_id === requirementId)
-    : data;
+  const entries =
+    !mappingId && requirementId ? data.filter((entry) => entry.requirement_id === requirementId) : data;
   if (entries.length === 0) return <EmptyState message={t("empty")} />;
 
   return (

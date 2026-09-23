@@ -544,3 +544,34 @@ export async function fetchMappingHistory(regulationId: string): Promise<AuditHi
     ];
   });
 }
+
+/**
+ * Historique des décisions pour un mapping spécifique — requête par mapping_id.
+ * Filtre les remises à « En attente » : ne montre que les décisions réelles.
+ */
+export async function fetchMappingHistoryById(mappingId: string): Promise<AuditHistoryEntry[]> {
+  const rows = await backendFetch("/api/mappings/history", z.array(backendMappingHistorySchema), {
+    searchParams: { mapping_id: mappingId },
+  });
+
+  return rows.flatMap((row): AuditHistoryEntry[] => {
+    const action = adaptHumanStatus(row.to_status);
+    if (action === "PENDING") return [];
+    return [
+      {
+        entry_id: row.history_id,
+        regulation_id: "",
+        requirement_id: row.requirement_id,
+        finding_id: row.mapping_id,
+        procedure_id: row.procedure_id ?? null,
+        action,
+        actor_id: row.actor ?? "",
+        custom_action: row.comment ?? undefined,
+        created_at: row.created_at ?? "",
+        previous_status: row.from_status ? adaptHumanStatus(row.from_status) : undefined,
+        assignee_id: row.assignee ?? undefined,
+        new_version_id: row.new_version_id ?? undefined,
+      },
+    ];
+  });
+}

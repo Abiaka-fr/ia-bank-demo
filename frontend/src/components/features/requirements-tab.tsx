@@ -71,6 +71,7 @@ export function RequirementsTab({
     () => new Set(focus ? [focus] : []),
   );
   const [selectedRequirementId, setSelectedRequirementId] = useState<string | null>(null);
+  const [analyzingRequirementId, setAnalyzingRequirementId] = useState<string | null>(null);
 
   const selectedReq = requirements.find((req) => req.requirement_id === selectedRequirementId);
 
@@ -86,6 +87,9 @@ export function RequirementsTab({
 
   const analyzeMutation = useMutation({
     mutationFn: (requirementId: string) => analyzeMappings([requirementId]),
+    onMutate: (requirementId: string) => {
+      setAnalyzingRequirementId(requirementId);
+    },
     onSuccess: (data) => {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.findings(regulationId),
@@ -101,6 +105,9 @@ export function RequirementsTab({
         description: errorMessage,
         duration: 5000,
       });
+    },
+    onSettled: () => {
+      setAnalyzingRequirementId(null);
     },
   });
 
@@ -250,7 +257,7 @@ export function RequirementsTab({
                     onClick={() => analyzeMutation.mutate(requirement.requirement_id)}
                     disabled={analyzeMutation.isPending}
                   >
-                    {analyzeMutation.isPending ? (
+                    {analyzingRequirementId === requirement.requirement_id ? (
                       <>
                         <div className="size-3 animate-spin rounded-full border border-current border-t-transparent" />
                         {t("analyzing")}

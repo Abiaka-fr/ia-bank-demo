@@ -17,3 +17,17 @@ export function fetchRegulationHistory(regulationId: string) {
     z.array(auditHistoryEntrySchema),
   );
 }
+
+/**
+ * Historique des décisions pour un mapping spécifique — requête par mapping_id.
+ */
+export function fetchMappingHistoryById(mappingId: string) {
+  if (isBackendLive) return backend.fetchMappingHistoryById(mappingId);
+  return apiFetch(
+    `/api/mappings/history`,
+    z.array(auditHistoryEntrySchema),
+    {
+      searchParams: { mapping_id: mappingId },
+    },
+  );
+}

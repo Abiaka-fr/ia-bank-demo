@@ -16,6 +16,7 @@ export const queryKeys = {
   portfolioSummary: () => ["dashboard", "overview"] as const,
   regulationMap: () => ["dashboard", "map"] as const,
   regulationHistory: (id: string) => ["regulations", id, "history"] as const,
+  mappingHistory: (id: string) => ["mappings", id, "history"] as const,
   users: () => ["users"] as const,
   procedures: () => ["procedures"] as const,
   procedure: (id: string) => ["procedures", id] as const,

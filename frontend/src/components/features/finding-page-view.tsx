@@ -388,14 +388,14 @@ export function FindingPageView({ findingId }: { findingId: string }) {
         </Card>
       )}
 
-      {/* Historique de tous les couples rattachés à cette exigence (`mapping_history`). */}
-      {regulationId && requirementId ? (
+      {/* Historique du couple spécifique (`mapping_history`). */}
+      {findingId ? (
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">{historyT("requirementTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <RegulationHistoryTab regulationId={regulationId} requirementId={requirementId} />
+            <RegulationHistoryTab mappingId={findingId} />
           </CardContent>
         </Card>
       ) : null}

@@ -41,6 +41,9 @@ export function useValidateFinding(regulationId: string) {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.regulationHistory(regulationId),
       });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.mappingHistory(findingId),
+      });
       // Page de détail du constat, et procédure : une acceptation en crée une nouvelle version.
       await queryClient.invalidateQueries({ queryKey: queryKeys.findingDetail(findingId) });
       if (updated.procedure_id) {
