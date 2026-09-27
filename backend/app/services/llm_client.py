@@ -2,6 +2,7 @@
 
 import json
 import logging
+import time
 
 import requests
 from pydantic import BaseModel, ValidationError
@@ -11,7 +12,8 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL = "openai/gpt-oss-120b"
+# MODEL = "openai/gpt-oss-120b"
+MODEL = "meta-llama/llama-3.2-1b-instruct"
 
 
 class LLMClient:
@@ -49,19 +51,24 @@ class LLMClient:
             "model": MODEL,
             "messages": messages,
             "reasoning": {"enabled": True},
+            "temperature": 0,
         }
 
         # First attempt
         try:
+            start_time = time.time()
             response = requests.post(
                 OPENROUTER_API_URL,
                 headers=headers,
                 json=payload,
                 timeout=60,
             )
+            latency_ms = (time.time() - start_time) * 1000
+            logger.info(f"⏱️  LLM call completed in {latency_ms:.2f}ms")
             response.raise_for_status()
         except requests.RequestException as e:
-            logger.error(f"OpenRouter API call failed: {e}")
+            latency_ms = (time.time() - start_time) * 1000
+            logger.error(f"❌ OpenRouter API call failed after {latency_ms:.2f}ms: {e}")
             raise ValueError(f"LLM API error: {e}")
 
         try:
@@ -106,12 +113,15 @@ class LLMClient:
             ]
 
             try:
+                start_time = time.time()
                 response = requests.post(
                     OPENROUTER_API_URL,
                     headers=headers,
                     json={**payload, "messages": follow_up_messages},
                     timeout=60,
                 )
+                latency_ms = (time.time() - start_time) * 1000
+                logger.info(f"⏱️  LLM retry call completed in {latency_ms:.2f}ms")
                 response.raise_for_status()
                 result = response.json()
 

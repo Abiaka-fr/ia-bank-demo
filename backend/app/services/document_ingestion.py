@@ -1,7 +1,6 @@
 """Service for ingesting and chunking regulatory documents."""
 
 import logging
-import re
 from datetime import datetime
 
 from pydantic import BaseModel
@@ -106,7 +105,7 @@ class DocumentIngestionService:
             IngestDocumentResponse with document and chunk info
         """
         # Step 1: Use provided metadata
-        logger.info(f"Step 1: Using provided metadata for document ingestion...")
+        logger.info("Step 1: Using provided metadata for document ingestion...")
         logger.info(f"  Title: {title}")
         logger.info(f"  Domain: {domain}")
         logger.info(f"  Language: {language}")
@@ -120,7 +119,7 @@ class DocumentIngestionService:
 
         # Step 2: Chunk document by token count (max 800 tokens per chunk)
         logger.info("Step 2: Chunking document by token count (max 800 tokens per chunk)...")
-        chunker = TokenBasedChunker(max_tokens=800)
+        chunker = TokenBasedChunker(max_tokens=1000)
         chunks = chunker.chunk(
             text,
             language=metadata.language,
@@ -176,7 +175,7 @@ class DocumentIngestionService:
             status="ACTIVE",
             file_path=doc.current_file_path,
             created_by=created_by,
-            change_reason="Initial document ingestion (token-based chunking, max 800 tokens per chunk)",
+            change_reason="Initial document ingestion",
         )
         db.add(doc_version)
         db.flush()

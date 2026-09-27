@@ -1,6 +1,24 @@
 """Application configuration."""
 
+import logging
+import os
 from pydantic_settings import BaseSettings
+
+# Create logs directory if it doesn't exist
+try:
+    os.makedirs("logs", exist_ok=True)
+except Exception:
+    pass
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[
+        logging.FileHandler("logs/app.log"),
+        logging.StreamHandler(),
+    ],
+)
 
 
 class Settings(BaseSettings):

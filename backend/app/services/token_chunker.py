@@ -52,7 +52,7 @@ class TokenCounter:
 class TokenBasedChunker:
     """Chunk documents by token count while respecting paragraph boundaries."""
 
-    DEFAULT_MAX_TOKENS = 500
+    DEFAULT_MAX_TOKENS = 800
     MIN_TOKENS_PER_CHUNK = 50  # Minimum tokens to avoid tiny chunks
 
     def __init__(self, max_tokens: int = DEFAULT_MAX_TOKENS):

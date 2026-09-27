@@ -1,8 +1,7 @@
 """Official public regulatory source model."""
 
-from datetime import datetime
 
-from sqlalchemy import Column, String, DateTime, Text
+from sqlalchemy import Column, DateTime, String, Text
 
 from app.db.base import Base
 
