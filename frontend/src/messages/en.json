@@ -112,6 +112,7 @@
     "analyzeButton": "Analyze",
     "analyzing": "Analyzing…",
     "extractionInProgress": "Extracting requirements. This may take a moment.",
+    "extractionProgress": "Progress: {percent}% completed",
     "extractionSuccess": "✓ {count} requirement(s) extracted successfully.",
     "extractionFailed": "Requirement extraction failed. Please try again.",
     "impactedActivity": "Impacted activities",
