@@ -44,7 +44,8 @@ def extract_json_from_response(content: str) -> str:
 
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 # MODEL = "openai/gpt-oss-120b"
-MODEL = "meta-llama/llama-3.2-1b-instruct"
+# MODEL = "meta-llama/llama-3.2-1b-instruct"
+MODEL = "openai/gpt-oss-safeguard-20b"
 LLM_CALL_TIMEOUT = 60  # seconds — fail fast if LLM hangs
 
 
