@@ -6,6 +6,7 @@ from sqlalchemy import Column, DateTime, ForeignKey, Index, String
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
+from app.utils.ulid_utils import generate_ulid
 
 
 class Procedure(Base):
@@ -13,8 +14,8 @@ class Procedure(Base):
 
     __tablename__ = "procedures"
 
-    procedure_id = Column(String, primary_key=True)
-    document_id = Column(String, ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
+    procedure_id = Column(String(26), primary_key=True, default=generate_ulid)
+    document_id = Column(String(26), ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
     name = Column(String)
     domain = Column(String)  # e.g., AML/CFT, KYC
     owner = Column(String)
@@ -39,12 +40,12 @@ class ProcedureVersion(Base):
 
     __tablename__ = "procedure_versions"
 
-    procedure_version_id = Column(String, primary_key=True)
-    procedure_id = Column(String, ForeignKey("procedures.procedure_id", ondelete="CASCADE"), nullable=False)
+    procedure_version_id = Column(String(26), primary_key=True, default=generate_ulid)
+    procedure_id = Column(String(26), ForeignKey("procedures.procedure_id", ondelete="CASCADE"), nullable=False)
     version_no = Column(String)
     version_timestamp = Column(DateTime)
     status = Column(String)  # ACTIVE, SUPERSEDED
-    document_version_id = Column(String, ForeignKey("document_versions.version_id", ondelete="SET NULL"), nullable=True)
+    document_version_id = Column(String(26), ForeignKey("document_versions.version_id", ondelete="SET NULL"), nullable=True)
 
     # Indexes
     __table_args__ = (

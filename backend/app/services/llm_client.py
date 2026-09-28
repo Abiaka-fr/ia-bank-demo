@@ -2,6 +2,7 @@
 
 import json
 import logging
+import re
 import time
 
 import requests
@@ -9,11 +10,42 @@ from pydantic import BaseModel, ValidationError
 
 from app.config import settings
 
+# Rate limit handling
+MAX_RETRIES = 1
+INITIAL_BACKOFF = 1  # seconds
+
 logger = logging.getLogger(__name__)
+
+
+def extract_json_from_response(content: str) -> str:
+    """
+    Extract JSON from response that may be wrapped in markdown.
+
+    Handles:
+    - ```json { ... } ```
+    - ```{ ... }```
+    - Plain JSON
+    - Text before/after JSON
+    """
+    content = content.strip()
+
+    # Try markdown code block (```json ... ```)
+    match = re.search(r"```(?:json)?\s*(\{[\s\S]*?\})\s*```", content)
+    if match:
+        return match.group(1)
+
+    # Try to find JSON object in response (greedy match)
+    match = re.search(r"\{[\s\S]*\}", content)
+    if match:
+        return match.group(0)
+
+    # Return as-is if no wrapper found
+    return content
 
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 # MODEL = "openai/gpt-oss-120b"
 MODEL = "meta-llama/llama-3.2-1b-instruct"
+LLM_CALL_TIMEOUT = 60  # seconds — fail fast if LLM hangs
 
 
 class LLMClient:
@@ -23,7 +55,6 @@ class LLMClient:
     def call(
         messages: list[dict],
         response_schema: type[BaseModel],
-        retry_on_parse_error: bool = True,
     ) -> BaseModel:
         """
         Call the LLM and parse response into the given Pydantic schema.
@@ -31,7 +62,6 @@ class LLMClient:
         Args:
             messages: List of message dicts with 'role' and 'content'
             response_schema: Pydantic BaseModel class to parse response into
-            retry_on_parse_error: If True, retry once if JSON parsing fails
 
         Returns:
             Parsed response as an instance of response_schema
@@ -52,24 +82,43 @@ class LLMClient:
             "messages": messages,
             "reasoning": {"enabled": True},
             "temperature": 0,
+            "max_tokens": 3000,  # Limit output to prevent excessive token usage
         }
 
-        # First attempt
-        try:
-            start_time = time.time()
-            response = requests.post(
-                OPENROUTER_API_URL,
-                headers=headers,
-                json=payload,
-                timeout=60,
-            )
-            latency_ms = (time.time() - start_time) * 1000
-            logger.info(f"⏱️  LLM call completed in {latency_ms:.2f}ms")
-            response.raise_for_status()
-        except requests.RequestException as e:
-            latency_ms = (time.time() - start_time) * 1000
-            logger.error(f"❌ OpenRouter API call failed after {latency_ms:.2f}ms: {e}")
-            raise ValueError(f"LLM API error: {e}")
+        # First attempt (with rate limit retries)
+        for retry_attempt in range(MAX_RETRIES + 1):
+            try:
+                start_time = time.time()
+                response = requests.post(
+                    OPENROUTER_API_URL,
+                    headers=headers,
+                    json=payload,
+                    timeout=LLM_CALL_TIMEOUT,
+                )
+                latency_ms = (time.time() - start_time) * 1000
+
+                # Check for rate limit (429)
+                if response.status_code == 429:
+                    if retry_attempt < MAX_RETRIES:
+                        backoff_time = INITIAL_BACKOFF * (2 ** retry_attempt)
+                        logger.warning(f"⚠️  Rate limited (429). Retry {retry_attempt + 1}/{MAX_RETRIES} after {backoff_time}s...")
+                        time.sleep(backoff_time)
+                        continue
+                    else:
+                        logger.error(f"❌ Rate limited (429) - max retries exceeded after {latency_ms:.2f}ms")
+                        raise ValueError("LLM API rate limited: max retries exceeded")
+
+                logger.info(f"⏱️  LLM call completed in {latency_ms:.2f}ms")
+                response.raise_for_status()
+                break  # Success, exit retry loop
+            except requests.Timeout as e:
+                latency_ms = (time.time() - start_time) * 1000
+                logger.error(f"❌ LLM call TIMEOUT after {latency_ms:.2f}ms (limit: {LLM_CALL_TIMEOUT}s): {e}")
+                raise ValueError(f"LLM API timeout: request exceeded {LLM_CALL_TIMEOUT} seconds")
+            except requests.RequestException as e:
+                latency_ms = (time.time() - start_time) * 1000
+                logger.error(f"❌ OpenRouter API call failed after {latency_ms:.2f}ms: {e}")
+                raise ValueError(f"LLM API error: {e}")
 
         try:
             result = response.json()
@@ -87,53 +136,13 @@ class LLMClient:
         if not content:
             raise ValueError("Empty content in assistant message")
 
-        # Try to parse the content as JSON and validate against schema
+        # Parse the content as JSON and validate against schema
         try:
-            parsed_json = json.loads(content)
+            # Extract JSON from markdown-wrapped response if needed
+            json_content = extract_json_from_response(content)
+            parsed_json = json.loads(json_content)
             parsed_response = response_schema(**parsed_json)
             return parsed_response
         except (json.JSONDecodeError, ValidationError) as e:
-            if not retry_on_parse_error:
-                logger.error(f"Failed to parse LLM response into {response_schema.__name__}: {e}")
-                raise ValueError(f"LLM response parsing failed: {e}")
-
-            # Retry with a follow-up message asking for correction
-            logger.warning(f"JSON parsing failed, retrying: {e}")
-
-            follow_up_messages = messages + [
-                {"role": "assistant", "content": content},
-                {
-                    "role": "user",
-                    "content": (
-                        f"The JSON you provided is invalid. Please provide a valid JSON object "
-                        f"that matches this structure exactly (no markdown, no extra text):\n\n"
-                        f"{response_schema.model_json_schema()}"
-                    ),
-                },
-            ]
-
-            try:
-                start_time = time.time()
-                response = requests.post(
-                    OPENROUTER_API_URL,
-                    headers=headers,
-                    json={**payload, "messages": follow_up_messages},
-                    timeout=60,
-                )
-                latency_ms = (time.time() - start_time) * 1000
-                logger.info(f"⏱️  LLM retry call completed in {latency_ms:.2f}ms")
-                response.raise_for_status()
-                result = response.json()
-
-                assistant_message = result["choices"][0].get("message", {})
-                content = assistant_message.get("content")
-
-                if not content:
-                    raise ValueError("Empty content in assistant message (retry)")
-
-                parsed_json = json.loads(content)
-                parsed_response = response_schema(**parsed_json)
-                return parsed_response
-            except Exception as retry_error:
-                logger.error(f"Retry failed: {retry_error}")
-                raise ValueError(f"LLM response parsing failed after retry: {retry_error}")
+            logger.error(f"❌ Failed to parse LLM response into {response_schema.__name__}: {e}")
+            raise ValueError(f"LLM response parsing failed: {e}")

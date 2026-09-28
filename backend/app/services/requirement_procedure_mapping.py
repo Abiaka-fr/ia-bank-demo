@@ -11,6 +11,7 @@ from app.models.mapping import RequirementProcedureMap
 from app.models.requirement import RegulatoryRequirement
 from app.schemas.mapping import ModificationLocation, SuggestedModification
 from app.services.llm_client import LLMClient
+from app.utils.ulid_utils import generate_ulid
 
 logger = logging.getLogger(__name__)
 
@@ -41,21 +42,8 @@ class RequirementProcedureMappingService:
 
     @staticmethod
     def generate_mapping_id(db: Session) -> str:
-        """Generate mapping_id using global sequential counter."""
-        # Find max numeric suffix across all mappings
-        all_maps = db.query(RequirementProcedureMap).all()
-
-        max_seq = 0
-        for m in all_maps:
-            try:
-                suffix = m.mapping_id.split("-")[-1]
-                seq = int(suffix)
-                max_seq = max(max_seq, seq)
-            except (IndexError, ValueError):
-                pass
-
-        next_seq = max_seq + 1
-        return f"MAP-{next_seq:04d}"
+        """Generate mapping_id using ULID (sortable, globally unique, no contention)."""
+        return generate_ulid()
 
     @staticmethod
     def ground_suggested_modifications(

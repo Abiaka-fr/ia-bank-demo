@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime, ForeignKey, Index, String, Text
 
 from app.db.base import Base
+from app.utils.ulid_utils import generate_ulid
 
 
 class AuditHistory(Base):
@@ -12,9 +13,9 @@ class AuditHistory(Base):
 
     __tablename__ = "audit_history"
 
-    audit_id = Column(String, primary_key=True)
-    document_id = Column(String, ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
-    version_id = Column(String, ForeignKey("document_versions.version_id", ondelete="SET NULL"), nullable=True)
+    audit_id = Column(String(26), primary_key=True, default=generate_ulid)
+    document_id = Column(String(26), ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
+    version_id = Column(String(26), ForeignKey("document_versions.version_id", ondelete="SET NULL"), nullable=True)
     event_timestamp = Column(DateTime, default=datetime.utcnow)
     event_type = Column(String)  # e.g., CREATED, UPDATED, ACTIVATED
     actor = Column(String)

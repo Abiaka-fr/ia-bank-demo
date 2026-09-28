@@ -24,6 +24,7 @@ from app.schemas.requirement import (
     RequirementsListResponse,
 )
 from app.services.requirement_extraction import RequirementExtractionService
+from app.utils.ulid_utils import generate_ulid
 
 logger = logging.getLogger(__name__)
 
@@ -269,8 +270,8 @@ def process_extraction_job(
     - On failure, job status → FAILED with error_message
     """
     try:
-        # Load job
-        job = db.query(ExtractionJob).filter(ExtractionJob.job_id == job_id).first()
+        # Load job with row lock to prevent concurrent processing
+        job = db.query(ExtractionJob).filter(ExtractionJob.job_id == job_id).with_for_update().first()
         if not job:
             raise HTTPException(status_code=404, detail="Extraction job not found")
 
@@ -300,7 +301,7 @@ def process_extraction_job(
         if not chunk:
             raise HTTPException(status_code=404, detail="Document chunk not found")
 
-        # Extract requirements from this chunk
+        # Extract requirements from this chunk (NO lock yet - LLM calls can run in parallel)
         logger.info(f"📞 Processing job {job_id}: extracting from chunk {job.chunk_no}...")
         chunk_no, requirements, error_msg = RequirementExtractionService._extract_from_chunk(chunk)
 
@@ -319,26 +320,22 @@ def process_extraction_job(
                 error_message=error_msg,
             )
 
-        # Persist requirements to database
-        doc = db.query(Document).filter(Document.document_id == job.document_id).first()
+        # Lock document for persistence (only during INSERT, not during LLM call)
+        # Serialize INSERT per document to prevent index contention
+        logger.info("   Acquiring document lock for persistence...")
+        doc = (
+            db.query(Document)
+            .with_for_update()  # Exclusive lock: serializes by document
+            .filter(Document.document_id == job.document_id)
+            .first()
+        )
         if not doc:
             raise HTTPException(status_code=404, detail="Document not found")
 
-        # Generate requirement IDs
-        all_existing_reqs = db.query(RegulatoryRequirement).all()
-        max_seq = 0
-        for req in all_existing_reqs:
-            try:
-                suffix = req.requirement_id.split("-")[-1]
-                seq = int(suffix)
-                max_seq = max(max_seq, seq)
-            except (IndexError, ValueError):
-                pass
-
+        # Persist requirements to database
         created_req_ids = []
         for idx, req_input in enumerate(requirements):
-            seq_num = max_seq + idx + 1
-            req_id = f"REQ-{seq_num:04d}"
+            req_id = generate_ulid()
             requirement = RegulatoryRequirement(
                 requirement_id=req_id,
                 source_document_id=job.document_id,

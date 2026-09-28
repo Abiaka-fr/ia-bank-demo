@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.models.document import Document, DocumentChunk, DocumentVersion
 from app.models.requirement import RegulatoryRequirement
 from app.services.llm_client import LLMClient
+from app.utils.ulid_utils import generate_ulid
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ class RequirementExtractionService:
                         "role": "user",
                         "content": (
                             "You are a regulatory requirement extraction specialist. Analyze the following "
-                            "regulation document chunk and extract ALL regulatory requirements.\n\n"
+                            "regulation document chunk and extract ALL regulatory requirements if any.\n\n"
                             "For each requirement provide:\n"
                             "- title: Short title/name of the requirement (in English)\n"
                             "- requirement_text: Full text of what is required (in English)\n"
@@ -72,7 +73,11 @@ class RequirementExtractionService:
                             "- domain: The regulatory domain (e.g., AML/CFT, KYC, DATA_PROTECTION)\n"
                             "- evidence: Copy the EXACT raw text from this chunk that substantiates the requirement. "
                             "Preserve all original formatting including newlines, spaces, and special characters exactly as they appear.\n\n"
-                            "Respond with valid JSON matching this structure (no markdown):\n"
+                            "IMPORTANT RULES:\n"
+                            "- Each requirement must be DISTINCT. Never output the same or a near-identical item twice.\n"
+                            "- If the chunk contains no binding requirements, return {\"requirements\": []}. This is correct and expected.\n"
+                            "- Output a single JSON object only. No prose, no markdown fences, no text before or after.\n\n"
+                            "Respond with valid JSON matching this structure:\n"
                             "{\n"
                             '  "requirements": [\n'
                             "    {\n"
@@ -205,21 +210,9 @@ class RequirementExtractionService:
         # Step 3: Persist requirements to database
         logger.info("Step 3: Persisting requirements to database...")
 
-        # Get base sequence number once before the loop
-        all_existing_reqs = db.query(RegulatoryRequirement).all()
-        max_existing_seq = 0
-        for req in all_existing_reqs:
-            try:
-                suffix = req.requirement_id.split("-")[-1]
-                seq = int(suffix)
-                max_existing_seq = max(max_existing_seq, seq)
-            except (IndexError, ValueError):
-                pass
-
         created_req_ids = []
         for idx, req_input in enumerate(all_requirements):
-            seq_num = max_existing_seq + idx + 1
-            req_id = f"REQ-{seq_num:04d}"
+            req_id = generate_ulid()
             requirement = RegulatoryRequirement(
                 requirement_id=req_id,
                 source_document_id=document_id,

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.models.document import Document, DocumentChunk, DocumentVersion
 from app.schemas.procedure import IngestProcedureResponse
 from app.services.token_chunker import TokenBasedChunker
+from app.utils.ulid_utils import generate_ulid
 
 logger = logging.getLogger(__name__)
 
@@ -17,25 +18,8 @@ class ProcedureIngestionService:
 
     @staticmethod
     def generate_document_id(db: Session, origin_code: str, category: str) -> str:
-        """Generate document_id using sequential counter per origin_code and category."""
-        prefix = f"{category[:3].upper()}-{origin_code}"
-
-        # Find max numeric suffix for this prefix
-        matching_docs = (
-            db.query(Document).filter(Document.document_id.startswith(prefix)).all()
-        )
-
-        max_seq = 0
-        for doc in matching_docs:
-            try:
-                suffix = doc.document_id.split("-")[-1]
-                seq = int(suffix)
-                max_seq = max(max_seq, seq)
-            except (IndexError, ValueError):
-                pass
-
-        next_seq = max_seq + 1
-        return f"{prefix}-{next_seq:03d}"
+        """Generate document_id using ULID (sortable, globally unique, no contention)."""
+        return generate_ulid()
 
     @staticmethod
     def ingest(

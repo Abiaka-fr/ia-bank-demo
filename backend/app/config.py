@@ -2,6 +2,7 @@
 
 import logging
 import os
+
 from pydantic_settings import BaseSettings
 
 # Create logs directory if it doesn't exist
@@ -19,6 +20,11 @@ logging.basicConfig(
         logging.StreamHandler(),
     ],
 )
+
+# Suppress verbose SQLAlchemy SQL query logging
+logging.getLogger("sqlalchemy.engine").setLevel(logging.ERROR)
+logging.getLogger("sqlalchemy.pool").setLevel(logging.ERROR)
+logging.getLogger("sqlalchemy").setLevel(logging.ERROR)
 
 
 class Settings(BaseSettings):
