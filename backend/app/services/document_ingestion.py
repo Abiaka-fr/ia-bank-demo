@@ -101,7 +101,7 @@ class DocumentIngestionService:
 
         # Step 2: Chunk document by token count (max 800 tokens per chunk)
         logger.info("Step 2: Chunking document by token count (max 800 tokens per chunk)...")
-        chunker = TokenBasedChunker(max_tokens=1000)
+        chunker = TokenBasedChunker(max_tokens=5000)
         chunks = chunker.chunk(
             text,
             language=metadata.language,

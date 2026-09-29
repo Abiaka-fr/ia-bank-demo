@@ -196,34 +196,40 @@ class RequirementExtractionService:
         logger.info("✅ Parallel extraction complete")
 
         # Step 2: Merge results from all chunks (sorted by chunk_no for determinism)
-        all_requirements = []
+        all_requirements_with_chunks = []  # List of (chunk_no, requirement) tuples
         for chunk_no in sorted(chunk_results.keys()):
             requirements, error_msg = chunk_results[chunk_no]
             if requirements:
-                # Augment source_reference with chunk info if needed
                 for req in requirements:
-                    req.source_reference = f"{req.source_reference}"
-                all_requirements.extend(requirements)
+                    all_requirements_with_chunks.append((chunk_no, req))
 
-        logger.info(f"Step 2: Merged {len(all_requirements)} requirements from all chunks")
+        logger.info(f"Step 2: Merged {len(all_requirements_with_chunks)} requirements from all chunks")
 
         # Step 3: Persist requirements to database
         logger.info("Step 3: Persisting requirements to database...")
 
+        # Create a map of chunk_no -> chunk for reference
+        chunks_by_no = {chunk.chunk_no: chunk for chunk in chunks}
+
         created_req_ids = []
-        for idx, req_input in enumerate(all_requirements):
+        for chunk_no, req_input in all_requirements_with_chunks:
+            chunk_ref = chunks_by_no.get(chunk_no)
+            source_ref = f"Chunk {chunk_no}"
+            if chunk_ref and chunk_ref.section_title:
+                source_ref = f"Chunk {chunk_no}: {chunk_ref.section_title}"
+
             req_id = generate_ulid()
             requirement = RegulatoryRequirement(
                 requirement_id=req_id,
                 source_document_id=document_id,
                 title=req_input.title,
                 title_lang_fr=req_input.title_lang_fr,
-                domain=req_input.domain,
+                domain=doc.domain,
                 language=doc.language,
                 requirement_text=req_input.requirement_text,
                 requirement_text_lang_fr=req_input.requirement_text_lang_fr,
                 risk_level=req_input.risk_level,
-                source_reference=req_input.source_reference,
+                source_reference=source_ref,
                 evidence=req_input.evidence,
                 status="ACTIVE",
             )
