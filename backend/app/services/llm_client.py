@@ -11,7 +11,8 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL = "openai/gpt-oss-120b"
+# MODEL = "openai/gpt-oss-120b"
+MODEL = "openai/gpt-oss-safeguard-20b"
 
 
 class LLMClient:
