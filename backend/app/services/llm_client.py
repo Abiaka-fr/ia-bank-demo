@@ -45,7 +45,7 @@ def extract_json_from_response(content: str) -> str:
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 # MODEL = "openai/gpt-oss-120b"
 # MODEL = "meta-llama/llama-3.2-1b-instruct" - cheaper, high latency use for testing local
-MODEL = "openai/gpt-oss-safeguard-20b" # expensive, low latency use for deploy
+MODEL = "openai/gpt-oss-safeguard-20b" # more expensive a bit, low latency use for deploy
 LLM_CALL_TIMEOUT = 60  # seconds — fail fast if LLM hangs
 
 
