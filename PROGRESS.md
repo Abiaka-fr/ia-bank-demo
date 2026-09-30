@@ -254,6 +254,30 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Notes de fin de session
 
+### 2026-09-30 — FR/EN des exigences et constats + titres longs
+
+- Question de Thư (« l'API ne renvoie pas le FR ou le FE ne bascule pas ? ») : **c'était le FE**.
+  L'API renvoie bien `title_lang_fr`/`requirement_text_lang_fr` et `explanation_lang_fr`/
+  `recommended_action_lang_fr` (vérifié en live : 9/9 mappings remplis), et les adapters les
+  mappaient ; mais `finding-page-view.tsx` (titre exigence, explication, action — plus un
+  « Explanation » codé en dur) et `regulation-mindmap.tsx` (libellé d'exigence) affichaient le
+  texte anglais sans passer par `pickLocalizedText`. Corrigé.
+- `suggested_modifications` n'a **pas** de variante FR (ni en base ni dans `SuggestedModification`) :
+  c'est normal, `original_text`/`new_text` sont un remplacement verbatim dans la procédure, donc
+  dans la langue de la procédure. Les traduire casserait l'application à l'ACCEPT.
+- Titres de cartes Procédures/Régulations (noms de fichier sans espace) : `wrap-anywhere`.
+
+### 2026-09-30 — Copilot : UI en forme de messagerie
+
+- `copilot-chat.tsx` : bulles (question à droite, réponse à gauche avec avatar), zone de saisie
+  collée en bas de l'écran, suggestions en état vide, question affichée pendant l'attente,
+  défilement auto vers le dernier message. Aucune nouvelle clé i18n, preuves/avertissement inchangés.
+- Hauteur minimale `calc(100svh-12rem)` approximée (commentaire `ponytail:`) — à revoir si l'en-tête
+  de page change.
+- Vérifié en capture (desktop + mobile) sur un `next dev` MSW à part : le `next start` du port 3000
+  sert la démo et n'a pas été reconstruit — il faut un `pnpm build` + redémarrage pour y voir la
+  nouvelle UI. Backend : 401 OpenRouter constaté puis résolu dans la journée (clé changée).
+
 ### 2026-09-30 — surlignage « Source document evidence » intermittent + dialog d'upload élargi
 
 - **Cause du surlignage aléatoire (FE, pas le LLM)** : `requirements-tab.tsx` surlignait avec

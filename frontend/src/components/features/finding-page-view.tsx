@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowUpCircle, Check, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -28,6 +28,7 @@ import { fetchProcedure } from "@/lib/api/procedures";
 import { queryKeys } from "@/lib/api/query-keys";
 import { useValidateFinding } from "@/lib/api/use-validate-finding";
 import { isBackendLive } from "@/lib/api/backend/config";
+import { pickLocalizedText } from "@/lib/localized-text";
 
 /**
  * Full-page review interface for a single finding (requirement × procedure mapping).
@@ -36,6 +37,7 @@ import { isBackendLive } from "@/lib/api/backend/config";
  */
 export function FindingPageView({ findingId }: { findingId: string }) {
   const t = useTranslations("findingPage");
+  const locale = useLocale();
   const common = useTranslations("common");
   const actionsT = useTranslations("actions");
   const dialogT = useTranslations("procedureDialog");
@@ -214,7 +216,8 @@ export function FindingPageView({ findingId }: { findingId: string }) {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <p className="text-base font-semibold leading-snug">{requirementSummary.title}</p>
+              <p className="text-base font-semibold leading-snug">{pickLocalizedText(locale, requirementSummary.title, requirementSummary.titleFr)}
+              </p>
               {finding.regulatory_evidence.length > 0 && (
                 <p className="text-sm leading-relaxed text-foreground bg-white dark:bg-slate-950 p-3 rounded border border-blue-200 dark:border-blue-800">
                   {finding.regulatory_evidence[0].excerpt}
@@ -293,9 +296,11 @@ export function FindingPageView({ findingId }: { findingId: string }) {
                     {finding.explanation && (
                       <div className="space-y-2">
                         <h5 className="text-xs font-bold uppercase tracking-wide text-blue-900 dark:text-blue-100">
-                          Explanation
+                          {t("explanation")}
                         </h5>
-                        <p className="text-sm leading-relaxed text-foreground font-medium">{finding.explanation}</p>
+                        <p className="text-sm leading-relaxed text-foreground font-medium">
+                          {pickLocalizedText(locale, finding.explanation, finding.explanation_fr)}
+                        </p>
                       </div>
                     )}
 
@@ -305,7 +310,11 @@ export function FindingPageView({ findingId }: { findingId: string }) {
                           {t("recommendedAction")}
                         </h5>
                         <p className="text-sm leading-relaxed text-foreground font-medium">
-                          {finding.recommended_action}
+                          {pickLocalizedText(
+                            locale,
+                            finding.recommended_action,
+                            finding.recommended_action_fr,
+                          )}
                         </p>
                       </div>
                     )}

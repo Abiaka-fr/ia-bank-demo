@@ -203,6 +203,7 @@ export const regulationMapRequirementSchema = z.object({
   requirement_id: z.string(),
   source_reference: z.string(),
   normalized_requirement: z.string(),
+  normalized_requirement_fr: z.string().optional(),
   procedures: z.array(regulationMapProcedureSchema),
 });
 

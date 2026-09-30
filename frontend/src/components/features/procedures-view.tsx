@@ -179,7 +179,7 @@ export function ProceduresView() {
                   aria-hidden
                 />
               </div>
-              <CardTitle className="text-base leading-snug">
+              <CardTitle className="text-base leading-snug wrap-anywhere">
                 <Link
                   href={`/procedures/${procedure.document_id}`}
                   className="after:absolute after:inset-0 after:rounded-xl hover:underline focus:outline-none"

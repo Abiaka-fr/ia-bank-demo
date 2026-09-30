@@ -24,6 +24,7 @@ export type MappingDetail = {
   finding: Finding;
   requirementSummary: {
     title: string;
+    titleFr: string | undefined;
     domain: string[];
     riskLevel: Priority;
     sourceReference: string;
@@ -80,6 +81,7 @@ export function adaptMappingDetail(raw: BackendMappingDetail): MappingDetail {
 
   const requirementSummary = {
     title: requirement.title ?? "",
+    titleFr: requirement.title_lang_fr ?? undefined,
     domain: adaptDomain(requirement.domain),
     riskLevel: adaptPriorityFromRiskLevel(requirement.risk_level),
     sourceReference: requirement.source_reference ?? "",

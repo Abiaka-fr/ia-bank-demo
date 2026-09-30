@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "cn";
 import { Wrench } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { PaginationControls } from "@/components/features/pagination-controls";
@@ -15,6 +15,7 @@ import {
 import { Link } from "@/i18n/navigation";
 import { fetchRegulationMap } from "@/lib/api/dashboard";
 import { queryKeys } from "@/lib/api/query-keys";
+import { pickLocalizedText } from "@/lib/localized-text";
 import {
   assessmentColorVar,
   categoricalColor,
@@ -50,6 +51,7 @@ export function RegulationMindmap({
   regulationId?: string;
 }) {
   const t = useTranslations("mindmap");
+  const locale = useLocale();
   const assessmentLabels = useTranslations("assessment");
   const statusLabels = useTranslations("humanStatus");
   const [page, setPage] = useState(1);
@@ -95,7 +97,11 @@ export function RegulationMindmap({
         // `normalized_requirement` existe déjà dans la réponse API mais n'était
         // jamais affiché ; `source_reference` passe en tooltip plutôt que de
         // disparaître (pas de 3e ligne disponible dans la largeur de colonne).
-        sublabel: requirement.normalized_requirement,
+        sublabel: pickLocalizedText(
+          locale,
+          requirement.normalized_requirement,
+          requirement.normalized_requirement_fr,
+        ),
         tooltip: requirement.source_reference,
         href: `/regulations/${regulation.regulation_id}?tab=requirements&focus=${requirement.requirement_id}`,
         children: requirement.procedures.map((procedure) => {

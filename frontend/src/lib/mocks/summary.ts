@@ -213,6 +213,7 @@ export function buildRegulationMap(
         requirement_id: requirement.requirement_id,
         source_reference: requirement.source_reference,
         normalized_requirement: requirement.normalized_requirement,
+        normalized_requirement_fr: requirement.normalized_requirement_fr,
         procedures: findings
           .filter((finding) => finding.requirement_id === requirement.requirement_id)
           .map((finding) => ({
