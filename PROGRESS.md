@@ -1977,3 +1977,8 @@ par défaut `COMPLIANCE_OFFICER` traduit. Toujours 100 % FE — aucun contrôle 
   l'emportait — mesuré) ; la conversation survit au changement FR/EN de l'interface (elle était
   perdue au remontage de `[locale]`). 3 cas vérifiés sur le vrai modèle. **Reste :** `CHAT_BOT_KEY` à définir sur l'environnement déployé.
   Écran vérifié en mode MSW (texte de page + console, capture impossible : fenêtre non dessinée).
+  **Besoins du PM revérifiés** (combien d'exigences/procédures à traiter, analysées ou non, par
+  domaine, par statut, conseil de résolution) : stats par exigence ET par procédure (comptage distinct),
+  `suggested_changes` dans le prompt, réponses comparées aux chiffres de la base (identiques). Corrigé :
+  `suggested_modifications` est une chaîne JSON sur Neon (plantait) ; une question EN avec l'interface
+  FR recevait une réponse FR ; un croisement non précalculé (risque × restant) est signalé, pas deviné.
