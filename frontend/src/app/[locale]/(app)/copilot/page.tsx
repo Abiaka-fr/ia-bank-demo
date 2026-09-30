@@ -13,7 +13,10 @@ export default async function CopilotPage({
   const t = await getTranslations({ locale, namespace: "copilot" });
 
   return (
-    <div className="space-y-6">
+    // Hauteur fixe = écran moins barre du haut, bandeau et padding de <main> (~135 px,
+    // mesuré desktop et mobile) : la page ne défile pas, seuls historique et messages défilent.
+    // ponytail: décalage codé en dur — à réajuster si la barre du haut ou le bandeau changent.
+    <div className="flex h-[calc(100svh-8.5rem)] flex-col gap-6">
       <PageHeader title={t("title")} subtitle={t("subtitle")} />
       <CopilotChat />
     </div>

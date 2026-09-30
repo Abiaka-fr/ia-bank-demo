@@ -2,7 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { cn } from "cn";
-import { Bot, Loader2, PanelLeftClose, PanelLeftOpen, Plus, SendHorizontal } from "lucide-react";
+import { Bot, Loader2, Plus, SendHorizontal } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -30,8 +30,6 @@ type Conversation = { id: string; turns: Turn[] };
 // ponytail: localStorage — propre à ce navigateur, plafonné à MAX_CONVERSATIONS ; passer
 // par un endpoint backend si l'historique doit suivre l'utilisateur d'un poste à l'autre.
 const MAX_CONVERSATIONS = 20;
-/** Préférence d'affichage de la liste, propre au navigateur. */
-const HISTORY_OPEN_KEY = "ia-bank.copilot.historyOpen";
 
 function loadConversations(key: string): Conversation[] {
   try {
@@ -48,22 +46,6 @@ export function CopilotChat() {
   const { user } = useSession();
   const storageKey = `ia-bank.copilot.${user?.user_id ?? "anonymous"}`;
   const [question, setQuestion] = useState("");
-  const [historyOpen, setHistoryOpen] = useState(() => {
-    try {
-      return window.localStorage.getItem(HISTORY_OPEN_KEY) !== "0";
-    } catch {
-      return true;
-    }
-  });
-
-  function toggleHistory() {
-    setHistoryOpen(!historyOpen);
-    try {
-      window.localStorage.setItem(HISTORY_OPEN_KEY, historyOpen ? "0" : "1");
-    } catch {
-      // Préférence non conservée : sans conséquence.
-    }
-  }
   const [conversations, setConversations] = useState(() => loadConversations(storageKey));
   // Reprend la conversation la plus récente ; sinon une nouvelle, enregistrée à la 1re réponse.
   const [activeId, setActiveId] = useState(
@@ -112,32 +94,14 @@ export function CopilotChat() {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [turns.length, pendingQuestion]);
 
+  // La page ne défile pas : seuls l'historique et les messages défilent (voir `copilot/page.tsx`).
   return (
-    // ponytail: 12rem ≈ barre du haut + en-tête de page, à ajuster si l'en-tête change.
-    <div className="flex min-h-[calc(100svh-12rem)] flex-col gap-4 lg:flex-row">
-      <aside
-        className={cn(
-          "flex shrink-0 flex-col gap-1 rounded-lg border bg-card p-2 lg:sticky lg:top-4 lg:self-start",
-          historyOpen && "lg:w-64",
-        )}
-      >
-        <div className={cn("flex items-center gap-1", !historyOpen && "lg:flex-col")}>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-expanded={historyOpen}
-            aria-controls="copilot-history"
-            aria-label={t(historyOpen ? "hideHistory" : "showHistory")}
-            title={t(historyOpen ? "hideHistory" : "showHistory")}
-            onClick={toggleHistory}
-          >
-            {historyOpen ? <PanelLeftClose aria-hidden /> : <PanelLeftOpen aria-hidden />}
-          </Button>
-          {historyOpen ? (
-            <span className="flex-1 truncate text-xs font-medium uppercase text-muted-foreground">
-              {t("history")}
-            </span>
-          ) : null}
+    <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
+      <aside className="flex max-h-48 shrink-0 flex-col rounded-lg border bg-card p-2 lg:max-h-none lg:w-64">
+        <div className="flex items-center gap-1 border-b pb-1">
+          <span className="flex-1 truncate px-2 text-xs font-medium uppercase text-muted-foreground">
+            {t("history")}
+          </span>
           <Button
             variant="ghost"
             size="icon"
@@ -149,107 +113,104 @@ export function CopilotChat() {
             <Plus aria-hidden />
           </Button>
         </div>
-        {historyOpen ? (
-          <nav
-            id="copilot-history"
-            aria-label={t("history")}
-            className="flex max-h-40 flex-col gap-0.5 overflow-y-auto border-t pt-1 lg:max-h-[calc(100svh-18rem)]"
-          >
-            {conversations.length === 0 ? (
-              <p className="px-3 py-2 text-xs text-muted-foreground">{t("noHistory")}</p>
-            ) : null}
-            {conversations.map((conversation) => {
-              const title = conversation.turns[0]?.question ?? "";
-              const active = conversation.id === activeId;
-              return (
-                <button
-                  key={conversation.id}
-                  type="button"
-                  title={title}
-                  aria-current={active ? "true" : undefined}
-                  disabled={mutation.isPending}
-                  onClick={() => setActiveId(conversation.id)}
-                  className={cn(
-                    "truncate rounded-md px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50",
-                    active && "bg-muted font-medium",
-                  )}
-                >
-                  {title}
-                </button>
-              );
-            })}
-          </nav>
-        ) : null}
+        <nav
+          aria-label={t("history")}
+          className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto pt-1"
+        >
+          {conversations.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-muted-foreground">{t("noHistory")}</p>
+          ) : null}
+          {conversations.map((conversation) => {
+            const title = conversation.turns[0]?.question ?? "";
+            const active = conversation.id === activeId;
+            return (
+              <button
+                key={conversation.id}
+                type="button"
+                title={title}
+                aria-current={active ? "true" : undefined}
+                disabled={mutation.isPending}
+                onClick={() => setActiveId(conversation.id)}
+                className={cn(
+                  "shrink-0 truncate rounded-md px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50",
+                  active && "bg-muted font-medium",
+                )}
+              >
+                {title}
+              </button>
+            );
+          })}
+        </nav>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-4">
-      <div className="flex flex-1 flex-col gap-4" aria-live="polite">
-        {turns.map((turn, index) => (
-          <Fragment key={index}>
-            <UserBubble text={turn.question} />
-            <AssistantBubble>
-              <div className="space-y-1 text-sm leading-relaxed">
-                {turn.answer.answer.split("\n").map((line, lineIndex) => (
-                  <MarkdownLine key={lineIndex} text={line} />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1 overflow-y-auto pb-4" aria-live="polite">
+          <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-4">
+          {turns.length === 0 && !pendingQuestion ? (
+            <div className="m-auto flex flex-col items-center gap-3 py-10 text-center">
+              <Bot className="size-10 text-muted-foreground" aria-hidden />
+              <p className="text-sm text-muted-foreground">{t("suggestionsLabel")}</p>
+              <div className="flex max-w-2xl flex-wrap justify-center gap-2">
+                {SUGGESTIONS.map((key) => (
+                  <Button
+                    key={key}
+                    variant="outline"
+                    size="sm"
+                    className="h-auto whitespace-normal py-1.5 text-left"
+                    onClick={() => ask(t(`suggestions.${key}`))}
+                  >
+                    {t(`suggestions.${key}`)}
+                  </Button>
                 ))}
               </div>
-              {turn.answer.evidence.length > 0 ? (
-                <div className="mt-3 space-y-2">
-                  <p className="text-xs font-medium uppercase text-muted-foreground">
-                    {t("evidenceHeading")}
-                  </p>
-                  {turn.answer.evidence.map((evidence, evidenceIndex) => (
-                    <EvidenceCard key={evidenceIndex} evidence={evidence} />
+            </div>
+          ) : null}
+          {turns.map((turn, index) => (
+            <Fragment key={index}>
+              <UserBubble text={turn.question} />
+              <AssistantBubble>
+                <div className="space-y-1 text-sm leading-relaxed">
+                  {turn.answer.answer.split("\n").map((line, lineIndex) => (
+                    <MarkdownLine key={lineIndex} text={line} />
                   ))}
                 </div>
-              ) : (
-                <p className="mt-3 text-xs text-muted-foreground">{t("noEvidence")}</p>
-              )}
-              <p className="mt-2 text-[11px] text-muted-foreground">{t("disclaimer")}</p>
-            </AssistantBubble>
-          </Fragment>
-        ))}
-        {pendingQuestion ? (
-          <>
-            <UserBubble text={pendingQuestion} />
-            <AssistantBubble>
-              <p
-                className="flex items-center gap-2 text-sm text-muted-foreground"
-                role="status"
-              >
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-                {t("pending")}
-              </p>
-            </AssistantBubble>
-          </>
-        ) : null}
-        <div ref={endRef} />
-      </div>
-
-      {turns.length === 0 && !pendingQuestion ? (
-        <div className="flex flex-col items-center gap-3 py-10 text-center">
-          <Bot className="size-10 text-muted-foreground" aria-hidden />
-          <p className="text-sm text-muted-foreground">{t("suggestionsLabel")}</p>
-          <div className="flex max-w-2xl flex-wrap justify-center gap-2">
-            {SUGGESTIONS.map((key) => (
-              <Button
-                key={key}
-                variant="outline"
-                size="sm"
-                className="h-auto whitespace-normal py-1.5 text-left"
-                onClick={() => ask(t(`suggestions.${key}`))}
-              >
-                {t(`suggestions.${key}`)}
-              </Button>
-            ))}
+                {turn.answer.evidence.length > 0 ? (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs font-medium uppercase text-muted-foreground">
+                      {t("evidenceHeading")}
+                    </p>
+                    {turn.answer.evidence.map((evidence, evidenceIndex) => (
+                      <EvidenceCard key={evidenceIndex} evidence={evidence} />
+                    ))}
+                  </div>
+                ) : null}
+                <div className="mt-3 space-y-0.5 border-t pt-2 text-[11px] text-muted-foreground">
+                  {turn.answer.evidence.length === 0 ? <p>{t("noEvidence")}</p> : null}
+                  <p>{t("disclaimer")}</p>
+                </div>
+              </AssistantBubble>
+            </Fragment>
+          ))}
+          {pendingQuestion ? (
+            <>
+              <UserBubble text={pendingQuestion} />
+              <AssistantBubble>
+                <p
+                  className="flex items-center gap-2 text-sm text-muted-foreground"
+                  role="status"
+                >
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  {t("pending")}
+                </p>
+              </AssistantBubble>
+            </>
+          ) : null}
+          <div ref={endRef} />
           </div>
         </div>
-      ) : null}
 
-      {/* Collé en bas de l'écran : la conversation défile derrière, comme une messagerie. */}
-      <div className="sticky bottom-0 -mb-4 border-t bg-background/95 py-3 backdrop-blur md:-mb-6">
         <form
-          className="flex items-end gap-2"
+          className="mx-auto flex w-full max-w-3xl items-end gap-2 rounded-xl border bg-card p-2 shadow-sm focus-within:ring-2 focus-within:ring-ring/40"
           onSubmit={(event) => {
             event.preventDefault();
             ask(question);
@@ -260,7 +221,7 @@ export function CopilotChat() {
             placeholder={t("placeholder")}
             value={question}
             rows={1}
-            className="max-h-40 min-h-10 resize-none"
+            className="max-h-40 min-h-10 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent"
             disabled={mutation.isPending}
             onChange={(event) => setQuestion(event.target.value)}
             onKeyDown={(event) => {
@@ -273,13 +234,13 @@ export function CopilotChat() {
           <Button
             type="submit"
             size="icon"
+            className="shrink-0 rounded-lg"
             aria-label={t("send")}
             disabled={mutation.isPending || !question.trim()}
           >
             <SendHorizontal aria-hidden />
           </Button>
         </form>
-      </div>
       </div>
     </div>
   );

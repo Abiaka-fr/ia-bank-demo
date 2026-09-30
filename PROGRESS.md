@@ -273,8 +273,13 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   `SessionProvider` (test `token.test.ts`).
 - Historique Copilot : liste des conversations en colonne à gauche (au-dessus sur mobile) au lieu
   du menu déroulant, conversation active surlignée.
-- Puis : historique dans un cadre séparé, bouton masquer/afficher (préférence en `localStorage`,
-  `ia-bank.copilot.historyOpen`), « Nouvelle conversation » en icône dans l'en-tête du cadre.
+- Puis : historique dans un cadre séparé, « Nouvelle conversation » en icône dans son en-tête
+  (le bouton masquer/afficher a été retiré à la demande). Page Copilot à hauteur fixe
+  (`copilot/page.tsx`, écran − ~135 px) : la page ne défile plus, seuls l'historique et les
+  messages défilent ; la saisie reste en bas sans `sticky`.
+- Puis (visuel uniquement, aucune fonction ajoutée) : colonne de lecture centrée `max-w-3xl`
+  (messages + saisie), zone de saisie en carte avec bouton d'envoi intégré, mentions « aucune
+  preuve » / avertissement IA regroupées en pied de réponse sous un filet.
 
 ### 2026-09-30 — Copilot : nouvelles conversations + historique conservé
 

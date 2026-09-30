@@ -38,18 +38,6 @@ describe("CopilotChat — historique", () => {
     expect(screen.getByText("100.")).toBeInTheDocument();
   });
 
-  it("masque puis réaffiche la liste de l'historique", () => {
-    renderWithProviders(<CopilotChat />);
-    const list = () => screen.queryByRole("navigation", { name: "Historique" });
-    expect(list()).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /Masquer l'historique/ }));
-    expect(list()).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /Afficher l'historique/ }));
-    expect(list()).toBeInTheDocument();
-  });
-
   it("n'affiche pas l'historique d'un autre utilisateur", () => {
     session.userId = "USR-2";
     renderWithProviders(<CopilotChat />);

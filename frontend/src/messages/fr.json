@@ -195,8 +195,6 @@
     "error": "Le Copilot n'a pas pu répondre.",
     "newConversation": "Nouvelle conversation",
     "history": "Historique",
-    "hideHistory": "Masquer l'historique",
-    "showHistory": "Afficher l'historique",
     "noHistory": "Aucune conversation pour l'instant"
   },
   "errors": {
