@@ -1905,3 +1905,12 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   `documents.document_id` n'a ni PK ni contrainte unique, Postgres refuse la FK du modèle ;
   `DELETE /api/documents/{id}` supprime donc lui-même ces lignes).
   Base locale : EXT-EU-001 réassignée à Thu Vo pendant le test. Non committé.
+
+- **2026-09-30 (Claude Code — mise à jour de la démo pm2)** : `git pull` (f4d639f : jobs d'extraction
+  async, IDs ULID, table `extraction_jobs` — déjà présente sur Neon, aucune migration à lancer ici :
+  `alembic/versions` n'est pas versionné). Nouvelle dépendance `python-ulid` ajoutée à la liste de
+  `scripts/local-dev/setup-backend.sh` et installée dans `.venv-backend`. `pm2 stop ia-demo` puis
+  `pm2 start ia-demo` (rebuild frontend) : front/back OK. Typecheck OK, lint 0 erreur (18 warnings).
+  Non committé.
+  Puis : en-tête collant (`top-bar.tsx`) passé de `z-10` à `z-20` — les boutons `relative z-10` des
+  cartes (« Analyser l'impact », suppression) passaient au-dessus au défilement. Rebuild pm2 OK.

@@ -90,6 +90,7 @@ echo "Installation des dépendances backend …"
   "email-validator>=2.0.0" \
   "bcrypt>=4.1.0" \
   "pyjwt>=2.8.0" \
+  "python-ulid>=2.0.0" \
   "psycopg[binary]>=3.2.0"
 
 # --- 3. Copie de travail de la base de référence -----------------------------
