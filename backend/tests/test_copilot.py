@@ -26,8 +26,10 @@ def test_ask_keeps_only_real_citations_and_forwards_history(monkeypatch):
             DocumentVersion(version_id="V1", document_id="INT-T-001", status="ACTIVE"),
             DocumentChunk(chunk_id="C1", document_id="INT-T-001", version_id="V1", chunk_no=1,
                           section_title="Revue", content="Revue annuelle.", language="FR"),
-            RegulatoryRequirement(requirement_id="REQ-T-2", source_document_id="EXT-T-001", domain="KYC"),
-            RegulatoryRequirement(requirement_id="REQ-T-3", source_document_id="EXT-T-001", domain="KYC"),
+            RegulatoryRequirement(requirement_id="REQ-T-2", source_document_id="EXT-T-001", domain="KYC",
+                                  risk_level="HIGH"),
+            RegulatoryRequirement(requirement_id="REQ-T-3", source_document_id="EXT-T-001", domain="KYC",
+                                  risk_level="HIGH"),
             RequirementProcedureMap(mapping_id="M1", requirement_id="REQ-T-2", procedure_id="INT-T-001",
                                     assessment="POTENTIAL_GAP", human_status="PENDING_REVIEW",
                                     # Stored as a JSON *string* on Postgres (seen on Neon).
@@ -35,7 +37,7 @@ def test_ask_keeps_only_real_citations_and_forwards_history(monkeypatch):
                                                                          "original_text": "annuelle",
                                                                          "new_text": "semestrielle"}])),
             RequirementProcedureMap(mapping_id="M2", requirement_id="REQ-T-3", procedure_id="INT-T-001",
-                                    assessment="POTENTIAL_GAP", human_status="PENDING_REVIEW"),
+                                    assessment="POTENTIAL_GAP", human_status="ACCEPT"),
         ]
     )
     db.commit()
@@ -67,6 +69,8 @@ def test_ask_keeps_only_real_citations_and_forwards_history(monkeypatch):
     stats = data["stats"]
     assert stats["requirements"]["analyzed"] == 2 and stats["requirements"]["not_yet_analyzed"] == 1
     assert stats["requirements"]["by_domain"] == {"KYC": 2, "null": 1}
+    # Remaining = REQ-T-1 (not analyzed) + REQ-T-2 (pending); REQ-T-3 is accepted, so out.
+    assert stats["requirements"]["remaining"] == {"total": 2, "by_risk_level": {"null": 1, "HIGH": 1}}
     # 2 mappings on the same procedure: the procedure counts once, the mappings twice.
     assert stats["procedures"]["by_assessment"] == {"POTENTIAL_GAP": 1}
     assert stats["mappings"]["by_assessment"] == {"POTENTIAL_GAP": 2}

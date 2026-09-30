@@ -1981,4 +1981,5 @@ par défaut `COMPLIANCE_OFFICER` traduit. Toujours 100 % FE — aucun contrôle 
   domaine, par statut, conseil de résolution) : stats par exigence ET par procédure (comptage distinct),
   `suggested_changes` dans le prompt, réponses comparées aux chiffres de la base (identiques). Corrigé :
   `suggested_modifications` est une chaîne JSON sur Neon (plantait) ; une question EN avec l'interface
-  FR recevait une réponse FR ; un croisement non précalculé (risque × restant) est signalé, pas deviné.
+  FR recevait une réponse FR ; un croisement non précalculé est signalé, pas deviné ; risque × restant (non analysées +
+  en attente de revue) ajouté aux stats (57 élevé / 43 moyen, identique à la base).
