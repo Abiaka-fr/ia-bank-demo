@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { AssigneeName } from "@/components/features/assignee-select";
@@ -57,20 +58,53 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
   });
 
   const queryClient = useQueryClient();
+  const [extractionProgress, setExtractionProgress] = useState<{
+    totalJobs: number;
+    completedJobs: number;
+    isProcessing: boolean;
+  } | null>(null);
+
   const extractMutation = useMutation({
-    mutationFn: () => extractRequirements(regulationId),
-    onSuccess: (data) => {
-      // Refetch requirements after extraction
+    mutationFn: async (data: { total_jobs_created: number; jobs: Array<{ job_id: string }> }) => {
+      setExtractionProgress({
+        totalJobs: data.total_jobs_created,
+        completedJobs: 0,
+        isProcessing: true,
+      });
+
+      // Process all jobs in parallel
+      const { processExtractionJob } = await import("@/lib/api/regulations");
+      const processPromises = data.jobs.map((job) =>
+        processExtractionJob(job.job_id)
+          .then(() => {
+            setExtractionProgress((prev) =>
+              prev ? { ...prev, completedJobs: prev.completedJobs + 1 } : null
+            );
+          })
+          .catch((error: unknown) => {
+            console.error(`Failed to process job ${job.job_id}:`, error);
+            setExtractionProgress((prev) =>
+              prev ? { ...prev, completedJobs: prev.completedJobs + 1 } : null
+            );
+          })
+      );
+
+      await Promise.all(processPromises);
+    },
+    onSuccess: () => {
+      // Refetch requirements after extraction jobs are processed
       void queryClient.invalidateQueries({
         queryKey: queryKeys.regulationRequirements(regulationId),
       });
-      toast.success(t("extractionSuccess", { count: data.requirements_count }), {
+      setExtractionProgress(null);
+      toast.success(t("extractionSuccess"), {
         duration: 3000,
       });
     },
     onError: (error: unknown) => {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       console.error("Requirement extraction failed:", error, errorMessage);
+      setExtractionProgress(null);
       toast.error(t("extractionFailed"), {
         description: errorMessage,
         duration: 5000,
@@ -200,10 +234,8 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
           )}
         </TabsContent>
 
-        <TabsContent value="requirements" className="mt-4">
-          {requirementsQuery.isPending ? (
-            <LoadingState rows={3} />
-          ) : requirements.length === 0 ? (
+        <TabsContent value="requirements">
+          {requirements.length === 0 && (
             <div className="flex flex-col items-center gap-6 rounded-lg border border-dashed bg-card px-6 py-16 text-center shadow-sm shadow-foreground/10">
               {extractMutation.isPending ? (
                 <>
@@ -228,25 +260,66 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
                     </p>
                   </div>
                   <Button
-                    onClick={() => extractMutation.mutate()}
+                    onClick={async () => {
+                      try {
+                        const extractResult = await extractRequirements(regulationId);
+                        setExtractionProgress({
+                          totalJobs: extractResult.total_jobs_created,
+                          completedJobs: 0,
+                          isProcessing: true,
+                        });
+                        extractMutation.mutate(extractResult);
+                      } catch (error) {
+                        console.error("Failed to extract requirements:", error);
+                        setExtractionProgress(null);
+                        toast.error(t("extractionFailed"), {
+                          description: error instanceof Error ? error.message : "Unknown error",
+                          duration: 5000,
+                        });
+                      }
+                    }}
                     disabled={extractMutation.isPending}
                     size="lg"
                     className="mt-2"
                   >
-                    {t("analyzeButton")}
+                    {extractMutation.isPending ? t("analyzing") : t("analyzeButton")}
                   </Button>
                 </>
               )}
             </div>
-          ) : (
-            <RequirementsTab
-              requirements={requirements}
-              findings={findings}
-              regulationId={regulationId}
-              focus={focus}
-              findingsLoaded={findingsQuery.isSuccess}
-            />
           )}
+          {extractionProgress && (
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-card p-4 shadow-sm">
+                <div className="mb-2">
+                  <p className="text-sm font-medium">
+                    {t("extractionProgress", {
+                      percent: Math.round(
+                        (extractionProgress.completedJobs / extractionProgress.totalJobs) * 100
+                      ),
+                    })}
+                  </p>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full bg-foreground transition-all duration-300"
+                    style={{
+                      width: `${(extractionProgress.completedJobs / extractionProgress.totalJobs) * 100}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          {requirementsQuery.isPending ? (
+            <LoadingState rows={3} />
+          ) : requirements.length > 0 && (<RequirementsTab
+            requirements={requirements}
+            findings={findings}
+            regulationId={regulationId}
+            focus={focus}
+            findingsLoaded={findingsQuery.isSuccess}
+          />)}
         </TabsContent>
 
         <TabsContent value="source" className="mt-4">

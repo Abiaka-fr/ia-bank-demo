@@ -1,16 +1,11 @@
 """User model for authentication and authorization."""
 
-import uuid
 from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, String
 
 from app.db.base import Base
-
-
-def _generate_user_id() -> str:
-    """Generate a unique user id, consistent with the string-id style used by other tables."""
-    return f"USR-{uuid.uuid4().hex}"
+from app.utils.ulid_utils import generate_ulid
 
 
 class User(Base):
@@ -18,7 +13,7 @@ class User(Base):
 
     __tablename__ = "users"
 
-    user_id = Column(String, primary_key=True, default=_generate_user_id)
+    user_id = Column(String(26), primary_key=True, default=generate_ulid)
     email = Column(String, nullable=False, unique=True)
     hashed_password = Column(String, nullable=False)
     full_name = Column(String)

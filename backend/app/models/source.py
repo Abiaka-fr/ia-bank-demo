@@ -1,10 +1,9 @@
 """Official public regulatory source model."""
 
-from datetime import datetime
-
-from sqlalchemy import Column, String, DateTime, Text
+from sqlalchemy import Column, DateTime, String, Text
 
 from app.db.base import Base
+from app.utils.ulid_utils import generate_ulid
 
 
 class OfficialPublicSource(Base):
@@ -12,7 +11,7 @@ class OfficialPublicSource(Base):
 
     __tablename__ = "official_public_sources"
 
-    source_id = Column(String, primary_key=True)
+    source_id = Column(String(26), primary_key=True, default=generate_ulid)
     authority = Column(String)  # e.g., ACPR, EBA, TRACFIN
     jurisdiction = Column(String)  # e.g., FR, EU, International
     domain = Column(String)  # e.g., AML/CFT, KYC

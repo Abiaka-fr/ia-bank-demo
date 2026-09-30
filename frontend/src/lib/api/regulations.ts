@@ -81,24 +81,63 @@ export function analyzeRegulation(id: string) {
 
 /**
  * Extract regulatory requirements from a document using LLM analysis.
- * Returns the count of extracted requirements and their IDs.
+ * Returns async extraction jobs (new job-based workflow).
  *
  * Endpoint: POST /api/requirements/extract
  * Uses backend when available, falls back to MSW mock otherwise.
  */
 export function extractRequirements(documentId: string) {
-  if (isBackendLive) return backend.extractRequirementsFromBackend(documentId);
+  if (isBackendLive) return backend.createExtractionJobsFromBackend(documentId);
 
   return apiFetch(
     "/api/requirements/extract",
-    z.object({
-      document_id: z.string(),
-      requirements_count: z.number(),
-      requirement_ids: z.array(z.string()),
-    }),
+    z
+      .object({
+        document_id: z.string(),
+        document_version_id: z.string(),
+        total_jobs_created: z.number(),
+        jobs: z.array(
+          z.object({
+            job_id: z.string(),
+            document_id: z.string(),
+            document_version_id: z.string(),
+            chunk_no: z.number(),
+            status: z.enum(["PENDING", "COMPLETED", "FAILED"]),
+            extracted_requirement_ids: z.array(z.string()).nullable(),
+            error_message: z.string().nullable(),
+            created_at: z.string(),
+            updated_at: z.string(),
+          })
+        ),
+      })
+      .passthrough(),
     {
       method: "POST",
       body: { document_id: documentId },
+    },
+  );
+}
+
+/**
+ * Process a single extraction job.
+ * Extracts requirements from a chunk via LLM and persists them.
+ *
+ * Endpoint: POST /api/requirements/jobs/{job_id}/process
+ */
+export function processExtractionJob(jobId: string) {
+  if (isBackendLive) return backend.processExtractionJobFromBackend(jobId);
+
+  return apiFetch(
+    `/api/requirements/jobs/${encodeURIComponent(jobId)}/process`,
+    z.object({
+      job_id: z.string(),
+      status: z.enum(["COMPLETED", "FAILED"]),
+      extracted_requirement_ids: z.array(z.string()),
+      error_message: z.string().nullable(),
+      chunks_processed: z.number(),
+    }),
+    {
+      method: "POST",
     },
   );
 }

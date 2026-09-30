@@ -243,17 +243,27 @@ export function RequirementsTab({
             )}
           >
             <CardHeader>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-xs font-medium">
-                  {requirement.requirement_id}
-                </span>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <CardTitle className="text-sm font-medium leading-snug flex-1">
+                  {firstFinding ? (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRequirementId(requirement.requirement_id)}
+                      className="text-left hover:underline focus:outline-none"
+                    >
+                      {displayedRequirementText}
+                    </button>
+                  ) : (
+                    displayedRequirementText
+                  )}
+                </CardTitle>
                 {canOpenFinding ? null : findingsLoaded ? (
                   // Masqué pendant le chargement : un clic relançait l'analyse LLM d'une
                   // exigence déjà analysée et créait des mappings en double.
                   <Button
                     size="sm"
                     variant="default"
-                    className="relative z-10 ml-auto gap-1"
+                    className="relative z-10 gap-1 flex-shrink-0"
                     onClick={() => analyzeMutation.mutate(requirement.requirement_id)}
                     disabled={analyzeMutation.isPending}
                   >
@@ -271,19 +281,6 @@ export function RequirementsTab({
                   </Button>
                 ) : null}
               </div>
-              <CardTitle className="text-sm font-medium leading-snug">
-                {firstFinding ? (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRequirementId(requirement.requirement_id)}
-                    className="text-left hover:underline focus:outline-none"
-                  >
-                    {displayedRequirementText}
-                  </button>
-                ) : (
-                  displayedRequirementText
-                )}
-              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {related.length ? (

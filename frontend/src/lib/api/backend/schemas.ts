@@ -249,6 +249,28 @@ export const backendExtractRequirementsSchema = z.object({
   requirement_ids: z.array(z.string()),
 });
 
+/** Response from POST /api/requirements/extract (new job-based workflow). */
+export const backendCreateExtractionJobsSchema = z
+  .object({
+    document_id: z.string(),
+    document_version_id: z.string(),
+    total_jobs_created: z.number(),
+    jobs: z.array(
+      z.object({
+        job_id: z.string(),
+        document_id: z.string(),
+        document_version_id: z.string(),
+        chunk_no: z.number(),
+        status: z.enum(["PENDING", "COMPLETED", "FAILED"]),
+        extracted_requirement_ids: z.array(z.string()).nullable(),
+        error_message: z.string().nullable(),
+        created_at: z.string(),
+        updated_at: z.string(),
+      })
+    ),
+  })
+  .passthrough();
+
 /** Response from POST /api/mappings/analyze — one entry per requirement analysed. */
 export const backendAnalyzeMappingsSchema = z.array(
   z.object({

@@ -6,6 +6,7 @@ from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Tex
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
+from app.utils.ulid_utils import generate_ulid
 
 
 class Document(Base):
@@ -13,7 +14,7 @@ class Document(Base):
 
     __tablename__ = "documents"
 
-    document_id = Column(String, primary_key=True)
+    document_id = Column(String(26), primary_key=True, default=generate_ulid)
     title = Column(String, nullable=False)
     category = Column(String)  # EXTERNAL, INTERNAL, CONTROL
     document_type = Column(String)  # e.g., REGULATORY_STANDARD, GUIDELINE, POLICY
@@ -41,8 +42,8 @@ class DocumentVersion(Base):
 
     __tablename__ = "document_versions"
 
-    version_id = Column(String, primary_key=True)
-    document_id = Column(String, ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
+    version_id = Column(String(26), primary_key=True, default=generate_ulid)
+    document_id = Column(String(26), ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
     version_no = Column(String)
     version_timestamp = Column(DateTime)
     status = Column(String)  # ACTIVE, SUPERSEDED
@@ -66,9 +67,9 @@ class DocumentChunk(Base):
 
     __tablename__ = "document_chunks"
 
-    chunk_id = Column(String, primary_key=True)
-    document_id = Column(String, ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
-    version_id = Column(String, ForeignKey("document_versions.version_id", ondelete="CASCADE"), nullable=False)
+    chunk_id = Column(String(26), primary_key=True, default=generate_ulid)
+    document_id = Column(String(26), ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
+    version_id = Column(String(26), ForeignKey("document_versions.version_id", ondelete="CASCADE"), nullable=False)
     chunk_no = Column(Integer)
     section_title = Column(String)
     content = Column(Text)
