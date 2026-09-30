@@ -6,7 +6,7 @@
  */
 import type { DocumentMeta, Finding, Priority } from "@/types/api";
 
-import type { BackendMappingDetail } from "./schemas";
+import type { BackendMappingDetail, BackendRequirement } from "./schemas";
 import {
   adaptAssessment,
   adaptHumanStatus,
@@ -25,6 +25,8 @@ export type MappingDetail = {
   requirementSummary: {
     title: string;
     titleFr: string | undefined;
+    text: string;
+    textFr: string | undefined;
     domain: string[];
     riskLevel: Priority;
     sourceReference: string;
@@ -45,7 +47,10 @@ export type MappingDetail = {
 /**
  * Adapt the raw mapping-detail response into the page-local shape.
  */
-export function adaptMappingDetail(raw: BackendMappingDetail): MappingDetail {
+export function adaptMappingDetail(
+  raw: BackendMappingDetail,
+  fullRequirement?: BackendRequirement,
+): MappingDetail {
   const { mapping, requirement, requirement_source_document: sourceDoc, procedure } = raw;
 
   // Build the Finding shape
@@ -81,7 +86,9 @@ export function adaptMappingDetail(raw: BackendMappingDetail): MappingDetail {
 
   const requirementSummary = {
     title: requirement.title ?? "",
-    titleFr: requirement.title_lang_fr ?? undefined,
+    titleFr: fullRequirement?.title_lang_fr ?? requirement.title_lang_fr ?? undefined,
+    text: fullRequirement?.requirement_text ?? "",
+    textFr: fullRequirement?.requirement_text_lang_fr ?? undefined,
     domain: adaptDomain(requirement.domain),
     riskLevel: adaptPriorityFromRiskLevel(requirement.risk_level),
     sourceReference: requirement.source_reference ?? "",

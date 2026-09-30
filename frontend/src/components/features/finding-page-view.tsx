@@ -100,6 +100,10 @@ export function FindingPageView({ findingId }: { findingId: string }) {
 
   const { finding, requirementSummary, regulationDocument, suggestedModifications } =
     mappingDetail;
+  // Texte de l'exigence, traduisible ; retombe sur la citation verbatim (jamais traduite).
+  const requirementText =
+    pickLocalizedText(locale, requirementSummary.text, requirementSummary.textFr) ||
+    finding.regulatory_evidence[0]?.excerpt;
 
   // Une décision acceptée ou rejetée est close : plus de bloc « Décision ».
   const isDecided = finding.human_status === "ACCEPTED" || finding.human_status === "REJECTED";
@@ -203,7 +207,7 @@ export function FindingPageView({ findingId }: { findingId: string }) {
         {/* Arrow/indicator showing extraction */}
         <div className="flex justify-center py-1">
           <div className="text-xs font-semibold text-muted-foreground px-2 py-1 bg-muted rounded">
-            ↓ Extracted requirement
+            ↓ {t("extractedRequirement")}
           </div>
         </div>
 
@@ -218,9 +222,9 @@ export function FindingPageView({ findingId }: { findingId: string }) {
             <div className="space-y-2">
               <p className="text-base font-semibold leading-snug">{pickLocalizedText(locale, requirementSummary.title, requirementSummary.titleFr)}
               </p>
-              {finding.regulatory_evidence.length > 0 && (
+              {requirementText && (
                 <p className="text-sm leading-relaxed text-foreground bg-white dark:bg-slate-950 p-3 rounded border border-blue-200 dark:border-blue-800">
-                  {finding.regulatory_evidence[0].excerpt}
+                  {requirementText}
                 </p>
               )}
             </div>

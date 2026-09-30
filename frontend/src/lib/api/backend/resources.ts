@@ -65,6 +65,7 @@ import {
   backendMappingHistorySchema,
   backendMappingSchema,
   backendRequirementListSchema,
+  backendRequirementSchema,
   backendRequirementsToProceduresSchema,
   backendTokenSchema,
   backendUserListSchema,
@@ -419,6 +420,17 @@ export async function updateUserRole(
     { method: "PUT", body: { role: body.role } },
   );
   return adaptUser(response);
+}
+
+/**
+ * `GET /api/requirements/{id}` — seule source du texte de l'exigence et de ses variantes FR :
+ * le bloc `requirement` de `GET /api/mappings/{id}` n'a ni `title_lang_fr` ni `requirement_text`.
+ */
+export async function fetchRequirement(requirementId: string) {
+  return backendFetch(
+    `/api/requirements/${encodeURIComponent(requirementId)}`,
+    backendRequirementSchema,
+  );
 }
 
 /**

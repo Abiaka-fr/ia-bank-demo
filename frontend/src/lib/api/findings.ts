@@ -37,14 +37,15 @@ export function fetchFindingsByRequirement(requirementId: string) {
  * Get complete details of a specific mapping (requirement × procedure impact).
  * Backend-only — no MSW mock; when the backend is not live, this throws immediately.
  */
-export function fetchFindingDetail(findingId: string): Promise<MappingDetail> {
+export async function fetchFindingDetail(findingId: string): Promise<MappingDetail> {
   if (!isBackendLive) {
     throw new BackendGapError(
       "Finding detail page is only available with a live backend. " +
         "Set NEXT_PUBLIC_BACKEND_URL to enable this feature.",
     );
   }
-  return backend.fetchMappingDetail(findingId).then(adaptMappingDetail);
+  const raw = await backend.fetchMappingDetail(findingId);
+  return adaptMappingDetail(raw, await backend.fetchRequirement(raw.mapping.requirement_id));
 }
 
 /**
