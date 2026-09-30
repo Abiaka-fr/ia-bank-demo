@@ -185,6 +185,11 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Blocages / Questions ouvertes
 
+- **2026-09-30 — pour Thư :** `new_text` des modifications suggérées généré en anglais sur une
+  procédure française (réécrit en anglais dans la procédure à l'ACCEPT). Cause et correctif proposé
+  (une ligne de prompt) : `docs/api-requests.md` #12. Non corrigé depuis le FE (`backend/` en
+  lecture seule).
+
 - Stack backend de Thư pas encore choisie → le frontend doit démarrer avec des données mockées
   respectant `docs/api-contract.md` en attendant.
 - **⚠️ Le backend de Thư diverge du contrat — analyse complète dans `docs/backend-integration.md`.**
@@ -253,6 +258,15 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   n'arrivent jamais sur Vercel.
 
 ## Notes de fin de session
+
+### 2026-09-30 — Copilot : nouvelles conversations + historique conservé
+
+- `copilot-chat.tsx` : plusieurs conversations, bouton « Nouvelle conversation », liste
+  « Conversations précédentes » (titre = 1re question). Stockage `localStorage`, clé
+  `ia-bank.copilot.<user_id>` (plus de fuite entre comptes), 20 conversations max ; reprend la
+  plus récente au rechargement et au changement FR↔EN. Test : `copilot-chat.test.tsx`.
+- Limite (`ponytail:` dans le code) : propre au navigateur. Un historique qui suit l'utilisateur
+  d'un poste à l'autre demanderait un endpoint backend (non demandé à Thư pour l'instant).
 
 ### 2026-09-30 — FR/EN des exigences et constats + titres longs
 

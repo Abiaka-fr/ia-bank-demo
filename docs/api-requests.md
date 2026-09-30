@@ -13,6 +13,25 @@ banner at its top) and is no longer the thing to check before calling an endpoin
 
 ## Open / deferred
 
+13. **Copilot "remaining requirements" ignores `ESCALATE`** (2026-09-30).
+    `backend/app/routers/copilot.py:71-75` counts a requirement as remaining when it has no mapping
+    or a `PENDING_REVIEW` mapping. A requirement whose only open mapping is `ESCALATE` (waiting for
+    an expert) is therefore counted as done. Suggested: treat `ESCALATE` like `PENDING_REVIEW`
+    there (`human_status in ("PENDING_REVIEW", "ESCALATE")`). Today's figure is unaffected (the only
+    escalated requirement also has a pending mapping).
+
+12. **`suggested_modifications[].new_text` must be in the procedure's language** (2026-09-30).
+    Seen on mapping `01M3R659NMBP4R168JRXANFX10`: the procedure is French, `original_text` is French,
+    but `new_text` ("ARTICLE 12 — Virtual Currency Risk Management…") is English. On ACCEPT that
+    English text gets written into the French procedure. Cause, read-only look at
+    `backend/app/services/requirement_procedure_mapping.py`: the prompt says "all text fields in
+    English and French" (l. 295) and never says which language `new_text` uses (l. 306/313).
+    Suggested fix: add to the rules "Write `new_text` in the same language as the procedure text
+    (the language of `original_text`)". No API shape change; existing mappings need a re-run.
+    Also noted: `GET /api/mappings/{id}` has no `title_lang_fr`/`requirement_text` in its
+    `requirement` block — the frontend now calls `GET /api/requirements/{id}` as well; adding
+    them there would save that request (nice-to-have).
+
 1. **European search (CELLAR / EUR-Lex)** — split in two (2026-09-15):
    - **Metadata search — done frontend-side, no backend needed.** A thin Next.js route
      `GET /api/eu-search` (`frontend/src/app/api/eu-search/route.ts`) queries the public CELLAR
