@@ -1755,6 +1755,47 @@ Authorization: Bearer <access_token>
 
 ---
 
+## 8. Compliance Copilot
+
+#### `POST /api/copilot/ask`
+Answer a question (FR or EN) from the indexed corpus: documents, requirements, mappings and the text of active procedure versions. Model: `qwen/qwen3.7-plus` via OpenRouter, key `CHAT_BOT_KEY`.
+
+**Authentication** Required (Bearer token)
+
+**Request Body**
+```json
+{
+  "question": "Et parmi elles, lesquelles sont à risque élevé ?",
+  "history": [
+    { "question": "Combien d'exigences restent à traiter ?", "answer": "118 exigences…" }
+  ]
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "answer": "118 exigences n'ont pas encore été analysées et 13 sont en attente de revue.",
+  "evidence": [
+    {
+      "document_id": "EXT-EU-001",
+      "document_title": "...",
+      "section_reference": "Article 14.2",
+      "excerpt": "verbatim source text",
+      "language": "EN"
+    }
+  ]
+}
+```
+
+**Notes:**
+- `history` (optional, max 4 items, oldest first): previous exchanges, so follow-up questions have context. The frontend keeps the conversation; nothing is stored server-side.
+- Reasoning is disabled for this route (`LLMClient.call(..., reasoning=False)`): ~7 s instead of ~25 s.
+- `evidence` is rebuilt server-side from the ids the model cites (requirement `evidence` or procedure chunk `content`, verbatim); unknown ids are dropped. Counting questions are answered from precomputed stats and may carry no evidence.
+- `503` if `CHAT_BOT_KEY` is not configured, `502` if the LLM call or its JSON parsing fails.
+
+---
+
 ## Data Models
 
 ### User

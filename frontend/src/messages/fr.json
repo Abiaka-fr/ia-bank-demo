@@ -177,8 +177,22 @@
   "copilot": {
     "title": "Copilot",
     "subtitle": "Assistant conversationnel adossé au corpus indexé",
-    "placeholderHeading": "Écran prévu pour une phase ultérieure",
-    "placeholderBody": "Cet écran est prévu après la mise en place des écrans d'analyse. Toute réponse produite ici devra citer sa preuve, ou indiquer explicitement qu'aucune preuve n'a été trouvée."
+    "inputLabel": "Votre question",
+    "placeholder": "Posez une question sur les régulations, les exigences ou les procédures internes…",
+    "send": "Envoyer",
+    "pending": "Recherche dans le corpus indexé…",
+    "suggestionsLabel": "Exemples :",
+    "suggestions": {
+      "remaining": "Combien d'exigences restent à traiter ?",
+      "gaps": "Comment traiter les écarts potentiels en attente de revue ?",
+      "procedures": "Quelles procédures internes sont indexées et que couvrent-elles ?",
+      "regulations": "Quelles régulations sont analysées et quelles sont leurs exigences à risque élevé ?"
+    },
+    "evidenceHeading": "Preuves citées",
+    "noEvidence": "Aucune preuve n'a été trouvée dans le corpus indexé.",
+    "disclaimer": "Réponse générée par l'IA à partir du corpus indexé — validation par un expert requise.",
+    "error": "Le Copilot n'a pas pu répondre.",
+    "newConversation": "Nouvelle conversation"
   },
   "errors": {
     "title": "Le chargement a échoué",

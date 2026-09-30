@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     # OpenRouter API (for pipeline ingestion)
     openrouter_api_key: str = ""
 
+    # OpenRouter API key dedicated to the Compliance Copilot (chat)
+    chat_bot_key: str = ""
+
     class Config:
         env_file = ".env"
         case_sensitive = False
