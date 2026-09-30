@@ -56,6 +56,9 @@ class LLMClient:
     def call(
         messages: list[dict],
         response_schema: type[BaseModel],
+        model: str = MODEL,
+        api_key: str | None = None,
+        reasoning: bool = True,
     ) -> BaseModel:
         """
         Call the LLM and parse response into the given Pydantic schema.
@@ -63,6 +66,9 @@ class LLMClient:
         Args:
             messages: List of message dicts with 'role' and 'content'
             response_schema: Pydantic BaseModel class to parse response into
+            model: OpenRouter model id (defaults to the pipeline model)
+            api_key: OpenRouter key (defaults to OPENROUTER_API_KEY)
+            reasoning: model thinking on/off (off is much faster for chat)
 
         Returns:
             Parsed response as an instance of response_schema
@@ -70,19 +76,20 @@ class LLMClient:
         Raises:
             ValueError: If API call fails or response cannot be parsed
         """
-        if not settings.openrouter_api_key:
+        api_key = api_key or settings.openrouter_api_key
+        if not api_key:
             raise ValueError("OPENROUTER_API_KEY not configured in settings")
 
         headers = {
-            "Authorization": f"Bearer {settings.openrouter_api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
 
         payload = {
-            "model": MODEL,
+            "model": model,
             "messages": messages,
             "temperature": 0,
-            "reasoning": {"enabled": True},
+            "reasoning": {"enabled": reasoning},
             "temperature": 0,
             "max_tokens": 10000,  # Limit output to prevent excessive token usage
         }

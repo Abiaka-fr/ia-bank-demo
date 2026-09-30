@@ -1,6 +1,6 @@
 # Choix de la base du backend, partagé par run-backend.sh et run-public.sh (à sourcer
 # après avoir défini REPO_ROOT, VENV_PY et DEV_DB). Exporte DATABASE_URL, DB_LABEL et
-# OPENROUTER_API_KEY (lue dans `backend/.env` quelle que soit la base, sauf si déjà définie).
+# OPENROUTER_API_KEY + CHAT_BOT_KEY (lues dans `backend/.env` quelle que soit la base, sauf si déjà définie).
 #
 #   DB_TARGET=cloud (défaut) : base Neon, URL lue dans `backend/.env` (lecture seule).
 #   DB_TARGET=local          : copie SQLite `.local/backend-dev.sqlite`.
@@ -16,6 +16,8 @@ read_backend_env() {
 # Clé LLM des routes d'extraction/d'analyse : sans elle, ces routes répondent 400.
 OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-$(read_backend_env OPENROUTER_API_KEY)}"
 [ -n "$OPENROUTER_API_KEY" ] || echo "Avertissement : OPENROUTER_API_KEY absente — extraction/analyse IA indisponibles (400)." >&2
+# Clé du Copilot (`POST /api/copilot/ask`) : sans elle, la route répond 503.
+CHAT_BOT_KEY="${CHAT_BOT_KEY:-$(read_backend_env CHAT_BOT_KEY)}"
 
 DB_TARGET="${DB_TARGET:-cloud}"
 
@@ -45,4 +47,4 @@ case "$DB_TARGET" in
     ;;
 esac
 
-export DATABASE_URL DB_LABEL OPENROUTER_API_KEY
+export DATABASE_URL DB_LABEL OPENROUTER_API_KEY CHAT_BOT_KEY

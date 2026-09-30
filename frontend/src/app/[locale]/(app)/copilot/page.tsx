@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
+import { CopilotChat } from "@/components/features/copilot-chat";
 import { PageHeader } from "@/components/layout/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function CopilotPage({
   params,
@@ -15,16 +15,7 @@ export default async function CopilotPage({
   return (
     <div className="space-y-6">
       <PageHeader title={t("title")} subtitle={t("subtitle")} />
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t("placeholderHeading")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            {t("placeholderBody")}
-          </p>
-        </CardContent>
-      </Card>
+      <CopilotChat />
     </div>
   );
 }

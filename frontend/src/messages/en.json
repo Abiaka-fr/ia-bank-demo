@@ -178,8 +178,22 @@
   "copilot": {
     "title": "Copilot",
     "subtitle": "Conversational assistant grounded in the indexed corpus",
-    "placeholderHeading": "Screen planned for a later phase",
-    "placeholderBody": "This screen is planned once the analysis screens are in place. Any answer produced here must cite its evidence, or state explicitly that no evidence was found."
+    "inputLabel": "Your question",
+    "placeholder": "Ask about regulations, requirements or internal procedures…",
+    "send": "Send",
+    "pending": "Searching the indexed corpus…",
+    "suggestionsLabel": "Examples:",
+    "suggestions": {
+      "remaining": "How many requirements still need to be addressed?",
+      "gaps": "How should the potential gaps pending review be addressed?",
+      "procedures": "Which internal procedures are indexed and what do they cover?",
+      "regulations": "Which regulations are analyzed and what are their high-risk requirements?"
+    },
+    "evidenceHeading": "Cited evidence",
+    "noEvidence": "No evidence was found in the indexed corpus.",
+    "disclaimer": "AI-generated answer from the indexed corpus — expert validation required.",
+    "error": "The Copilot could not answer.",
+    "newConversation": "New conversation"
   },
   "errors": {
     "title": "Loading failed",

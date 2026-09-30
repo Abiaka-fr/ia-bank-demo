@@ -1952,3 +1952,34 @@ par défaut `COMPLIANCE_OFFICER` traduit. Toujours 100 % FE — aucun contrôle 
   Non committé.
   Puis : en-tête collant (`top-bar.tsx`) passé de `z-10` à `z-20` — les boutons `relative z-10` des
   cartes (« Analyser l'impact », suppression) passaient au-dessus au défilement. Rebuild pm2 OK.
+- **2026-09-30 (Hoang — Copilot, branche `feat/copilot-chat`)** : le Copilot n'est plus un
+  placeholder. Portée = message du PM (pas de spec) : questions sur les procédures internes, les
+  régulations, le nombre d'exigences restant à traiter, et comment traiter une exigence.
+  **Backend fait côté frontend à la demande explicite de Hoang** (exception à la règle `backend/`
+  en lecture seule) :
+  - `POST /api/copilot/ask` (`backend/app/routers/copilot.py`, `schemas/copilot.py`, `API.md` §8) :
+    tout le corpus (documents, exigences, correspondances, texte des procédures actives, ~29k tokens)
+    + statistiques précalculées dans le prompt, modèle `qwen/qwen3.7-plus`, clé `CHAT_BOT_KEY`
+    (`backend/.env`, exportée par `scripts/local-dev/db-env.sh`). Les preuves sont reconstruites
+    côté serveur à partir des ids cités (texte source verbatim), les ids inventés sont écartés.
+  - `LLMClient.call` accepte `model`/`api_key` optionnels (défauts inchangés pour le pipeline).
+  - Frontend : `copilot-chat.tsx` (questions-exemples, réponse, preuves via `EvidenceCard`),
+    `lib/api/copilot.ts`, clés i18n FR/EN.
+  **Vérifié :** 7 tests backend, 167 tests frontend, typecheck, lint (0 erreur) ; un seul appel réel
+  au modèle (réponse correcte, ~25 s). **Complété le même jour** après lecture du chatbot du projet DA
+  (`D:\abiaka\DA`, même modèle qwen) : reasoning coupé pour le Copilot (`LLMClient.call(reasoning=...)`,
+  défaut inchangé pour le pipeline) → ~7 s au lieu de ~25 s ; les 4 derniers échanges sont renvoyés
+  comme contexte (`history`) + bouton « Nouvelle conversation » ; test `tests/test_copilot.py`.
+  Rien d'autre repris de DA (SSE, stockage des conversations, vérification des chiffres par claims) :
+  trop lourd pour un écran P2. **Bilingue dans une même session** : réponse dans la langue de la
+  dernière question (FR↔EN à tout moment) ; `locale` de l'interface seulement si la question est
+  ambiguë (« REQ-0001 ? »), consigne placée juste avant la question (en fin de prompt, l'historique
+  l'emportait — mesuré) ; la conversation survit au changement FR/EN de l'interface (elle était
+  perdue au remontage de `[locale]`). 3 cas vérifiés sur le vrai modèle. **Reste :** `CHAT_BOT_KEY` à définir sur l'environnement déployé.
+  Écran vérifié en mode MSW (texte de page + console, capture impossible : fenêtre non dessinée).
+  **Besoins du PM revérifiés** (combien d'exigences/procédures à traiter, analysées ou non, par
+  domaine, par statut, conseil de résolution) : stats par exigence ET par procédure (comptage distinct),
+  `suggested_changes` dans le prompt, réponses comparées aux chiffres de la base (identiques). Corrigé :
+  `suggested_modifications` est une chaîne JSON sur Neon (plantait) ; une question EN avec l'interface
+  FR recevait une réponse FR ; un croisement non précalculé est signalé, pas deviné ; risque × restant (non analysées +
+  en attente de revue) ajouté aux stats (57 élevé / 43 moyen, identique à la base).
