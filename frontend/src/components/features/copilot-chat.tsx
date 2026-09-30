@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { cn } from "cn";
 import { Bot, Loader2, Plus, SendHorizontal } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Fragment, useEffect, useRef, useState } from "react";
@@ -10,13 +11,6 @@ import { EvidenceCard } from "@/components/features/evidence-card";
 import { MarkdownLine } from "@/components/features/markdown-line";
 import { useSession } from "@/components/providers/session-provider";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { askCopilot } from "@/lib/api/copilot";
 import type { CopilotAnswer } from "@/types/api";
@@ -102,38 +96,51 @@ export function CopilotChat() {
 
   return (
     // ponytail: 12rem ≈ barre du haut + en-tête de page, à ajuster si l'en-tête change.
-    <div className="flex min-h-[calc(100svh-12rem)] flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex min-h-[calc(100svh-12rem)] flex-col gap-4 lg:flex-row">
+      <aside className="flex shrink-0 flex-col gap-2 lg:sticky lg:top-4 lg:w-64 lg:self-start">
+        <Button
+          variant="outline"
+          size="sm"
+          className="justify-start"
+          disabled={mutation.isPending || turns.length === 0}
+          onClick={() => setActiveId(crypto.randomUUID())}
+        >
+          <Plus aria-hidden />
+          {t("newConversation")}
+        </Button>
         {conversations.length > 0 ? (
-          <Select
-            value={turns.length > 0 ? activeId : ""}
-            onValueChange={setActiveId}
-            disabled={mutation.isPending}
+          <nav
+            aria-label={t("history")}
+            className="flex max-h-40 flex-col gap-0.5 overflow-y-auto lg:max-h-[calc(100svh-18rem)]"
           >
-            <SelectTrigger aria-label={t("history")} className="w-72 max-w-full">
-              <SelectValue placeholder={t("history")} />
-            </SelectTrigger>
-            <SelectContent>
-              {conversations.map((conversation) => (
-                <SelectItem key={conversation.id} value={conversation.id}>
-                  <span className="truncate">{conversation.turns[0]?.question}</span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <p className="px-3 pt-2 pb-1 text-xs font-medium uppercase text-muted-foreground">
+              {t("history")}
+            </p>
+            {conversations.map((conversation) => {
+              const title = conversation.turns[0]?.question ?? "";
+              const active = conversation.id === activeId;
+              return (
+                <button
+                  key={conversation.id}
+                  type="button"
+                  title={title}
+                  aria-current={active ? "true" : undefined}
+                  disabled={mutation.isPending}
+                  onClick={() => setActiveId(conversation.id)}
+                  className={cn(
+                    "truncate rounded-md px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50",
+                    active && "bg-muted font-medium",
+                  )}
+                >
+                  {title}
+                </button>
+              );
+            })}
+          </nav>
         ) : null}
-        {turns.length > 0 ? (
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={mutation.isPending}
-            onClick={() => setActiveId(crypto.randomUUID())}
-          >
-            <Plus aria-hidden />
-            {t("newConversation")}
-          </Button>
-        ) : null}
-      </div>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col gap-4">
       <div className="flex flex-1 flex-col gap-4" aria-live="polite">
         {turns.map((turn, index) => (
           <Fragment key={index}>
@@ -198,7 +205,7 @@ export function CopilotChat() {
       ) : null}
 
       {/* Collé en bas de l'écran : la conversation défile derrière, comme une messagerie. */}
-      <div className="sticky bottom-0 -mx-4 -mb-4 border-t bg-background/95 px-4 py-3 backdrop-blur md:-mx-6 md:-mb-6 md:px-6">
+      <div className="sticky bottom-0 -mb-4 border-t bg-background/95 py-3 backdrop-blur md:-mb-6">
         <form
           className="flex items-end gap-2"
           onSubmit={(event) => {
@@ -230,6 +237,7 @@ export function CopilotChat() {
             <SendHorizontal aria-hidden />
           </Button>
         </form>
+      </div>
       </div>
     </div>
   );

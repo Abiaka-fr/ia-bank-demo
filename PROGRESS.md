@@ -259,6 +259,21 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Notes de fin de session
 
+### 2026-09-30 — Session partagée entre onglets + historique Copilot en colonne
+
+- **Reconnexion à chaque nouvel onglet** : jeton et utilisateur étaient en `sessionStorage`
+  (propre à chaque onglet — choix d'origine, `open-in-new-tab.ts` contournait le cas pour les liens
+  internes seulement). Passés en `localStorage` (`lib/api/token.ts`, `session-provider.tsx`) :
+  un nouvel onglet reste connecté, la déconnexion se propage aux autres onglets, et la session dure
+  jusqu'à l'expiration du JWT (24 h). Conséquence : fermer le navigateur ne déconnecte plus —
+  se déconnecter explicitement sur un poste partagé. Chacun doit se reconnecter une fois après ce
+  déploiement.
+- Bug corrigé au passage : un 401 purgeait le jeton mais gardait l'utilisateur, la garde restait
+  sur un écran en erreur au lieu de la connexion. `clearToken` purge les deux et prévient
+  `SessionProvider` (test `token.test.ts`).
+- Historique Copilot : liste des conversations en colonne à gauche (au-dessus sur mobile) au lieu
+  du menu déroulant, conversation active surlignée.
+
 ### 2026-09-30 — Copilot : nouvelles conversations + historique conservé
 
 - `copilot-chat.tsx` : plusieurs conversations, bouton « Nouvelle conversation », liste
