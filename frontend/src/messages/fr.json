@@ -193,7 +193,8 @@
     "noEvidence": "Aucune preuve n'a été trouvée dans le corpus indexé.",
     "disclaimer": "Réponse générée par l'IA à partir du corpus indexé — validation par un expert requise.",
     "error": "Le Copilot n'a pas pu répondre.",
-    "newConversation": "Nouvelle conversation"
+    "newConversation": "Nouvelle conversation",
+    "history": "Conversations précédentes"
   },
   "errors": {
     "title": "Le chargement a échoué",
@@ -473,6 +474,7 @@
     "viewDocument": "Afficher le document",
     "recommendedAction": "Action recommandée",
     "explanation": "Explication",
+    "extractedRequirement": "Exigence extraite",
     "impactedProcedure": "Procédure impactée",
     "suggestedModifications": "Modifications suggérées",
     "original": "Original",

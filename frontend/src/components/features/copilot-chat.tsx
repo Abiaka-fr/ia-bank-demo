@@ -1,14 +1,22 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { Bot, Loader2, RotateCcw, SendHorizontal } from "lucide-react";
+import { Bot, Loader2, Plus, SendHorizontal } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { EvidenceCard } from "@/components/features/evidence-card";
 import { MarkdownLine } from "@/components/features/markdown-line";
+import { useSession } from "@/components/providers/session-provider";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { askCopilot } from "@/lib/api/copilot";
 import type { CopilotAnswer } from "@/types/api";
@@ -18,24 +26,51 @@ const SUGGESTIONS = ["remaining", "gaps", "procedures", "regulations"] as const;
 const HISTORY_TURNS = 4;
 
 type Turn = { question: string; answer: CopilotAnswer };
+type Conversation = { id: string; turns: Turn[] };
 
 /**
- * Hors du composant : le changement FR↔EN change le segment `[locale]` et remonte la
- * page — la conversation doit survivre à ce remontage (même session, deux langues).
+ * Le backend ne stocke rien (`backend/API.md`, `/api/copilot/ask`) : les conversations
+ * vivent dans le navigateur, une clé par utilisateur. Elles survivent au rechargement et
+ * au changement FR↔EN (qui remonte la page).
  */
-// ponytail: mémoire du module — perdue au rechargement, et partagée si un autre compte se
-// connecte dans le même onglet ; passer en stockage par utilisateur si cela devient un besoin.
-let savedTurns: Turn[] = [];
+// ponytail: localStorage — propre à ce navigateur, plafonné à MAX_CONVERSATIONS ; passer
+// par un endpoint backend si l'historique doit suivre l'utilisateur d'un poste à l'autre.
+const MAX_CONVERSATIONS = 20;
+
+function loadConversations(key: string): Conversation[] {
+  try {
+    const parsed: unknown = JSON.parse(window.localStorage.getItem(key) ?? "[]");
+    return Array.isArray(parsed) ? (parsed as Conversation[]) : [];
+  } catch {
+    return [];
+  }
+}
 
 export function CopilotChat() {
   const t = useTranslations("copilot");
   const locale = useLocale();
+  const { user } = useSession();
+  const storageKey = `ia-bank.copilot.${user?.user_id ?? "anonymous"}`;
   const [question, setQuestion] = useState("");
-  const [turns, setTurnsState] = useState(() => savedTurns);
+  const [conversations, setConversations] = useState(() => loadConversations(storageKey));
+  // Reprend la conversation la plus récente ; sinon une nouvelle, enregistrée à la 1re réponse.
+  const [activeId, setActiveId] = useState(
+    () => conversations[0]?.id ?? crypto.randomUUID(),
+  );
+  const turns = conversations.find((c) => c.id === activeId)?.turns ?? [];
 
-  function setTurns(next: Turn[]) {
-    savedTurns = next;
-    setTurnsState(next);
+  function saveTurns(nextTurns: Turn[]) {
+    // La conversation active remonte en tête : c'est elle qu'on retrouve au rechargement.
+    const next = [
+      { id: activeId, turns: nextTurns },
+      ...conversations.filter((c) => c.id !== activeId),
+    ].slice(0, MAX_CONVERSATIONS);
+    setConversations(next);
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(next));
+    } catch {
+      // Stockage plein ou bloqué : la conversation reste utilisable, juste pas conservée.
+    }
   }
 
   const mutation = useMutation({
@@ -48,7 +83,7 @@ export function CopilotChat() {
         locale === "en" ? "EN" : "FR",
       ),
     onSuccess: (answer, asked) => {
-      setTurns([...savedTurns, { question: asked, answer }]);
+      saveTurns([...turns, { question: asked, answer }]);
       setQuestion("");
     },
     onError: (error) => toast.error(t("error"), { description: error.message }),
@@ -68,6 +103,37 @@ export function CopilotChat() {
   return (
     // ponytail: 12rem ≈ barre du haut + en-tête de page, à ajuster si l'en-tête change.
     <div className="flex min-h-[calc(100svh-12rem)] flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-2">
+        {conversations.length > 0 ? (
+          <Select
+            value={turns.length > 0 ? activeId : ""}
+            onValueChange={setActiveId}
+            disabled={mutation.isPending}
+          >
+            <SelectTrigger aria-label={t("history")} className="w-72 max-w-full">
+              <SelectValue placeholder={t("history")} />
+            </SelectTrigger>
+            <SelectContent>
+              {conversations.map((conversation) => (
+                <SelectItem key={conversation.id} value={conversation.id}>
+                  <span className="truncate">{conversation.turns[0]?.question}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
+        {turns.length > 0 ? (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={mutation.isPending}
+            onClick={() => setActiveId(crypto.randomUUID())}
+          >
+            <Plus aria-hidden />
+            {t("newConversation")}
+          </Button>
+        ) : null}
+      </div>
       <div className="flex flex-1 flex-col gap-4" aria-live="polite">
         {turns.map((turn, index) => (
           <Fragment key={index}>
@@ -163,19 +229,6 @@ export function CopilotChat() {
           >
             <SendHorizontal aria-hidden />
           </Button>
-          {turns.length > 0 ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label={t("newConversation")}
-              title={t("newConversation")}
-              disabled={mutation.isPending}
-              onClick={() => setTurns([])}
-            >
-              <RotateCcw aria-hidden />
-            </Button>
-          ) : null}
         </form>
       </div>
     </div>

@@ -193,7 +193,8 @@
     "noEvidence": "No evidence was found in the indexed corpus.",
     "disclaimer": "AI-generated answer from the indexed corpus — expert validation required.",
     "error": "The Copilot could not answer.",
-    "newConversation": "New conversation"
+    "newConversation": "New conversation",
+    "history": "Previous conversations"
   },
   "errors": {
     "title": "Loading failed",
@@ -473,6 +474,7 @@
     "viewDocument": "View document",
     "recommendedAction": "Recommended action",
     "explanation": "Explanation",
+    "extractedRequirement": "Extracted requirement",
     "impactedProcedure": "Impacted procedure",
     "suggestedModifications": "Suggested modifications",
     "original": "Original",
