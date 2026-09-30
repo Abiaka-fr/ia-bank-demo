@@ -194,7 +194,10 @@
     "disclaimer": "AI-generated answer from the indexed corpus — expert validation required.",
     "error": "The Copilot could not answer.",
     "newConversation": "New conversation",
-    "history": "Previous conversations"
+    "history": "History",
+    "hideHistory": "Hide history",
+    "showHistory": "Show history",
+    "noHistory": "No conversations yet"
   },
   "errors": {
     "title": "Loading failed",

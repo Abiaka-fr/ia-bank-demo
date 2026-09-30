@@ -194,7 +194,10 @@
     "disclaimer": "Réponse générée par l'IA à partir du corpus indexé — validation par un expert requise.",
     "error": "Le Copilot n'a pas pu répondre.",
     "newConversation": "Nouvelle conversation",
-    "history": "Conversations précédentes"
+    "history": "Historique",
+    "hideHistory": "Masquer l'historique",
+    "showHistory": "Afficher l'historique",
+    "noHistory": "Aucune conversation pour l'instant"
   },
   "errors": {
     "title": "Le chargement a échoué",

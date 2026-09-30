@@ -2,7 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { cn } from "cn";
-import { Bot, Loader2, Plus, SendHorizontal } from "lucide-react";
+import { Bot, Loader2, PanelLeftClose, PanelLeftOpen, Plus, SendHorizontal } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -30,6 +30,8 @@ type Conversation = { id: string; turns: Turn[] };
 // ponytail: localStorage — propre à ce navigateur, plafonné à MAX_CONVERSATIONS ; passer
 // par un endpoint backend si l'historique doit suivre l'utilisateur d'un poste à l'autre.
 const MAX_CONVERSATIONS = 20;
+/** Préférence d'affichage de la liste, propre au navigateur. */
+const HISTORY_OPEN_KEY = "ia-bank.copilot.historyOpen";
 
 function loadConversations(key: string): Conversation[] {
   try {
@@ -46,6 +48,22 @@ export function CopilotChat() {
   const { user } = useSession();
   const storageKey = `ia-bank.copilot.${user?.user_id ?? "anonymous"}`;
   const [question, setQuestion] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(() => {
+    try {
+      return window.localStorage.getItem(HISTORY_OPEN_KEY) !== "0";
+    } catch {
+      return true;
+    }
+  });
+
+  function toggleHistory() {
+    setHistoryOpen(!historyOpen);
+    try {
+      window.localStorage.setItem(HISTORY_OPEN_KEY, historyOpen ? "0" : "1");
+    } catch {
+      // Préférence non conservée : sans conséquence.
+    }
+  }
   const [conversations, setConversations] = useState(() => loadConversations(storageKey));
   // Reprend la conversation la plus récente ; sinon une nouvelle, enregistrée à la 1re réponse.
   const [activeId, setActiveId] = useState(
@@ -97,25 +115,49 @@ export function CopilotChat() {
   return (
     // ponytail: 12rem ≈ barre du haut + en-tête de page, à ajuster si l'en-tête change.
     <div className="flex min-h-[calc(100svh-12rem)] flex-col gap-4 lg:flex-row">
-      <aside className="flex shrink-0 flex-col gap-2 lg:sticky lg:top-4 lg:w-64 lg:self-start">
-        <Button
-          variant="outline"
-          size="sm"
-          className="justify-start"
-          disabled={mutation.isPending || turns.length === 0}
-          onClick={() => setActiveId(crypto.randomUUID())}
-        >
-          <Plus aria-hidden />
-          {t("newConversation")}
-        </Button>
-        {conversations.length > 0 ? (
-          <nav
-            aria-label={t("history")}
-            className="flex max-h-40 flex-col gap-0.5 overflow-y-auto lg:max-h-[calc(100svh-18rem)]"
+      <aside
+        className={cn(
+          "flex shrink-0 flex-col gap-1 rounded-lg border bg-card p-2 lg:sticky lg:top-4 lg:self-start",
+          historyOpen && "lg:w-64",
+        )}
+      >
+        <div className={cn("flex items-center gap-1", !historyOpen && "lg:flex-col")}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-expanded={historyOpen}
+            aria-controls="copilot-history"
+            aria-label={t(historyOpen ? "hideHistory" : "showHistory")}
+            title={t(historyOpen ? "hideHistory" : "showHistory")}
+            onClick={toggleHistory}
           >
-            <p className="px-3 pt-2 pb-1 text-xs font-medium uppercase text-muted-foreground">
+            {historyOpen ? <PanelLeftClose aria-hidden /> : <PanelLeftOpen aria-hidden />}
+          </Button>
+          {historyOpen ? (
+            <span className="flex-1 truncate text-xs font-medium uppercase text-muted-foreground">
               {t("history")}
-            </p>
+            </span>
+          ) : null}
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t("newConversation")}
+            title={t("newConversation")}
+            disabled={mutation.isPending || turns.length === 0}
+            onClick={() => setActiveId(crypto.randomUUID())}
+          >
+            <Plus aria-hidden />
+          </Button>
+        </div>
+        {historyOpen ? (
+          <nav
+            id="copilot-history"
+            aria-label={t("history")}
+            className="flex max-h-40 flex-col gap-0.5 overflow-y-auto border-t pt-1 lg:max-h-[calc(100svh-18rem)]"
+          >
+            {conversations.length === 0 ? (
+              <p className="px-3 py-2 text-xs text-muted-foreground">{t("noHistory")}</p>
+            ) : null}
             {conversations.map((conversation) => {
               const title = conversation.turns[0]?.question ?? "";
               const active = conversation.id === activeId;

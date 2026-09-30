@@ -273,6 +273,8 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   `SessionProvider` (test `token.test.ts`).
 - Historique Copilot : liste des conversations en colonne à gauche (au-dessus sur mobile) au lieu
   du menu déroulant, conversation active surlignée.
+- Puis : historique dans un cadre séparé, bouton masquer/afficher (préférence en `localStorage`,
+  `ia-bank.copilot.historyOpen`), « Nouvelle conversation » en icône dans l'en-tête du cadre.
 
 ### 2026-09-30 — Copilot : nouvelles conversations + historique conservé
 
