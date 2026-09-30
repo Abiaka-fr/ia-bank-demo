@@ -84,7 +84,7 @@ class LLMClient:
             "temperature": 0,
             "reasoning": {"enabled": True},
             "temperature": 0,
-            "max_tokens": 3000,  # Limit output to prevent excessive token usage
+            "max_tokens": 10000,  # Limit output to prevent excessive token usage
         }
 
         # First attempt (with rate limit retries)

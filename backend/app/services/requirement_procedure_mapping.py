@@ -99,6 +99,13 @@ class RequirementProcedureMappingService:
 
         # Ground each modification
         for mod in suggested_mods:
+            # Skip empty original_text
+            if not mod.original_text or mod.original_text.strip() == "":
+                warnings.append(
+                    f"Skipping modification with empty original_text in {procedure_document_id}"
+                )
+                continue
+
             found = False
 
             # Search all chunks for the original_text
@@ -295,7 +302,7 @@ class RequirementProcedureMappingService:
                                         '  "recommended_action_lang_fr": "French translation of recommended_action",\n'
                                         '  "suggested_modifications": [\n'
                                         "    {\n"
-                                        '      "original_text": "exact text from procedure to replace",\n'
+                                        '      "original_text": "exact text from procedure to replace. Never let it empty. If you want to add new_text in the content. the origin_text should be one 1 sentence before the position you want to add",\n'
                                         '      "new_text": "replacement text that complies"\n'
                                         "    }\n"
                                         "  ]\n"
@@ -336,6 +343,13 @@ class RequirementProcedureMappingService:
                         error_msg = f"MODIFICATION GROUNDING FAILED: {str(mod_error)}"
                         logger.error(f"❌ {error_msg}", exc_info=True)
                         warnings.append(error_msg)
+                        continue
+
+                    # Skip mapping if no valid modifications
+                    if not grounded_mods:
+                        skip_msg = f"Skipping mapping for {req_id} vs {procedure.document_id}: no valid modifications"
+                        logger.info(f"⏭️  {skip_msg}")
+                        warnings.append(skip_msg)
                         continue
 
                     # Serialize modifications to JSON
