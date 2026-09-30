@@ -110,6 +110,11 @@ export async function signUp(body: SignupBody): Promise<LoginResponse> {
   return { user: adaptUser(response.user), token: response.access_token };
 }
 
+/** `GET /api/auth/me` — profil à jour (rôle changé par un admin depuis la connexion). */
+export async function fetchMe(): Promise<User> {
+  return adaptUser(await backendFetch("/api/auth/me", backendUserSchema));
+}
+
 // --- Documents --------------------------------------------------------------
 
 async function listDocuments(category: "EXTERNAL" | "INTERNAL") {

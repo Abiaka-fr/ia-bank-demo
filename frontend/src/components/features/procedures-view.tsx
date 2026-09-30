@@ -40,6 +40,9 @@ import { queryKeys } from "@/lib/api/query-keys";
 import { deleteDocument } from "@/lib/api/regulations";
 import { fetchProcedures } from "@/lib/api/procedures";
 import { formatDateDDMMYYYY } from "@/lib/format-date";
+import { cn } from "cn";
+import { useSession } from "@/components/providers/session-provider";
+import { accessProfileForUser, canUploadRegulations } from "@/lib/access-profile";
 
 type SortOrder = "newest" | "oldest" | "title";
 
@@ -54,6 +57,8 @@ export function ProceduresView() {
   // Mêmes libellés de dates que les cartes de régulation.
   const regulationsT = useTranslations("regulations");
   const queryClient = useQueryClient();
+  const { user } = useSession();
+  const canEdit = canUploadRegulations(accessProfileForUser(user));
 
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortOrder>("newest");
@@ -153,22 +158,24 @@ export function ProceduresView() {
                 <Badge variant="secondary" className="font-mono text-[11px]">
                   {procedure.document_id}
                 </Badge>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="relative z-10 ml-auto h-6 w-6 text-muted-foreground hover:text-destructive"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setDeleteConfirmId(procedure.document_id);
-                  }}
-                  disabled={deleteMutation.isPending}
-                >
-                  <Trash2 className="size-4" aria-hidden />
-                  <span className="sr-only">{t("delete")}</span>
-                </Button>
+                {canEdit ? (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="relative z-10 ml-auto h-6 w-6 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDeleteConfirmId(procedure.document_id);
+                    }}
+                    disabled={deleteMutation.isPending}
+                  >
+                    <Trash2 className="size-4" aria-hidden />
+                    <span className="sr-only">{t("delete")}</span>
+                  </Button>
+                ) : null}
                 <ChevronRight
-                  className="size-4 text-muted-foreground"
+                  className={cn("size-4 text-muted-foreground", !canEdit && "ml-auto")}
                   aria-hidden
                 />
               </div>

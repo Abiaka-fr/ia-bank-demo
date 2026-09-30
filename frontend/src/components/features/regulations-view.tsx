@@ -47,6 +47,9 @@ import {
   updateRegulationAssignee,
 } from "@/lib/api/regulations";
 import type { RegulationSummary } from "@/types/api";
+import { cn } from "cn";
+import { useSession } from "@/components/providers/session-provider";
+import { accessProfileForUser, canUploadRegulations } from "@/lib/access-profile";
 
 const ALL_AUTHORITIES = "ALL";
 type SortOrder = "newest" | "oldest" | "title";
@@ -56,6 +59,8 @@ export function RegulationsView() {
   const common = useTranslations("common");
   const assigneeT = useTranslations("assignee");
   const queryClient = useQueryClient();
+  const { user } = useSession();
+  const canEdit = canUploadRegulations(accessProfileForUser(user));
 
   const [search, setSearch] = useState("");
   const [authority, setAuthority] = useState<string>(ALL_AUTHORITIES);
@@ -217,22 +222,24 @@ export function RegulationsView() {
                 {!hasReview ? (
                   <DocumentStatusBadge status={regulation.status} />
                 ) : null}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="relative z-10 ml-auto h-6 w-6 text-muted-foreground hover:text-destructive"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setDeleteConfirmId(regulation.document_id);
-                  }}
-                  disabled={deleteMutation.isPending}
-                >
-                  <Trash2 className="size-4" aria-hidden />
-                  <span className="sr-only">{t("delete")}</span>
-                </Button>
+                {canEdit ? (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="relative z-10 ml-auto h-6 w-6 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDeleteConfirmId(regulation.document_id);
+                    }}
+                    disabled={deleteMutation.isPending}
+                  >
+                    <Trash2 className="size-4" aria-hidden />
+                    <span className="sr-only">{t("delete")}</span>
+                  </Button>
+                ) : null}
                 <ChevronRight
-                  className="size-4 text-muted-foreground"
+                  className={cn("size-4 text-muted-foreground", !canEdit && "ml-auto")}
                   aria-hidden
                 />
               </div>
@@ -328,17 +335,23 @@ export function RegulationsView() {
                   </p>
                   {/* Modifiable directement sur la carte : l'assignation faite à
                       l'upload n'est pas définitive. */}
-                  <AssigneeSelect
-                    value={regulation.assignee_id}
-                    disabled={assignMutation.isPending}
-                    onChange={(assigneeId) =>
-                      assignMutation.mutate({
-                        regulationId: regulation.document_id,
-                        assigneeId,
-                      })
-                    }
-                    className="w-full"
-                  />
+                  {canEdit ? (
+                    <AssigneeSelect
+                      value={regulation.assignee_id}
+                      disabled={assignMutation.isPending}
+                      onChange={(assigneeId) =>
+                        assignMutation.mutate({
+                          regulationId: regulation.document_id,
+                          assigneeId,
+                        })
+                      }
+                      className="w-full"
+                    />
+                  ) : (
+                    <p className="text-sm">
+                      <AssigneeName userId={regulation.assignee_id} />
+                    </p>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">{t("openCardHint")}</p>
               </div>

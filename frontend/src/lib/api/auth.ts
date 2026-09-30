@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { loginResponseSchema, type LoginBody, type SignupBody } from "@/types/api";
+import { loginResponseSchema, type LoginBody, type SignupBody, type User } from "@/types/api";
 
 import { isBackendLive } from "./backend/config";
 import * as backend from "./backend/resources";
@@ -29,6 +29,16 @@ export function signUp(body: SignupBody) {
     method: "POST",
     body,
   });
+}
+
+/**
+ * Utilisateur courant tel que le serveur le voit maintenant — permet de prendre en
+ * compte un changement de rôle sans se reconnecter.
+ */
+export function fetchMe(): Promise<User | null> {
+  // ponytail: pas de `/api/auth/me` en mode mock, la session reste celle du login.
+  if (!isBackendLive) return Promise.resolve(null);
+  return backend.fetchMe();
 }
 
 /**

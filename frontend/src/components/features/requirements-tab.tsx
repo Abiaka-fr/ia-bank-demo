@@ -27,6 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSession } from "@/components/providers/session-provider";
+import { accessProfileForUser, canAnalyzeProcedures } from "@/lib/access-profile";
 import { humanStatusValues } from "@/lib/assessment";
 import { pickLocalizedText } from "@/lib/localized-text";
 import { highlightSegments } from "@/lib/evidence-match";
@@ -65,6 +67,8 @@ export function RequirementsTab({
   const t = useTranslations("regulations");
   const locale = useLocale();
   const queryClient = useQueryClient();
+  const { user } = useSession();
+  const canAnalyze = canAnalyzeProcedures(accessProfileForUser(user));
 
   const [search, setSearch] = useState("");
   const [domain, setDomain] = useState<string>(ALL_DOMAINS);
@@ -258,7 +262,7 @@ export function RequirementsTab({
                     displayedRequirementText
                   )}
                 </CardTitle>
-                {canOpenFinding ? null : findingsLoaded ? (
+                {canOpenFinding || !canAnalyze ? null : findingsLoaded ? (
                   // Masqué pendant le chargement : un clic relançait l'analyse LLM d'une
                   // exigence déjà analysée et créait des mappings en double.
                   <Button

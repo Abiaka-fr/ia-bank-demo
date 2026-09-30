@@ -10,6 +10,8 @@ const STORAGE_KEY = "ia-bank.session";
 type SessionContextValue = {
   user: User | null;
   signIn: (user: User, token: string) => void;
+  /** Remplace l'utilisateur en session (même jeton) — ex. rôle changé côté serveur. */
+  updateUser: (user: User) => void;
   signOut: () => void;
 };
 
@@ -65,15 +67,22 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const user = useMemo(() => parseUser(raw), [raw]);
 
-  const signIn = useCallback((nextUser: User, token: string) => {
+  const updateUser = useCallback((nextUser: User) => {
     try {
       window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
     } catch {
       // Sans persistance, la session ne survivra pas au rechargement.
     }
-    writeToken(token);
     notify();
   }, []);
+
+  const signIn = useCallback(
+    (nextUser: User, token: string) => {
+      writeToken(token);
+      updateUser(nextUser);
+    },
+    [updateUser],
+  );
 
   const signOut = useCallback(() => {
     try {
@@ -86,8 +95,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, signIn, signOut }),
-    [user, signIn, signOut],
+    () => ({ user, signIn, updateUser, signOut }),
+    [user, signIn, updateUser, signOut],
   );
 
   return <SessionContext value={value}>{children}</SessionContext>;

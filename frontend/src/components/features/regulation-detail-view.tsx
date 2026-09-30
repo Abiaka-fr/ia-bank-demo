@@ -35,12 +35,16 @@ import {
   extractRequirements,
 } from "@/lib/api/regulations";
 import { formatDateDDMMYYYY } from "@/lib/format-date";
+import { useSession } from "@/components/providers/session-provider";
+import { accessProfileForUser, canAnalyzeProcedures } from "@/lib/access-profile";
 
 export function RegulationDetailView({ regulationId }: { regulationId: string }) {
   const t = useTranslations("regulations");
   const common = useTranslations("common");
   const assigneeT = useTranslations("assignee");
   const historyT = useTranslations("history");
+  const { user } = useSession();
+  const canAnalyze = canAnalyzeProcedures(accessProfileForUser(user));
 
   const regulationQuery = useQuery({
     queryKey: queryKeys.regulation(regulationId),
@@ -259,31 +263,33 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
                       {t("requirementsAnalyzeHint")}
                     </p>
                   </div>
-                  <Button
-                    onClick={async () => {
-                      try {
-                        const extractResult = await extractRequirements(regulationId);
-                        setExtractionProgress({
-                          totalJobs: extractResult.total_jobs_created,
-                          completedJobs: 0,
-                          isProcessing: true,
-                        });
-                        extractMutation.mutate(extractResult);
-                      } catch (error) {
-                        console.error("Failed to extract requirements:", error);
-                        setExtractionProgress(null);
-                        toast.error(t("extractionFailed"), {
-                          description: error instanceof Error ? error.message : "Unknown error",
-                          duration: 5000,
-                        });
-                      }
-                    }}
-                    disabled={extractMutation.isPending}
-                    size="lg"
-                    className="mt-2"
-                  >
-                    {extractMutation.isPending ? t("analyzing") : t("analyzeButton")}
-                  </Button>
+                  {canAnalyze ? (
+                    <Button
+                      onClick={async () => {
+                        try {
+                          const extractResult = await extractRequirements(regulationId);
+                          setExtractionProgress({
+                            totalJobs: extractResult.total_jobs_created,
+                            completedJobs: 0,
+                            isProcessing: true,
+                          });
+                          extractMutation.mutate(extractResult);
+                        } catch (error) {
+                          console.error("Failed to extract requirements:", error);
+                          setExtractionProgress(null);
+                          toast.error(t("extractionFailed"), {
+                            description: error instanceof Error ? error.message : "Unknown error",
+                            duration: 5000,
+                          });
+                        }
+                      }}
+                      disabled={extractMutation.isPending}
+                      size="lg"
+                      className="mt-2"
+                    >
+                      {extractMutation.isPending ? t("analyzing") : t("analyzeButton")}
+                    </Button>
+                  ) : null}
                 </>
               )}
             </div>

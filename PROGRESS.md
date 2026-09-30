@@ -272,6 +272,26 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   l'extraction des documents existants pour en profiter.
 - Dialog d'upload : `sm:max-w-sm` → `sm:max-w-3xl` (×2).
 
+### 2026-09-30 (2) — audit des profils d'accès FE, trous bouchés
+
+Auditeur pouvait encore : lancer « Analyser » par exigence (`requirements-tab`) et l'extraction
+(`regulation-detail-view`), supprimer régulations/procédures, changer l'assignataire. Masqué via
+`canAnalyzeProcedures`/`canUploadRegulations`. `/users` et `/knowledge-base` tapés à la main
+redirigent désormais vers l'écran d'atterrissage (`auth-guard.tsx`). Libellé du rôle backend
+par défaut `COMPLIANCE_OFFICER` traduit. Toujours 100 % FE — aucun contrôle côté backend.
+
+### 2026-09-30 (3) — rôle rafraîchi sans reconnexion + codes de rôle backend
+
+- `GET /api/auth/me` existait déjà côté backend (rien à ajouter). `AuthGuard` l'appelle à chaque
+  changement de page et met à jour la session (`updateUser`) si le rôle a changé → un rôle
+  modifié dans « Utilisateurs » s'applique à la navigation suivante, sans logout. Mode mock : no-op.
+- **Bug trouvé** : la base Neon stocke des codes (`COMPLIANCE_ADMIN` ×3, `COMPLIANCE_OFFICER` ×3),
+  pas les libellés FR de `KNOWN_ROLES` → tous résolus en Officer (les admins ne voyaient pas
+  « Utilisateurs »). `resolveAccessProfile`/`roleLabel` acceptent maintenant aussi les codes.
+- Sélecteur de `/users` : un compte à code (ex. `COMPLIANCE_ADMIN`) présélectionne le premier
+  libellé FR de ce profil (`user-role-row.tsx`).
+- Commit + push `main` + `pm2 restart ia-demo` (rebuild).
+
 > Ajouter une entrée ici à la fin de chaque session : date, ce qui a été fait, ce qui reste, tout
 > point de blocage. Ne pas écraser les entrées précédentes.
 
