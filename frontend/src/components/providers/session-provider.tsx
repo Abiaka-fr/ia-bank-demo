@@ -2,10 +2,9 @@
 
 import { createContext, use, useCallback, useMemo, useSyncExternalStore } from "react";
 
-import { clearToken, writeToken } from "@/lib/api/token";
+import { SESSION_USER_KEY, clearToken, writeToken } from "@/lib/api/token";
 import { userSchema, type User } from "@/types/api";
 
-const STORAGE_KEY = "ia-bank.session";
 
 type SessionContextValue = {
   user: User | null;
@@ -18,13 +17,13 @@ type SessionContextValue = {
 const SessionContext = createContext<SessionContextValue | null>(null);
 
 /**
- * Session conservée en `sessionStorage` : l'utilisateur courant ici, le jeton dans
+ * Session conservée en `localStorage` (partagée entre onglets) : l'utilisateur courant ici, le jeton dans
  * `lib/api/token.ts` (la couche API doit pouvoir le lire sans passer par React).
  *
  * Le niveau de garantie dépend du mode (voir `lib/api/backend/config.ts`) :
  * en mode mock, c'est une simulation — aucun contrôle d'accès réel ; en mode backend
  * réel, le jeton est un vrai JWT signé, exigé par le serveur sur toutes les routes
- * `/api/**` et expirant au bout de 60 minutes.
+ * `/api/**` et expirant au bout de 24 heures.
  */
 const listeners = new Set<() => void>();
 
@@ -43,7 +42,7 @@ function subscribe(listener: () => void) {
 
 function getSnapshot(): string | null {
   try {
-    return window.sessionStorage.getItem(STORAGE_KEY);
+    return window.localStorage.getItem(SESSION_USER_KEY);
   } catch {
     return null;
   }
@@ -69,7 +68,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const updateUser = useCallback((nextUser: User) => {
     try {
-      window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
+      window.localStorage.setItem(SESSION_USER_KEY, JSON.stringify(nextUser));
     } catch {
       // Sans persistance, la session ne survivra pas au rechargement.
     }
@@ -85,13 +84,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(() => {
-    try {
-      window.sessionStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // Rien à nettoyer si le stockage est indisponible.
-    }
     clearToken();
-    notify();
   }, []);
 
   const value = useMemo(

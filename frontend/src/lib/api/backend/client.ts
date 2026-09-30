@@ -47,7 +47,7 @@ function buildUrl(path: string, searchParams: BackendRequestOptions["searchParam
 
 /** Traduit `{detail: "..."}` vers l'`ApiError` que les écrans savent déjà afficher. */
 async function readBackendError(response: Response): Promise<ApiError> {
-  // 401 : jeton absent, invalide ou expiré (60 min). On le purge pour que la garde de
+  // 401 : jeton absent, invalide ou expiré (24 h). On le purge (avec l'utilisateur) pour que la garde de
   // session renvoie vers l'écran de connexion au lieu de boucler sur des 401.
   if (response.status === 401) {
     clearToken();

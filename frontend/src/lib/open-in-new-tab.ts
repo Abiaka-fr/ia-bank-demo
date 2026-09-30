@@ -1,5 +1,9 @@
 /**
- * Ouvre une page interne dans un nouvel onglet en lui transmettant la session.
+ * Ouvre une page interne dans un nouvel onglet en lui transmettant la `sessionStorage`.
+ *
+ * Depuis le 2026-09-30 la session (jeton + utilisateur) vit en `localStorage`, partagée
+ * d'office entre onglets ; la copie ne sert plus qu'à l'état du mode mock
+ * (`lib/mocks/store.ts`, toujours en `sessionStorage`). Historique :
  *
  * **Bug réel trouvé en testant** (pas en lisant le code) : un simple
  * `<a target="_blank">`, même sans `rel="noopener"`, n'hérite pas de la
