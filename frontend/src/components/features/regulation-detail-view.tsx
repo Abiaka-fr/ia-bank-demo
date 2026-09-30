@@ -90,15 +90,14 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
       );
 
       await Promise.all(processPromises);
-      return data.total_jobs_created;
     },
-    onSuccess: (totalJobsCreated: number) => {
+    onSuccess: () => {
       // Refetch requirements after extraction jobs are processed
       void queryClient.invalidateQueries({
         queryKey: queryKeys.regulationRequirements(regulationId),
       });
       setExtractionProgress(null);
-      toast.success(t("extractionSuccess", { count: totalJobsCreated }), {
+      toast.success(t("extractionSuccess"), {
         duration: 3000,
       });
     },

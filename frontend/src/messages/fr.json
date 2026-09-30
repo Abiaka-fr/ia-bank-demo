@@ -113,7 +113,7 @@
     "analyzing": "Analyse en cours…",
     "extractionInProgress": "Extraction des exigences en cours. Cela peut prendre quelques instants.",
     "extractionProgress": "Progression : {percent}% terminée",
-    "extractionSuccess": "✓ {count} exigence(s) extraite(s) avec succès.",
+    "extractionSuccess": "✓ Exigences extraites avec succès.",
     "extractionFailed": "L'extraction des exigences a échoué. Veuillez réessayer.",
     "impactedActivity": "Activités impactées",
     "tabOverview": "Vue d'ensemble",
