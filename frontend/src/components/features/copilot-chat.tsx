@@ -2,7 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { RotateCcw, SendHorizontal } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -20,12 +20,24 @@ const HISTORY_TURNS = 4;
 
 type Turn = { question: string; answer: CopilotAnswer };
 
-// ponytail: conversation gardée en mémoire du composant (perdue au rechargement) ;
-// persister côté serveur si l'historique doit survivre à la session.
+/**
+ * Hors du composant : le changement FR↔EN change le segment `[locale]` et remonte la
+ * page — la conversation doit survivre à ce remontage (même session, deux langues).
+ */
+// ponytail: mémoire du module — perdue au rechargement, et partagée si un autre compte se
+// connecte dans le même onglet ; passer en stockage par utilisateur si cela devient un besoin.
+let savedTurns: Turn[] = [];
+
 export function CopilotChat() {
   const t = useTranslations("copilot");
+  const locale = useLocale();
   const [question, setQuestion] = useState("");
-  const [turns, setTurns] = useState<Turn[]>([]);
+  const [turns, setTurnsState] = useState(() => savedTurns);
+
+  function setTurns(next: Turn[]) {
+    savedTurns = next;
+    setTurnsState(next);
+  }
 
   const mutation = useMutation({
     mutationFn: (asked: string) =>
@@ -34,9 +46,10 @@ export function CopilotChat() {
         turns
           .slice(-HISTORY_TURNS)
           .map((turn) => ({ question: turn.question, answer: turn.answer.answer })),
+        locale === "en" ? "EN" : "FR",
       ),
     onSuccess: (answer, asked) => {
-      setTurns((previous) => [...previous, { question: asked, answer }]);
+      setTurns([...savedTurns, { question: asked, answer }]);
       setQuestion("");
     },
     onError: (error) => toast.error(t("error"), { description: error.message }),

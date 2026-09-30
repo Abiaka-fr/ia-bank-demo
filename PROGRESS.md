@@ -1925,5 +1925,9 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   défaut inchangé pour le pipeline) → ~7 s au lieu de ~25 s ; les 4 derniers échanges sont renvoyés
   comme contexte (`history`) + bouton « Nouvelle conversation » ; test `tests/test_copilot.py`.
   Rien d'autre repris de DA (SSE, stockage des conversations, vérification des chiffres par claims) :
-  trop lourd pour un écran P2. **Reste :** `CHAT_BOT_KEY` à définir sur l'environnement déployé.
+  trop lourd pour un écran P2. **Bilingue dans une même session** : réponse dans la langue de la
+  dernière question (FR↔EN à tout moment) ; `locale` de l'interface seulement si la question est
+  ambiguë (« REQ-0001 ? »), consigne placée juste avant la question (en fin de prompt, l'historique
+  l'emportait — mesuré) ; la conversation survit au changement FR/EN de l'interface (elle était
+  perdue au remontage de `[locale]`). 3 cas vérifiés sur le vrai modèle. **Reste :** `CHAT_BOT_KEY` à définir sur l'environnement déployé.
   Écran vérifié en mode MSW (texte de page + console, capture impossible : fenêtre non dessinée).

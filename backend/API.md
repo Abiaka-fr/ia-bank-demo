@@ -1768,7 +1768,8 @@ Answer a question (FR or EN) from the indexed corpus: documents, requirements, m
   "question": "Et parmi elles, lesquelles sont à risque élevé ?",
   "history": [
     { "question": "Combien d'exigences restent à traiter ?", "answer": "118 exigences…" }
-  ]
+  ],
+  "locale": "EN"
 }
 ```
 
@@ -1790,6 +1791,7 @@ Answer a question (FR or EN) from the indexed corpus: documents, requirements, m
 
 **Notes:**
 - `history` (optional, max 4 items, oldest first): previous exchanges, so follow-up questions have context. The frontend keeps the conversation; nothing is stored server-side.
+- Language: the answer follows the language of the latest question (FR or EN), even mid-conversation. `locale` (optional, `FR` default) is the interface language, used only when the question has no clear language (e.g. `REQ-0001 ?`).
 - Reasoning is disabled for this route (`LLMClient.call(..., reasoning=False)`): ~7 s instead of ~25 s.
 - `evidence` is rebuilt server-side from the ids the model cites (requirement `evidence` or procedure chunk `content`, verbatim); unknown ids are dropped. Counting questions are answered from precomputed stats and may carry no evidence.
 - `503` if `CHAT_BOT_KEY` is not configured, `502` if the LLM call or its JSON parsing fails.

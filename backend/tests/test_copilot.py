@@ -38,7 +38,9 @@ def test_ask_keeps_only_real_citations_and_forwards_history(monkeypatch):
     monkeypatch.setattr(copilot.settings, "chat_bot_key", "test-key")
     monkeypatch.setattr(copilot.LLMClient, "call", fake_call)
 
-    body = CopilotAskRequest(question="Et celle-ci ?", history=[{"question": "Q1", "answer": "A1"}])
+    body = CopilotAskRequest(
+        question="Et celle-ci ?", history=[{"question": "Q1", "answer": "A1"}], locale="EN"
+    )
     result = copilot.ask_copilot(body, None, db)
 
     assert [(e.document_id, e.section_reference, e.language) for e in result.evidence] == [
@@ -47,7 +49,8 @@ def test_ask_keeps_only_real_citations_and_forwards_history(monkeypatch):
     ]
     messages, kwargs = calls[0]
     assert kwargs["reasoning"] is False and kwargs["api_key"] == "test-key"
-    assert [m["role"] for m in messages] == ["system", "user", "assistant", "user"]
+    assert [m["role"] for m in messages] == ["system", "user", "assistant", "system", "user"]
     assert messages[-1]["content"] == "Et celle-ci ?"
     assert json.loads(messages[2]["content"])["answer"] == "A1"
     assert '"requirements_not_yet_analyzed": 1' in messages[0]["content"]
+    assert "reply in English" in messages[-2]["content"]  # UI-language fallback, next to the question
