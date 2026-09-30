@@ -9,7 +9,11 @@ from sqlalchemy.orm import Session
 from app.models.document import Document, DocumentChunk, DocumentVersion
 from app.models.mapping import RequirementProcedureMap
 from app.models.requirement import RegulatoryRequirement
-from app.schemas.mapping import ModificationLocation, SuggestedModification
+from app.schemas.mapping import (
+    ModificationLocation,
+    SuggestedModification,
+    SuggestedModificationInput,
+)
 from app.services.llm_client import LLMClient
 from app.utils.ulid_utils import generate_ulid
 
@@ -25,7 +29,7 @@ class MappingAssessment(BaseModel):
     explanation_lang_fr: str  # French translation of explanation
     recommended_action: str
     recommended_action_lang_fr: str  # French translation of recommended_action
-    suggested_modifications: Optional[list[SuggestedModification]] = None
+    suggested_modifications: Optional[list[SuggestedModificationInput]] = None
 
 
 class AnalyzeMappingsResponse(BaseModel):
@@ -48,18 +52,18 @@ class RequirementProcedureMappingService:
     @staticmethod
     def ground_suggested_modifications(
         db: Session,
-        suggested_mods: Optional[list[SuggestedModification]],
+        suggested_mods: Optional[list[SuggestedModificationInput]],
         procedure_document_id: str,
     ) -> tuple[list[SuggestedModification], list[str]]:
         """
-        Ground suggested modifications with actual chunk/offset info.
+        Ground suggested modifications by finding chunk and calculating offsets.
 
-        For each modification, find the chunk and verify the offset matches original text.
-        If text doesn't match verbatim, try to find the text and update offsets.
+        For each modification with original_text, search all chunks to find which one contains it.
+        Then calculate start_offset and end_offset.
 
         Args:
             db: Database session
-            suggested_mods: List of modifications from LLM
+            suggested_mods: List of modifications from LLM (no location yet)
             procedure_document_id: Document ID of the procedure being modified
 
         Returns:
@@ -86,57 +90,44 @@ class RequirementProcedureMappingService:
             warnings.append(f"No active version for procedure document {procedure_document_id}")
             return [], warnings
 
-        chunks_by_no = {}
         chunks = (
             db.query(DocumentChunk)
             .filter(DocumentChunk.version_id == active_version.version_id)
+            .order_by(DocumentChunk.chunk_no.asc())
             .all()
         )
-        for chunk in chunks:
-            chunks_by_no[chunk.chunk_no] = chunk
 
         # Ground each modification
         for mod in suggested_mods:
-            chunk = chunks_by_no.get(mod.location.chunk_no)
-            if not chunk:
-                warnings.append(
-                    f"Modification references non-existent chunk {mod.location.chunk_no} in {procedure_document_id}"
-                )
-                continue
+            found = False
 
-            # Verify text at the specified offset matches the original_text
-            offset_text = chunk.content[mod.location.start_offset:mod.location.end_offset]
-            if offset_text != mod.original_text:
-                # Try to find the original text in the chunk
+            # Search all chunks for the original_text
+            for chunk in chunks:
                 found_start = chunk.content.find(mod.original_text)
-                if found_start == -1:
-                    warnings.append(
-                        f"Original text not found in chunk {mod.location.chunk_no} of {procedure_document_id}: "
-                        f'"{mod.original_text[:50]}..."'
+                if found_start != -1:
+                    # Found it! Calculate offsets
+                    found_end = found_start + len(mod.original_text)
+                    location = ModificationLocation(
+                        chunk_no=chunk.chunk_no,
+                        start_offset=found_start,
+                        end_offset=found_end,
                     )
-                    continue
-                # Update offsets to match found text
-                found_end = found_start + len(mod.original_text)
-                warnings.append(
-                    f"Adjusted offsets for modification in chunk {mod.location.chunk_no} "
-                    f"(was {mod.location.start_offset}-{mod.location.end_offset}, "
-                    f"now {found_start}-{found_end})"
-                )
-                location = ModificationLocation(
-                    chunk_no=mod.location.chunk_no,
-                    start_offset=found_start,
-                    end_offset=found_end,
-                )
-            else:
-                location = mod.location
 
-            grounded.append(
-                SuggestedModification(
-                    location=location,
-                    original_text=mod.original_text,
-                    new_text=mod.new_text,
+                    grounded.append(
+                        SuggestedModification(
+                            location=location,
+                            original_text=mod.original_text,
+                            new_text=mod.new_text,
+                        )
+                    )
+                    found = True
+                    break
+
+            if not found:
+                warnings.append(
+                    f"Original text not found in any chunk of {procedure_document_id}: "
+                    f'"{mod.original_text[:80]}..."'
                 )
-            )
 
         return grounded, warnings
 
@@ -271,7 +262,7 @@ class RequirementProcedureMappingService:
 
                     # Concatenate procedure content
                     proc_content = "\n\n".join(
-                        [f"[CHUNK {c.chunk_no}: {c.section_title}]\n{c.content}" for c in proc_chunks]
+                        [f"[CHUNK_NO {c.chunk_no}]\n{c.content}" for c in proc_chunks]
                     )
 
                     # LLM call to assess impact
@@ -304,16 +295,15 @@ class RequirementProcedureMappingService:
                                         '  "recommended_action_lang_fr": "French translation of recommended_action",\n'
                                         '  "suggested_modifications": [\n'
                                         "    {\n"
-                                        '      "location": {\n'
-                                        '        "chunk_no": 1,\n'
-                                        '        "start_offset": 0,\n'
-                                        '        "end_offset": 50\n'
-                                        '      },\n'
-                                        '      "original_text": "text to replace",\n'
-                                        '      "new_text": "replacement text"\n'
+                                        '      "original_text": "exact text from procedure to replace",\n'
+                                        '      "new_text": "replacement text that complies"\n'
                                         "    }\n"
                                         "  ]\n"
-                                        "}"
+                                        "}\n\n"
+                                        "INSTRUCTIONS FOR suggested_modifications:\n"
+                                        "- If procedure already fully covers requirement, set suggested_modifications to []\n"
+                                        "- Provide exact original_text as it appears in the procedure (will be matched by string search)\n"
+                                        "- Provide new_text with updated content that addresses the requirement\n"
                                     ),
                                 }
                             ],
