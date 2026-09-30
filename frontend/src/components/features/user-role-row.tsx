@@ -34,8 +34,12 @@ export function UserRoleRow({ user }: { user: User }) {
   const rolesT = useTranslations("roles");
   const queryClient = useQueryClient();
 
-  const isKnownRole = KNOWN_ROLES.some((entry) => entry.role === user.role);
-  const roleOptions = isKnownRole
+  // Le backend stocke parfois le code du profil (`COMPLIANCE_ADMIN`) au lieu du libellé :
+  // on présélectionne alors le premier libellé de ce profil.
+  const selected =
+    KNOWN_ROLES.find((entry) => entry.role === user.role) ??
+    KNOWN_ROLES.find((entry) => entry.profile === user.role);
+  const roleOptions = selected
     ? KNOWN_ROLES
     : [{ role: user.role, profile: null }, ...KNOWN_ROLES];
 
@@ -54,7 +58,7 @@ export function UserRoleRow({ user }: { user: User }) {
       <TableCell className="whitespace-normal text-muted-foreground">{user.email}</TableCell>
       <TableCell className="whitespace-normal pr-4">
         <Select
-          value={user.role}
+          value={selected?.role ?? user.role}
           onValueChange={(nextRole) => mutation.mutate(nextRole)}
           disabled={mutation.isPending}
         >

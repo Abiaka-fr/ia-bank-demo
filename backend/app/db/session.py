@@ -1,6 +1,6 @@
 """Database session configuration."""
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
@@ -9,7 +9,7 @@ from app.config import settings
 # vs ~150 ms reused. pre_ping drops connections Neon closed while idle/suspended.
 engine = create_engine(
     settings.database_url,
-    echo=settings.debug,
+    echo=False,  # Disable SQL query logging (use logging config instead)
     pool_pre_ping=True,
 )
 

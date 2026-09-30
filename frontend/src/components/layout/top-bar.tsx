@@ -16,7 +16,7 @@ export function TopBar() {
   return (
     // print:hidden : feuille de style d'impression minimale (Phase 6 § 5) — la barre
     // du haut n'a pas sa place sur un document imprimé.
-    <header className="sticky top-0 z-10 flex flex-col border-b bg-background print:hidden">
+    <header className="sticky top-0 z-20 flex flex-col border-b bg-background print:hidden">
       <div className="flex h-14 items-center gap-3 px-4">
         <SidebarTrigger />
         <Separator orientation="vertical" className="h-6" />

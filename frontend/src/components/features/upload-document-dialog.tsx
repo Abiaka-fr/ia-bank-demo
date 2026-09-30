@@ -155,7 +155,7 @@ export function UploadDocumentDialog({ kind }: { kind: DocumentKind }) {
       {/* `max-h-[90vh] overflow-y-auto` : l'aperçu d'extraction peut dépasser le
           viewport sur un document avec beaucoup de sections — sans ça, les boutons du
           pied de page deviennent inatteignables. */}
-      <DialogContent className="flex max-h-[90vh] flex-col overflow-y-auto">
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>{t("description")}</DialogDescription>

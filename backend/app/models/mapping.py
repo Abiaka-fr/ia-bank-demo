@@ -1,12 +1,12 @@
 """Requirement to procedure mapping model."""
 
-import uuid
 from datetime import datetime
 
 from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, Index, String, Text
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
+from app.utils.ulid_utils import generate_ulid
 
 
 class RequirementProcedureMap(Base):
@@ -14,9 +14,9 @@ class RequirementProcedureMap(Base):
 
     __tablename__ = "requirement_procedure_map"
 
-    mapping_id = Column(String, primary_key=True)
-    requirement_id = Column(String, ForeignKey("regulatory_requirements.requirement_id", ondelete="CASCADE"), nullable=False)
-    procedure_id = Column(String, ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
+    mapping_id = Column(String(26), primary_key=True, default=generate_ulid)
+    requirement_id = Column(String(26), ForeignKey("regulatory_requirements.requirement_id", ondelete="CASCADE"), nullable=False)
+    procedure_id = Column(String(26), ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
     assessment = Column(String)  # COVERED, PARTIALLY_COVERED, POTENTIAL_GAP, HUMAN_REVIEW
     confidence = Column(Float)  # 0.0 - 1.0
     explanation = Column(Text)  # English explanation
@@ -41,15 +41,15 @@ class MappingHistory(Base):
 
     __tablename__ = "mapping_history"
 
-    history_id = Column(String, primary_key=True, default=lambda: f"MHI-{uuid.uuid4().hex}")
-    mapping_id = Column(String, nullable=False)
+    history_id = Column(String(26), primary_key=True, default=generate_ulid)
+    mapping_id = Column(String(26), nullable=False)
     # Denormalised so "every mapping linked to a requirement" is one indexed query.
-    requirement_id = Column(String, nullable=False)
-    procedure_id = Column(String)  # procedure document_id, as on the mapping
+    requirement_id = Column(String(26), nullable=False)
+    procedure_id = Column(String(26))  # procedure document_id, as on the mapping
     from_status = Column(String)
     to_status = Column(String, nullable=False)
     assignee = Column(String)  # ESCALATE: user_id or email escalated to
-    new_version_id = Column(String)  # ACCEPT: procedure version created
+    new_version_id = Column(String(26))  # ACCEPT: procedure version created
     comment = Column(Text)  # reviewer's chosen action
     actor = Column(String)  # user_id who decided
     created_at = Column(DateTime, default=datetime.utcnow)

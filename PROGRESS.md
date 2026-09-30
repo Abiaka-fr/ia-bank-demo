@@ -254,6 +254,44 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Notes de fin de session
 
+### 2026-09-30 — surlignage « Source document evidence » intermittent + dialog d'upload élargi
+
+- **Cause du surlignage aléatoire (FE, pas le LLM)** : `requirements-tab.tsx` surlignait avec
+  `source_text` (= `requirement_text`, reformulé par le LLM) ou `source_text_fr` (traduction) au
+  lieu du champ `evidence` (citation verbatim). Mesuré sur `.local/backend-dev.sqlite` (39 exigences) :
+  FR 0/39, EN 20/39, `evidence` 24/39 en correspondance exacte.
+- **Correctif** : on utilise `evidence` (helper existant `adaptRequirementEvidenceToEvidenceRef`,
+  jusqu'ici inutilisé) et `highlightSegments` cherche phrase par phrase + tolère les tirets
+  U+2011 — ~34/39 exigences surlignées au moins en partie.
+- **Correctif backend (⚠️ fait depuis une session FE, à la demande explicite de l'utilisateur —
+  Thư, merci de relire)** : `requirement_extraction.py` → `ground_evidence()` recale chaque
+  `evidence` du LLM sur le texte exact du chunk (alignement difflib par mots, sans appel LLM en
+  plus). Le LLM sautait des mots, coupait par « ... » ou remplaçait `-` par `‑`. Rejoué sur les 39
+  evidences de la base de dev : 24 → 39/39 retrouvées verbatim. Test : `tests/test_ground_evidence.py`
+  (lancer avec `DATABASE_URL=sqlite://`). **Ne s'applique qu'aux nouvelles extractions** — relancer
+  l'extraction des documents existants pour en profiter.
+- Dialog d'upload : `sm:max-w-sm` → `sm:max-w-3xl` (×2).
+
+### 2026-09-30 (2) — audit des profils d'accès FE, trous bouchés
+
+Auditeur pouvait encore : lancer « Analyser » par exigence (`requirements-tab`) et l'extraction
+(`regulation-detail-view`), supprimer régulations/procédures, changer l'assignataire. Masqué via
+`canAnalyzeProcedures`/`canUploadRegulations`. `/users` et `/knowledge-base` tapés à la main
+redirigent désormais vers l'écran d'atterrissage (`auth-guard.tsx`). Libellé du rôle backend
+par défaut `COMPLIANCE_OFFICER` traduit. Toujours 100 % FE — aucun contrôle côté backend.
+
+### 2026-09-30 (3) — rôle rafraîchi sans reconnexion + codes de rôle backend
+
+- `GET /api/auth/me` existait déjà côté backend (rien à ajouter). `AuthGuard` l'appelle à chaque
+  changement de page et met à jour la session (`updateUser`) si le rôle a changé → un rôle
+  modifié dans « Utilisateurs » s'applique à la navigation suivante, sans logout. Mode mock : no-op.
+- **Bug trouvé** : la base Neon stocke des codes (`COMPLIANCE_ADMIN` ×3, `COMPLIANCE_OFFICER` ×3),
+  pas les libellés FR de `KNOWN_ROLES` → tous résolus en Officer (les admins ne voyaient pas
+  « Utilisateurs »). `resolveAccessProfile`/`roleLabel` acceptent maintenant aussi les codes.
+- Sélecteur de `/users` : un compte à code (ex. `COMPLIANCE_ADMIN`) présélectionne le premier
+  libellé FR de ce profil (`user-role-row.tsx`).
+- Commit + push `main` + `pm2 restart ia-demo` (rebuild).
+
 > Ajouter une entrée ici à la fin de chaque session : date, ce qui a été fait, ce qui reste, tout
 > point de blocage. Ne pas écraser les entrées précédentes.
 
@@ -1906,6 +1944,14 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   `DELETE /api/documents/{id}` supprime donc lui-même ces lignes).
   Base locale : EXT-EU-001 réassignée à Thu Vo pendant le test. Non committé.
 
+- **2026-09-30 (Claude Code — mise à jour de la démo pm2)** : `git pull` (f4d639f : jobs d'extraction
+  async, IDs ULID, table `extraction_jobs` — déjà présente sur Neon, aucune migration à lancer ici :
+  `alembic/versions` n'est pas versionné). Nouvelle dépendance `python-ulid` ajoutée à la liste de
+  `scripts/local-dev/setup-backend.sh` et installée dans `.venv-backend`. `pm2 stop ia-demo` puis
+  `pm2 start ia-demo` (rebuild frontend) : front/back OK. Typecheck OK, lint 0 erreur (18 warnings).
+  Non committé.
+  Puis : en-tête collant (`top-bar.tsx`) passé de `z-10` à `z-20` — les boutons `relative z-10` des
+  cartes (« Analyser l'impact », suppression) passaient au-dessus au défilement. Rebuild pm2 OK.
 - **2026-09-30 (Hoang — Copilot, branche `feat/copilot-chat`)** : le Copilot n'est plus un
   placeholder. Portée = message du PM (pas de spec) : questions sur les procédures internes, les
   régulations, le nombre d'exigences restant à traiter, et comment traiter une exigence.

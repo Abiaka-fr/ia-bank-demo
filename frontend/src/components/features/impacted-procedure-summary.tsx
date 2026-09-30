@@ -27,9 +27,6 @@ export function ImpactedProcedureSummary({
   return (
     <span className={cn("block min-w-0 space-y-1 text-left", className)}>
       <span className="block text-sm font-medium">{title}</span>
-      <span className="block font-mono text-[11px] text-muted-foreground">
-        {finding.procedure_id ?? "—"} · {finding.finding_id}
-      </span>
       {explanation ? (
         <span className="line-clamp-2 text-xs text-muted-foreground">{explanation}</span>
       ) : null}

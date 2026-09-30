@@ -10,12 +10,19 @@ class ModificationLocation(BaseModel):
     """Location of a text modification within a document chunk."""
 
     chunk_no: int
-    start_offset: int
-    end_offset: int
+    start_offset: int | None = None  # Calculated by ground_suggested_modifications
+    end_offset: int | None = None  # Calculated by ground_suggested_modifications
+
+
+class SuggestedModificationInput(BaseModel):
+    """LLM response: suggested modification with just text (no location yet)."""
+
+    original_text: str
+    new_text: str
 
 
 class SuggestedModification(BaseModel):
-    """A suggested text modification for a procedure."""
+    """A suggested text modification for a procedure (after grounding with location)."""
 
     location: ModificationLocation
     original_text: str

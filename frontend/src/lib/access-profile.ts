@@ -59,13 +59,18 @@ export const KNOWN_ROLES = [
   },
 ] as const satisfies readonly { role: string; profile: AccessProfile; labelKey: string }[];
 
-const ROLE_TO_PROFILE: Record<string, AccessProfile> = Object.fromEntries(
-  KNOWN_ROLES.map(({ role, profile }) => [role, profile]),
-);
+// Le backend stocke aussi le code du profil lui-même (`COMPLIANCE_OFFICER` à
+// l'inscription, `COMPLIANCE_ADMIN` sur les comptes de démo) : on l'accepte tel quel.
+// Pour le libellé, un code prend celui du premier rôle connu de ce profil.
+const ROLE_TO_PROFILE: Record<string, AccessProfile> = {
+  ...Object.fromEntries(ACCESS_PROFILES.map((profile) => [profile, profile])),
+  ...Object.fromEntries(KNOWN_ROLES.map(({ role, profile }) => [role, profile])),
+};
 
-const ROLE_TO_LABEL_KEY: Record<string, string> = Object.fromEntries(
-  KNOWN_ROLES.map(({ role, labelKey }) => [role, labelKey]),
-);
+const ROLE_TO_LABEL_KEY: Record<string, string> = Object.fromEntries([
+  ...[...KNOWN_ROLES].reverse().map(({ profile, labelKey }) => [profile, labelKey]),
+  ...KNOWN_ROLES.map(({ role, labelKey }) => [role, labelKey]),
+]);
 
 export function resolveAccessProfile(role: string | null | undefined): AccessProfile {
   if (!role) return DEFAULT_ACCESS_PROFILE;
@@ -110,13 +115,15 @@ export function canValidateFindings(profile: AccessProfile): boolean {
   return profile !== "AUDITOR";
 }
 
-/** Même restriction que la validation — cohérent avec l'esprit « lecture seule ». */
+/** Même restriction que la validation — cohérent avec l'esprit « lecture seule ».
+ * Couvre aussi la gestion des documents (suppression, changement d'assignataire). */
 export function canUploadRegulations(profile: AccessProfile): boolean {
   return profile !== "AUDITOR";
 }
 
 /** Déclencher `POST /api/procedures/:id/analyze` (écran Analyze, Phase 6 § 2.2 / Phase 7
- * Jour 0) — même restriction que le reste des actions d'écriture. */
+ * Jour 0) — même restriction que le reste des actions d'écriture. Couvre aussi
+ * l'extraction d'exigences et l'analyse par exigence. */
 export function canAnalyzeProcedures(profile: AccessProfile): boolean {
   return profile !== "AUDITOR";
 }

@@ -27,9 +27,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSession } from "@/components/providers/session-provider";
+import { accessProfileForUser, canAnalyzeProcedures } from "@/lib/access-profile";
 import { humanStatusValues } from "@/lib/assessment";
 import { pickLocalizedText } from "@/lib/localized-text";
 import { highlightSegments } from "@/lib/evidence-match";
+import { adaptRequirementEvidenceToEvidenceRef } from "@/lib/api/backend/adapt";
 import { analyzeMappings, fetchRegulation } from "@/lib/api/regulations";
 import { queryKeys } from "@/lib/api/query-keys";
 import { openInNewTabWithSession } from "@/lib/open-in-new-tab";
@@ -64,6 +67,8 @@ export function RequirementsTab({
   const t = useTranslations("regulations");
   const locale = useLocale();
   const queryClient = useQueryClient();
+  const { user } = useSession();
+  const canAnalyze = canAnalyzeProcedures(accessProfileForUser(user));
 
   const [search, setSearch] = useState("");
   const [domain, setDomain] = useState<string>(ALL_DOMAINS);
@@ -243,17 +248,27 @@ export function RequirementsTab({
             )}
           >
             <CardHeader>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-xs font-medium">
-                  {requirement.requirement_id}
-                </span>
-                {canOpenFinding ? null : findingsLoaded ? (
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <CardTitle className="text-sm font-medium leading-snug flex-1">
+                  {firstFinding ? (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRequirementId(requirement.requirement_id)}
+                      className="text-left hover:underline focus:outline-none"
+                    >
+                      {displayedRequirementText}
+                    </button>
+                  ) : (
+                    displayedRequirementText
+                  )}
+                </CardTitle>
+                {canOpenFinding || !canAnalyze ? null : findingsLoaded ? (
                   // Masqué pendant le chargement : un clic relançait l'analyse LLM d'une
                   // exigence déjà analysée et créait des mappings en double.
                   <Button
                     size="sm"
                     variant="default"
-                    className="relative z-10 ml-auto gap-1"
+                    className="relative z-10 gap-1 flex-shrink-0"
                     onClick={() => analyzeMutation.mutate(requirement.requirement_id)}
                     disabled={analyzeMutation.isPending}
                   >
@@ -271,19 +286,6 @@ export function RequirementsTab({
                   </Button>
                 ) : null}
               </div>
-              <CardTitle className="text-sm font-medium leading-snug">
-                {firstFinding ? (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRequirementId(requirement.requirement_id)}
-                    className="text-left hover:underline focus:outline-none"
-                  >
-                    {displayedRequirementText}
-                  </button>
-                ) : (
-                  displayedRequirementText
-                )}
-              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {related.length ? (
@@ -400,19 +402,12 @@ export function RequirementsTab({
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">
                       {(() => {
                         const docText = regulationQuery.data?.extracted_text || "";
-                        const evidenceRefs = [
-                          {
-                            document_id: regulationId,
-                            document_title: regulationQuery.data?.title || "",
-                            section_reference: selectedReq.source_reference || "",
-                            excerpt: pickLocalizedText(
-                              locale,
-                              selectedReq.source_text,
-                              selectedReq.source_text_fr,
-                            ),
-                            language: locale === "fr" ? ("FR" as const) : ("EN" as const),
-                          },
-                        ];
+                        // `evidence` = citation verbatim du document ; `source_text(_fr)` est
+                        // reformulé/traduit par le LLM et ne se retrouve presque jamais tel quel.
+                        const evidenceRefs = adaptRequirementEvidenceToEvidenceRef(
+                          selectedReq,
+                          regulationQuery.data?.title,
+                        );
                         const segments = highlightSegments(docText, evidenceRefs);
                         return segments.map((segment, idx) =>
                           segment.isMatch ? (

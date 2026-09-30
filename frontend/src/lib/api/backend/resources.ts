@@ -54,6 +54,7 @@ import {
 import {
   backendAnalyzeMappingsSchema,
   backendAssigneeHistorySchema,
+  backendCreateExtractionJobsSchema,
   backendDeleteDocumentSchema,
   backendDocumentContentSchema,
   backendExtractRequirementsSchema,
@@ -107,6 +108,11 @@ export async function signUp(body: SignupBody): Promise<LoginResponse> {
   });
 
   return { user: adaptUser(response.user), token: response.access_token };
+}
+
+/** `GET /api/auth/me` — profil à jour (rôle changé par un admin depuis la connexion). */
+export async function fetchMe(): Promise<User> {
+  return adaptUser(await backendFetch("/api/auth/me", backendUserSchema));
 }
 
 // --- Documents --------------------------------------------------------------
@@ -496,19 +502,33 @@ export async function validateMapping(
  * Extract regulatory requirements from a document using LLM analysis.
  * Calls backend endpoint: POST /api/requirements/extract
  */
-export async function extractRequirementsFromBackend(
-  documentId: string,
-): Promise<{
-  document_id: string;
-  requirements_count: number;
-  requirement_ids: string[];
-}> {
+export async function createExtractionJobsFromBackend(documentId: string) {
   return backendFetch(
     "/api/requirements/extract",
-    backendExtractRequirementsSchema,
+    backendCreateExtractionJobsSchema,
     {
       method: "POST",
       body: { document_id: documentId },
+    },
+  );
+}
+
+/**
+ * Process a single extraction job.
+ * Endpoint: POST /api/requirements/jobs/{job_id}/process
+ */
+export async function processExtractionJobFromBackend(jobId: string) {
+  return backendFetch(
+    `/api/requirements/jobs/${encodeURIComponent(jobId)}/process`,
+    z.object({
+      job_id: z.string(),
+      status: z.enum(["COMPLETED", "FAILED"]),
+      extracted_requirement_ids: z.array(z.string()),
+      error_message: z.string().nullable(),
+      chunks_processed: z.number(),
+    }),
+    {
+      method: "POST",
     },
   );
 }

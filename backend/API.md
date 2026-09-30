@@ -654,15 +654,12 @@ POST /api/procedures/ingest
 
 ---
 
-### Extract Requirements from Document
+### Create Extraction Jobs for Document (Async Workflow)
 
 #### `POST /api/requirements/extract`
-Extract regulatory requirements from an ingested document using LLM analysis.
+Create extraction jobs for all chunks of a document (asynchronous job-based workflow).
 
-This endpoint takes a document_id and uses an LLM to:
-1. Load the document's chunked content
-2. Analyze and extract all regulatory requirements
-3. Store RegulatoryRequirement rows with metadata
+This endpoint takes a document_id and creates one extraction job per chunk. Jobs start in PENDING status. Use the job processing endpoint to process each job and extract requirements from that chunk.
 
 **Authentication** Required (Bearer token)
 
@@ -681,8 +678,43 @@ POST /api/requirements/extract
 ```json
 {
   "document_id": "EXT-EU-AML-002",
-  "requirements_count": 12,
-  "requirement_ids": ["REQ-0001", "REQ-0002", "REQ-0003", ...]
+  "document_version_id": "VER-EXT-EU-AML-002-01",
+  "total_jobs_created": 3,
+  "jobs": [
+    {
+      "job_id": "550e8400-e29b-41d4-a716-446655440000",
+      "document_id": "EXT-EU-AML-002",
+      "document_version_id": "VER-EXT-EU-AML-002-01",
+      "chunk_no": 1,
+      "status": "PENDING",
+      "extracted_requirement_ids": null,
+      "error_message": null,
+      "created_at": "2026-09-25T10:00:00",
+      "updated_at": "2026-09-25T10:00:00"
+    },
+    {
+      "job_id": "550e8400-e29b-41d4-a716-446655440001",
+      "document_id": "EXT-EU-AML-002",
+      "document_version_id": "VER-EXT-EU-AML-002-01",
+      "chunk_no": 2,
+      "status": "PENDING",
+      "extracted_requirement_ids": null,
+      "error_message": null,
+      "created_at": "2026-09-25T10:00:00",
+      "updated_at": "2026-09-25T10:00:00"
+    },
+    {
+      "job_id": "550e8400-e29b-41d4-a716-446655440002",
+      "document_id": "EXT-EU-AML-002",
+      "document_version_id": "VER-EXT-EU-AML-002-01",
+      "chunk_no": 3,
+      "status": "PENDING",
+      "extracted_requirement_ids": null,
+      "error_message": null,
+      "created_at": "2026-09-25T10:00:00",
+      "updated_at": "2026-09-25T10:00:00"
+    }
+  ]
 }
 ```
 
@@ -696,15 +728,92 @@ POST /api/requirements/extract
 **Response (500 on error)**
 ```json
 {
-  "detail": "Requirement extraction failed: ..."
+  "detail": "Failed to create extraction jobs: ..."
+}
+```
+
+**Notes:**
+- Jobs are created but NOT processed immediately — caller must trigger processing
+- Each job extracts requirements from one document chunk
+- Use POST /api/jobs/{job_id}/process to process each job
+- Ingested document must have chunks (via /api/documents/regulation-ingest)
+
+---
+
+### Process a Single Extraction Job
+
+#### `POST /api/requirements/jobs/{job_id}/process`
+Process a single extraction job: extract requirements from a chunk and persist them to the database.
+
+This endpoint:
+1. Loads the specified job
+2. Extracts requirements from the chunk via LLM
+3. Persists requirements to RegulatoryRequirement table
+4. Updates job status to COMPLETED (with requirement_ids) or FAILED (with error)
+
+**Authentication** Required (Bearer token)
+
+**Path Parameters**
+- `job_id` (required, UUID): The ID of the extraction job to process
+
+**Request Example**
+```
+POST /api/requirements/jobs/550e8400-e29b-41d4-a716-446655440000/process
+```
+
+**Response (200 OK) — Success**
+```json
+{
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "COMPLETED",
+  "extracted_requirement_ids": ["REQ-0001", "REQ-0002", "REQ-0003"],
+  "error_message": null,
+  "chunks_processed": 1
+}
+```
+
+**Response (200 OK) — Failure**
+```json
+{
+  "job_id": "550e8400-e29b-41d4-a716-446655440001",
+  "status": "FAILED",
+  "extracted_requirement_ids": [],
+  "error_message": "LLM call failed: API timeout",
+  "chunks_processed": 0
+}
+```
+
+**Response (404 Not Found)**
+```json
+{
+  "detail": "Extraction job not found"
+}
+```
+
+**Response (400 Bad Request)**
+```json
+{
+  "detail": "Job is in COMPLETED status; only PENDING jobs can be processed"
+}
+```
+
+**Response (500 on error)**
+```json
+{
+  "detail": "Failed to process extraction job: ..."
 }
 ```
 
 **Notes:**
 - Requires OPENROUTER_API_KEY environment variable
+- **Job processing rules:**
+  - PENDING jobs can always be processed
+  - FAILED jobs can only be processed if `extracted_requirement_ids` is NULL (never successfully extracted)
+  - Jobs that have extracted requirements cannot be reprocessed (prevents duplicates)
 - Requirement IDs are generated sequentially globally
-- All requirements are marked as ACTIVE status
-- Extract from the document (via /api/documents/ingest) before extracting requirements
+- All extracted requirements are marked as ACTIVE status
+- On failure, job status is updated to FAILED with error_message set (allows retry)
+- On success, job status is updated to COMPLETED with extracted_requirement_ids set (prevents accidental reprocessing)
 
 ---
 

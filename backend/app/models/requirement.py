@@ -2,10 +2,11 @@
 
 from datetime import datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, Index, DateTime
+from sqlalchemy import Column, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
+from app.utils.ulid_utils import generate_ulid
 
 
 class RegulatoryRequirement(Base):
@@ -13,8 +14,8 @@ class RegulatoryRequirement(Base):
 
     __tablename__ = "regulatory_requirements"
 
-    requirement_id = Column(String, primary_key=True)
-    source_document_id = Column(String, ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
+    requirement_id = Column(String(26), primary_key=True, default=generate_ulid)
+    source_document_id = Column(String(26), ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
     title = Column(String)  # English title
     title_lang_fr = Column(String, nullable=True)  # French title
     domain = Column(String)  # e.g., AML/CFT, KYC

@@ -79,4 +79,18 @@ describe("highlightSegments", () => {
     expect(matched[0].text).toBe(content.slice(0, content.indexOf("\r\n\r\n2.3")));
     expect(segments.map((segment) => segment.text).join("")).toBe(content);
   });
+
+  it("surligne les phrases intactes même si le LLM a altéré une autre phrase", () => {
+    const content =
+      "Member States shall require self-regulatory bodies to report annually. They shall act with honesty and integrity at all times.";
+    // Tiret insécable (U+2011) + mots sautés dans la 2e phrase — cas réels du backend.
+    const excerpt =
+      "Member States shall require self\u2011regulatory bodies to report annually. They shall act with integrity always.";
+    const matched = highlightSegments(content, [
+      { document_id: "EXT", document_title: "", section_reference: "", excerpt, language: "EN" },
+    ]).filter((segment) => segment.isMatch);
+    expect(matched.map((segment) => segment.text)).toEqual([
+      "Member States shall require self-regulatory bodies to report annually.",
+    ]);
+  });
 });

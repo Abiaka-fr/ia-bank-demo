@@ -1,7 +1,6 @@
 """Service for ingesting and chunking regulatory documents."""
 
 import logging
-import re
 from datetime import datetime
 
 from pydantic import BaseModel
@@ -9,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.models.document import Document, DocumentChunk, DocumentVersion
 from app.services.token_chunker import TokenBasedChunker
+from app.utils.ulid_utils import generate_ulid
 
 logger = logging.getLogger(__name__)
 
@@ -53,27 +53,8 @@ class DocumentIngestionService:
 
     @staticmethod
     def generate_document_id(db: Session, origin_code: str, category: str) -> str:
-        """Generate document_id using sequential counter per origin_code and category."""
-        # Query max existing id for this origin_code+category
-        prefix = f"{category[:3].upper()}-{origin_code}"
-
-        # Find max numeric suffix for this prefix
-        matching_docs = (
-            db.query(Document).filter(Document.document_id.startswith(prefix)).all()
-        )
-
-        max_seq = 0
-        for doc in matching_docs:
-            try:
-                # Extract numeric suffix from doc_id (e.g., "EXT-EU-AML-001" -> 1)
-                suffix = doc.document_id.split("-")[-1]
-                seq = int(suffix)
-                max_seq = max(max_seq, seq)
-            except (IndexError, ValueError):
-                pass
-
-        next_seq = max_seq + 1
-        return f"{prefix}-{next_seq:03d}"
+        """Generate document_id using ULID (sortable, globally unique, no contention)."""
+        return generate_ulid()
 
     @staticmethod
     def ingest(
@@ -106,7 +87,7 @@ class DocumentIngestionService:
             IngestDocumentResponse with document and chunk info
         """
         # Step 1: Use provided metadata
-        logger.info(f"Step 1: Using provided metadata for document ingestion...")
+        logger.info("Step 1: Using provided metadata for document ingestion...")
         logger.info(f"  Title: {title}")
         logger.info(f"  Domain: {domain}")
         logger.info(f"  Language: {language}")
@@ -120,7 +101,7 @@ class DocumentIngestionService:
 
         # Step 2: Chunk document by token count (max 800 tokens per chunk)
         logger.info("Step 2: Chunking document by token count (max 800 tokens per chunk)...")
-        chunker = TokenBasedChunker(max_tokens=800)
+        chunker = TokenBasedChunker(max_tokens=5000)
         chunks = chunker.chunk(
             text,
             language=metadata.language,
@@ -176,7 +157,7 @@ class DocumentIngestionService:
             status="ACTIVE",
             file_path=doc.current_file_path,
             created_by=created_by,
-            change_reason="Initial document ingestion (token-based chunking, max 800 tokens per chunk)",
+            change_reason="Initial document ingestion",
         )
         db.add(doc_version)
         db.flush()

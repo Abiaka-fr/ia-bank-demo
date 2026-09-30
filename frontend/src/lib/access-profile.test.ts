@@ -146,4 +146,12 @@ describe("roleLabel", () => {
     // Act / Assert
     expect(roleLabel("Stagiaire Conformité", t)).toBe("Stagiaire Conformité");
   });
+
+  it("accepte le code de profil stocké par le backend (COMPLIANCE_ADMIN, COMPLIANCE_OFFICER)", () => {
+    const t = (key: string) => `EN:${key}`;
+    expect(resolveAccessProfile("COMPLIANCE_ADMIN")).toBe("COMPLIANCE_ADMIN");
+    expect(resolveAccessProfile("AUDITOR")).toBe("AUDITOR");
+    expect(roleLabel("COMPLIANCE_ADMIN", t)).toBe("EN:knowledgeBaseAdmin");
+    expect(roleLabel("COMPLIANCE_OFFICER", t)).toBe("EN:complianceOfficer");
+  });
 });
