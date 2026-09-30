@@ -30,6 +30,7 @@ import {
 import { humanStatusValues } from "@/lib/assessment";
 import { pickLocalizedText } from "@/lib/localized-text";
 import { highlightSegments } from "@/lib/evidence-match";
+import { adaptRequirementEvidenceToEvidenceRef } from "@/lib/api/backend/adapt";
 import { analyzeMappings, fetchRegulation } from "@/lib/api/regulations";
 import { queryKeys } from "@/lib/api/query-keys";
 import { openInNewTabWithSession } from "@/lib/open-in-new-tab";
@@ -397,19 +398,12 @@ export function RequirementsTab({
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">
                       {(() => {
                         const docText = regulationQuery.data?.extracted_text || "";
-                        const evidenceRefs = [
-                          {
-                            document_id: regulationId,
-                            document_title: regulationQuery.data?.title || "",
-                            section_reference: selectedReq.source_reference || "",
-                            excerpt: pickLocalizedText(
-                              locale,
-                              selectedReq.source_text,
-                              selectedReq.source_text_fr,
-                            ),
-                            language: locale === "fr" ? ("FR" as const) : ("EN" as const),
-                          },
-                        ];
+                        // `evidence` = citation verbatim du document ; `source_text(_fr)` est
+                        // reformulé/traduit par le LLM et ne se retrouve presque jamais tel quel.
+                        const evidenceRefs = adaptRequirementEvidenceToEvidenceRef(
+                          selectedReq,
+                          regulationQuery.data?.title,
+                        );
                         const segments = highlightSegments(docText, evidenceRefs);
                         return segments.map((segment, idx) =>
                           segment.isMatch ? (

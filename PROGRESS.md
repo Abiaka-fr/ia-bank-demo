@@ -254,6 +254,24 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Notes de fin de session
 
+### 2026-09-30 — surlignage « Source document evidence » intermittent + dialog d'upload élargi
+
+- **Cause du surlignage aléatoire (FE, pas le LLM)** : `requirements-tab.tsx` surlignait avec
+  `source_text` (= `requirement_text`, reformulé par le LLM) ou `source_text_fr` (traduction) au
+  lieu du champ `evidence` (citation verbatim). Mesuré sur `.local/backend-dev.sqlite` (39 exigences) :
+  FR 0/39, EN 20/39, `evidence` 24/39 en correspondance exacte.
+- **Correctif** : on utilise `evidence` (helper existant `adaptRequirementEvidenceToEvidenceRef`,
+  jusqu'ici inutilisé) et `highlightSegments` cherche phrase par phrase + tolère les tirets
+  U+2011 — ~34/39 exigences surlignées au moins en partie.
+- **Correctif backend (⚠️ fait depuis une session FE, à la demande explicite de l'utilisateur —
+  Thư, merci de relire)** : `requirement_extraction.py` → `ground_evidence()` recale chaque
+  `evidence` du LLM sur le texte exact du chunk (alignement difflib par mots, sans appel LLM en
+  plus). Le LLM sautait des mots, coupait par « ... » ou remplaçait `-` par `‑`. Rejoué sur les 39
+  evidences de la base de dev : 24 → 39/39 retrouvées verbatim. Test : `tests/test_ground_evidence.py`
+  (lancer avec `DATABASE_URL=sqlite://`). **Ne s'applique qu'aux nouvelles extractions** — relancer
+  l'extraction des documents existants pour en profiter.
+- Dialog d'upload : `sm:max-w-sm` → `sm:max-w-3xl` (×2).
+
 > Ajouter une entrée ici à la fin de chaque session : date, ce qui a été fait, ce qui reste, tout
 > point de blocage. Ne pas écraser les entrées précédentes.
 

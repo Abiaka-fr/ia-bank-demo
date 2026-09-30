@@ -41,6 +41,17 @@ function splitExcerptFragments(excerpt: string): string[] {
     .filter((fragment) => fragment.length >= MIN_FRAGMENT_LENGTH);
 }
 
+/** Trait d'union ASCII, insécable (U+2011), U+2010 ou demi-cadratin : même tiret pour le lecteur. */
+const DASHES = /[-\u2010\u2011\u2013]/g;
+
+function splitSentences(excerpt: string): string[] {
+  const sentences = excerpt
+    .split(/\[\s*(?:…|\.\.\.)\s*\]|…|\.\.\.|(?<=[.;:])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence.length >= MIN_FRAGMENT_LENGTH);
+  return sentences.length > 0 ? sentences : [excerpt];
+}
+
 function probe(value: string): string {
   return value.slice(0, PROBE_LENGTH);
 }
@@ -101,13 +112,18 @@ export function highlightSegments(
   const sortedExcerpts = Array.from(excerpts).sort((a, b) => b.length - a.length);
   const replacements: Array<{ start: number; end: number }> = [];
 
+  // L'extrait vient d'un LLM : « quasi » verbatim, mais il saute parfois un mot, coupe
+  // par « ... » ou remplace un tiret. On cherche donc phrase par phrase — une phrase
+  // altérée ne fait perdre que son propre surlignage, pas celui de tout l'extrait.
   // Tout blanc vaut tout blanc : le texte source vient souvent en `\r\n` (fichier
   // Windows) alors que l'extrait est en `\n`, ou avec des espaces doublés.
-  sortedExcerpts.forEach((excerpt) => {
+  sortedExcerpts.flatMap(splitSentences).forEach((excerpt) => {
     const pattern = new RegExp(
       excerpt
         .split(/\s+/)
-        .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .map((word) =>
+          word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(DASHES, DASHES.source),
+        )
         .join("\\s+"),
       "gi",
     );
