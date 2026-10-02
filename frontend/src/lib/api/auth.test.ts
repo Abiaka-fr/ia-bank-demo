@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { DEMO_PASSWORD } from "@/lib/mocks/data/users";
-
 import { login, signUp } from "./auth";
 import { fetchUsers } from "./users";
 import { ApiError } from "./client";
 import { fetchRegulations, updateRegulationAssignee } from "./regulations";
 import { uploadDocument, type DocumentMetadata } from "./upload";
+
+const DEMO_PASSWORD = "MotDePasse123";
 
 const KNOWN_EMAIL = "marie.lefevre@iabank.fr";
 
