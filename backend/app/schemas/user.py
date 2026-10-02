@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class UserCreate(BaseModel):
@@ -11,7 +11,15 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
     full_name: str | None = None
-    role: str | None = None  # Defaults to COMPLIANCE_OFFICER if not provided
+    # No `role`: a new account is always COMPLIANCE_OFFICER; an administrator changes it
+    # afterwards (PUT /api/users/{user_id}/role).
+
+    @field_validator("password")
+    @classmethod
+    def password_fits_bcrypt(cls, value: str) -> str:
+        if len(value.encode("utf-8")) > 72:
+            raise ValueError("Password must be at most 72 bytes")
+        return value
 
 
 class UserLogin(BaseModel):

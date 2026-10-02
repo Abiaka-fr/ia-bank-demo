@@ -49,7 +49,7 @@ class MappingHistory(Base):
     from_status = Column(String)
     to_status = Column(String, nullable=False)
     assignee = Column(String)  # ESCALATE: user_id or email escalated to
-    new_version_id = Column(String(26))  # ACCEPT: procedure version created
+    new_version_id = Column(String(64))  # ACCEPT: procedure version created
     comment = Column(Text)  # reviewer's chosen action
     actor = Column(String)  # user_id who decided
     created_at = Column(DateTime, default=datetime.utcnow)

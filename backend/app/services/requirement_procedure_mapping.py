@@ -232,6 +232,22 @@ class RequirementProcedureMappingService:
 
                     logger.info(f"✅ Procedure document validated: {procedure.document_id}")
 
+                    # Already analysed: a second run would call the LLM again and store a
+                    # duplicate mapping for the same pair.
+                    already_mapped = (
+                        db.query(RequirementProcedureMap.mapping_id)
+                        .filter(
+                            RequirementProcedureMap.requirement_id == req_id,
+                            RequirementProcedureMap.procedure_id == procedure.document_id,
+                        )
+                        .first()
+                    )
+                    if already_mapped:
+                        warnings.append(
+                            f"{req_id} vs {procedure.document_id} already analysed: mapping kept as is"
+                        )
+                        continue
+
                     # Load procedure's chunks
                     logger.info("   Loading active version for procedure...")
                     proc_version = (
@@ -345,12 +361,12 @@ class RequirementProcedureMappingService:
                         warnings.append(error_msg)
                         continue
 
-                    # Skip mapping if no valid modifications
+                    # No grounded modification — the procedure covers the requirement, or the
+                    # LLM did not quote the text verbatim. The assessment is still the result
+                    # of the analysis: it is stored, without modifications. Dropping it made a
+                    # COVERED requirement look as if it had never been analysed.
                     if not grounded_mods:
-                        skip_msg = f"Skipping mapping for {req_id} vs {procedure.document_id}: no valid modifications"
-                        logger.info(f"⏭️  {skip_msg}")
-                        warnings.append(skip_msg)
-                        continue
+                        logger.info(f"   No grounded modification for {req_id} vs {procedure.document_id}")
 
                     # Serialize modifications to JSON
                     try:

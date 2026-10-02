@@ -90,7 +90,6 @@ class LLMClient:
             "messages": messages,
             "temperature": 0,
             "reasoning": {"enabled": reasoning},
-            "temperature": 0,
             "max_tokens": 10000,  # Limit output to prevent excessive token usage
         }
 

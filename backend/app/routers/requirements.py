@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, require_writer
 from app.db import get_db
 from app.models.document import Document, DocumentVersion
 from app.models.extraction_job import ExtractionJob
@@ -71,7 +71,12 @@ def list_all_requirements(
         query = query.filter(RegulatoryRequirement.status == status)
 
     total = query.count()
-    items = query.offset(offset).limit(limit).all()
+    items = (
+        query.order_by(RegulatoryRequirement.created_at, RegulatoryRequirement.requirement_id)
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
 
     return RequirementsListResponse(
         total=total,
@@ -129,7 +134,12 @@ def list_requirements_by_documents(
         query = query.filter(RegulatoryRequirement.status == status)
 
     total = query.count()
-    items = query.offset(offset).limit(limit).all()
+    items = (
+        query.order_by(RegulatoryRequirement.created_at, RegulatoryRequirement.requirement_id)
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
 
     return RequirementsListResponse(
         total=total,
@@ -157,7 +167,7 @@ def get_requirement(
 @router.post("/extract", response_model=CreateExtractionJobsResponse, status_code=201)
 def extract_requirements(
     payload: ExtractRequirementsRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writer),
     db: Session = Depends(get_db),
 ) -> CreateExtractionJobsResponse:
     """
@@ -174,6 +184,9 @@ def extract_requirements(
 
     **Notes:**
     - Jobs are created but NOT processed immediately
+    - Idempotent: if jobs already exist for the document's active version, no new job is
+      created; the response lists the jobs still to process (PENDING, or FAILED with
+      nothing extracted) with `total_jobs_created = 0`
     - Caller must poll POST /api/jobs/{job_id}/process to process each job
     - Each job extracts requirements from one document chunk
     """
@@ -196,6 +209,31 @@ def extract_requirements(
 
         if not active_version:
             raise HTTPException(status_code=404, detail="No active version found for document")
+
+        # Jobs already exist for this version: hand back the ones still to process instead
+        # of creating a second series (every chunk would be extracted twice).
+        existing_jobs = (
+            db.query(ExtractionJob)
+            .filter(
+                ExtractionJob.document_id == payload.document_id,
+                ExtractionJob.document_version_id == active_version.version_id,
+            )
+            .order_by(ExtractionJob.chunk_no.asc())
+            .all()
+        )
+        if existing_jobs:
+            remaining = [
+                job
+                for job in existing_jobs
+                if job.status == "PENDING"
+                or (job.status == "FAILED" and job.extracted_requirement_ids is None)
+            ]
+            return CreateExtractionJobsResponse(
+                document_id=payload.document_id,
+                document_version_id=active_version.version_id,
+                total_jobs_created=0,
+                jobs=[ExtractionJobRead.model_validate(job) for job in remaining],
+            )
 
         # Load chunks to determine how many jobs to create
         from app.models.document import DocumentChunk
@@ -246,7 +284,7 @@ def extract_requirements(
 @router.post("/jobs/{job_id}/process", response_model=ProcessJobResponse, status_code=200)
 def process_extraction_job(
     job_id: UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writer),
     db: Session = Depends(get_db),
 ) -> ProcessJobResponse:
     """
@@ -353,9 +391,9 @@ def process_extraction_job(
             db.add(requirement)
             created_req_ids.append(req_id)
 
-        db.commit()
-
-        # Update job status to COMPLETED
+        # One commit for the requirements and the job status. Committing the requirements
+        # first released the job's row lock while it was still PENDING: a concurrent call
+        # waiting on that lock then extracted the same chunk a second time.
         job.status = "COMPLETED"
         job.extracted_requirement_ids = json.dumps(created_req_ids)
         db.commit()
@@ -375,6 +413,7 @@ def process_extraction_job(
         logger.error(f"Failed to process extraction job {job_id}: {str(e)}", exc_info=True)
         # Try to mark job as FAILED
         try:
+            db.rollback()  # the failed transaction must be closed before writing again
             job = db.query(ExtractionJob).filter(ExtractionJob.job_id == job_id).first()
             if job:
                 job.status = "FAILED"

@@ -15,7 +15,11 @@ def hash_password(password: str) -> str:
 
 def verify_password(password: str, hashed_password: str) -> bool:
     """Check a plaintext password against a bcrypt hash."""
-    return bcrypt.checkpw(password.encode("utf-8"), hashed_password.encode("utf-8"))
+    try:
+        return bcrypt.checkpw(password.encode("utf-8"), hashed_password.encode("utf-8"))
+    except ValueError:
+        # bcrypt >= 5 raises on a password longer than 72 bytes: no stored hash can match it.
+        return False
 
 
 def create_access_token(subject: str) -> str:

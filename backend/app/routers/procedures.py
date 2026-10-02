@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, require_writer
 from app.db import get_db
 from app.models.document import Document
 from app.models.user import User
@@ -70,7 +70,9 @@ def list_procedures(
         query = query.filter(Document.domain == domain)
 
     total = query.count()
-    items = query.offset(offset).limit(limit).all()
+    items = (
+        query.order_by(Document.created_at, Document.document_id).offset(offset).limit(limit).all()
+    )
 
     items_with_docs = []
     for doc in items:
@@ -126,7 +128,7 @@ def get_procedure(
 @router.post("/ingest", response_model=IngestProcedureResponse, status_code=201)
 def ingest_procedure(
     payload: IngestProcedureRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writer),
     db: Session = Depends(get_db),
 ) -> IngestProcedureResponse:
     """
@@ -144,7 +146,7 @@ def ingest_procedure(
     - `domain` (required): Compliance domain (e.g., AML/CFT, KYC, DORA)
     - `language` (required): Document language (EN, FR)
     - `summary` (optional): Brief summary of the procedure
-    - `created_by` (required): User/system performing the ingestion
+    - `created_by` (ignored): the procedure is attributed to the authenticated user
     - `published_at` (optional): Publication date (ISO 8601 format)
 
     **Response:** IngestProcedureResponse with procedure details and chunk count
@@ -155,7 +157,7 @@ def ingest_procedure(
     - No LLM required
     - Procedures are assigned sequential IDs
     - Each procedure starts at version 1.0
-    - Category: INTERNAL, Origin: European Union (EU)
+    - Category: INTERNAL, Origin: Demo Bank (BANK)
     """
     try:
         result = ProcedureIngestionService.ingest(
@@ -164,7 +166,7 @@ def ingest_procedure(
             title=payload.title,
             domain=payload.domain,
             language=payload.language,
-            created_by=payload.created_by,
+            created_by=current_user.user_id,
             summary=payload.summary,
             published_at=payload.published_at,
         )

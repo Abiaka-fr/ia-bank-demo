@@ -1,14 +1,18 @@
 """Requirement-Procedure mapping endpoints."""
 
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, require_writer
 from app.db import get_db
+from app.models.audit import AuditHistory
 from app.models.document import Document, DocumentChunk, DocumentVersion
 from app.models.mapping import MappingHistory, RequirementProcedureMap
 from app.models.requirement import RegulatoryRequirement
 from app.models.user import User
+from app.routers.documents import ASSIGNEE_CHANGED
 from app.schemas.document import DocumentChunkInput
 from app.schemas.mapping import (
     AnalyzeMappingsRequest,
@@ -66,28 +70,38 @@ def get_requirements_with_procedures(
     if risk_level:
         query = query.filter(RegulatoryRequirement.risk_level == risk_level)
 
-    requirements = query.all()
+    requirements = query.order_by(
+        RegulatoryRequirement.created_at, RegulatoryRequirement.requirement_id
+    ).all()
+
+    # Two queries for all the requirements — it was one per requirement plus one per
+    # mapping, i.e. hundreds of round trips to a remote database for one regulation.
+    mapping_query = db.query(RequirementProcedureMap).filter(
+        RequirementProcedureMap.requirement_id.in_([req.requirement_id for req in requirements])
+    )
+    if assessment:
+        mapping_query = mapping_query.filter(RequirementProcedureMap.assessment == assessment)
+    all_mappings = mapping_query.order_by(RequirementProcedureMap.mapping_id).all()
+    total_mappings = len(all_mappings)
+
+    mappings_by_requirement: dict[str, list[RequirementProcedureMap]] = {}
+    for mapping in all_mappings:
+        mappings_by_requirement.setdefault(mapping.requirement_id, []).append(mapping)
+
+    # `procedure_id` stores the procedure's document_id.
+    procedure_docs = {
+        doc.document_id: doc
+        for doc in db.query(Document)
+        .filter(Document.document_id.in_({m.procedure_id for m in all_mappings}))
+        .all()
+    }
 
     result_data = []
-    total_mappings = 0
 
     for req in requirements:
-        mapping_query = db.query(RequirementProcedureMap).filter(
-            RequirementProcedureMap.requirement_id == req.requirement_id
-        )
-
-        if assessment:
-            mapping_query = mapping_query.filter(RequirementProcedureMap.assessment == assessment)
-
-        mappings = mapping_query.all()
-        total_mappings += len(mappings)
-
         procedures_list = []
-        for mapping in mappings:
-            # Fetch procedure document using procedure_id (which stores document_id)
-            procedure_doc = db.query(Document).filter(
-                Document.document_id == mapping.procedure_id
-            ).first()
+        for mapping in mappings_by_requirement.get(req.requirement_id, []):
+            procedure_doc = procedure_docs.get(mapping.procedure_id)
 
             if procedure_doc:
                 # Convert Document to ProcedureRead format
@@ -254,7 +268,7 @@ def list_mappings(
         query = query.filter(RequirementProcedureMap.human_status == human_status)
 
     total = query.count()
-    items = query.offset(offset).limit(limit).all()
+    items = query.order_by(RequirementProcedureMap.mapping_id).offset(offset).limit(limit).all()
 
     return MappingListResponse(
         total=total,
@@ -384,7 +398,7 @@ def get_mapping_detail(
 def update_mapping_human_status(
     mapping_id: str,
     payload: HumanStatusUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writer),
     db: Session = Depends(get_db),
 ) -> MappingRead:
     """
@@ -431,7 +445,19 @@ def update_mapping_human_status(
             raise HTTPException(status_code=400, detail="assignee is required to escalate")
         # ponytail: stored on the procedure document (no assignee column on the mapping);
         # it also overwrites the uploader kept there until a created_by column exists.
-        _procedure_document(db, mapping).assignee = payload.assignee
+        document = _procedure_document(db, mapping)
+        if document.assignee != payload.assignee:
+            # Same trace as PUT /api/documents/{id}/assignee: the escalation changes who is
+            # in charge of the procedure, its history must show it.
+            db.add(
+                AuditHistory(
+                    document_id=document.document_id,
+                    event_type=ASSIGNEE_CHANGED,
+                    actor=current_user.user_id,
+                    details=json.dumps({"from": document.assignee, "to": payload.assignee}),
+                )
+            )
+        document.assignee = payload.assignee
     elif payload.human_status == HumanStatusEnum.ACCEPT and mapping.human_status != HumanStatusEnum.ACCEPT:
         new_version_id = _apply_suggested_modifications(db, mapping, created_by=current_user.user_id)
 
@@ -523,7 +549,7 @@ def _apply_suggested_modifications(
 @router.post("/analyze", status_code=201)
 def analyze_requirement_impact(
     payload: AnalyzeMappingsRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writer),
     db: Session = Depends(get_db),
 ):
     """
@@ -533,7 +559,10 @@ def analyze_requirement_impact(
     1. For each requirement, find all procedures in the same domain
     2. Assess how the requirement impacts each procedure
     3. Generate suggested modifications if needed
-    4. Store RequirementProcedureMap rows with PENDING_REVIEW status
+    4. Store RequirementProcedureMap rows with PENDING_REVIEW status — also when no
+       modification is suggested or none could be located (the assessment is kept)
+
+    A requirement × procedure pair that already has a mapping is not analysed again.
 
     **Request Body:**
     - `requirement_ids` (required): List of requirement IDs to analyze

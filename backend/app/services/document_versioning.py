@@ -98,16 +98,32 @@ def apply_modifications(
         text = result.get(chunk_no)
         if text is None:
             raise ValueError(f"Chunk {chunk_no} not found in the current procedure version")
-        if mod.new_text and mod.new_text in text:
-            continue  # Already applied (finding accepted before): never apply twice.
         start, end = mod.location.start_offset, mod.location.end_offset
         if text[start:end] != mod.original_text:
             # ponytail: first occurrence only; ambiguous if the same sentence appears twice.
             start = text.find(mod.original_text)
             if start == -1:
+                if mod.new_text and mod.new_text in text:
+                    continue  # Already applied (finding accepted before): never apply twice.
                 raise ValueError(
                     f"Original text no longer found in chunk {chunk_no}: {mod.original_text[:80]!r}"
                 )
             end = start + len(mod.original_text)
+        if _is_inside_applied_text(text, start, mod):
+            continue  # Already applied: this occurrence is part of the new text.
         result[chunk_no] = text[:start] + mod.new_text + text[end:]
     return result
+
+
+def _is_inside_applied_text(text: str, start: int, mod: SuggestedModification) -> bool:
+    """True when the original text found at `start` is part of an already applied `new_text`.
+
+    A modification that extends a sentence keeps the original inside the new text; looking
+    only for `new_text` anywhere in the chunk skipped modifications that were never applied
+    (a shortened sentence, or a new text that also exists elsewhere).
+    """
+    offset = mod.new_text.find(mod.original_text)
+    if offset == -1:
+        return False
+    applied_start = start - offset
+    return applied_start >= 0 and text.startswith(mod.new_text, applied_start)

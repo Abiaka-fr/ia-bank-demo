@@ -29,3 +29,23 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_error
 
     return user
+
+
+# `User.role` is a free string: either the profile code or the French label the user
+# screen stores (same mapping as frontend/src/lib/access-profile.ts).
+ADMIN_ROLES = {"COMPLIANCE_ADMIN", "Admin Base de Connaissances"}
+READ_ONLY_ROLES = {"AUDITOR", "Auditeur Interne"}
+
+
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Only an administrator may change roles."""
+    if current_user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Administrator role required")
+    return current_user
+
+
+def require_writer(current_user: User = Depends(get_current_user)) -> User:
+    """Auditors consult; they never upload, analyse, decide or delete."""
+    if current_user.role in READ_ONLY_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Read-only role")
+    return current_user

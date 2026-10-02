@@ -66,6 +66,8 @@ class DocumentIngestionService:
         created_by: str,
         summary: str | None = None,
         published_at: datetime | None = None,
+        origin_code: str | None = None,
+        origin_name: str | None = None,
     ) -> IngestDocumentResponse:
         """
         Ingest a regulation document: chunk by token count, and persist.
@@ -116,8 +118,9 @@ class DocumentIngestionService:
         # Use constants for fixed metadata
         CATEGORY = "EXTERNAL"
         DOCUMENT_TYPE = "REGULATORY_STANDARD"
-        ORIGIN_CODE = "EU"
-        ORIGIN_NAME = "European Union"
+        # The issuing authority comes from the client; European Union when it sends none.
+        ORIGIN_CODE = origin_code or "EU"
+        ORIGIN_NAME = origin_name or "European Union"
         DATA_CLASSIFICATION = "EUR-Lex/CELLAR"
 
         document_id = DocumentIngestionService.generate_document_id(db, ORIGIN_CODE, CATEGORY)

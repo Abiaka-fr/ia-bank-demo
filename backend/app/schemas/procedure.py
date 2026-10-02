@@ -17,7 +17,8 @@ class IngestProcedureRequest(BaseModel):
     domain: str  # e.g., AML/CFT, KYC, DORA, MIFID, etc.
     language: str  # EN, FR
     summary: str | None = None
-    created_by: str
+    # Ignored: the procedure is attributed to the authenticated user.
+    created_by: str | None = None
     published_at: datetime | None = None
 
     class Config:
