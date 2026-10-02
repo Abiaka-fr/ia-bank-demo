@@ -74,8 +74,35 @@ import {
   type BackendProcedureMinimal,
 } from "./schemas";
 
-/** Le backend plafonne `limit` à 200 ; le corpus en compte 32, une page suffit. */
-const PAGE_LIMIT = "200";
+/** Le backend plafonne `limit` à 200 : au-delà, on enchaîne les pages jusqu'à `total`. */
+const PAGE_LIMIT = 200;
+
+async function fetchAllPages<TSchema extends z.ZodType<{ total: number; items: unknown[] }>>(
+  path: string,
+  schema: TSchema,
+  searchParams: Record<string, string | string[] | undefined> = {},
+): Promise<z.infer<TSchema>["items"]> {
+  const items: z.infer<TSchema>["items"] = [];
+  for (;;) {
+    const page = await backendFetch(path, schema, {
+      searchParams: { ...searchParams, limit: String(PAGE_LIMIT), offset: String(items.length) },
+    });
+    items.push(...page.items);
+    // Page vide : garde-fou si `total` est faux, pour ne jamais boucler.
+    if (items.length >= page.total || page.items.length === 0) return items;
+  }
+}
+
+/** Identifiants répétés en query string : par lots, pour garder l'URL sous ~4 Ko. */
+const ID_BATCH_SIZE = 100;
+
+function inBatches<T>(ids: readonly T[]): T[][] {
+  const batches: T[][] = [];
+  for (let start = 0; start < ids.length; start += ID_BATCH_SIZE) {
+    batches.push(ids.slice(start, start + ID_BATCH_SIZE));
+  }
+  return batches;
+}
 
 // --- Authentification -------------------------------------------------------
 
@@ -118,10 +145,8 @@ export async function fetchMe(): Promise<User> {
 // --- Documents --------------------------------------------------------------
 
 async function listDocuments(category: "EXTERNAL" | "INTERNAL") {
-  const response = await backendFetch("/api/documents", backendDocumentListSchema, {
-    searchParams: { category, limit: PAGE_LIMIT },
-  });
-  return response.items.map(adaptDocument);
+  const items = await fetchAllPages("/api/documents", backendDocumentListSchema, { category });
+  return items.map(adaptDocument);
 }
 
 /** Les régulations sont les documents `EXTERNAL` du backend. */
@@ -253,19 +278,13 @@ export async function fetchRequirements(
   documentId: string,
   filters: { domain?: string } = {},
 ): Promise<Requirement[]> {
-  const response = await backendFetch(
+  const items = await fetchAllPages(
     "/api/requirements/by-documents",
     backendRequirementListSchema,
-    {
-      searchParams: {
-        document_ids: [documentId],
-        domain: filters.domain,
-        limit: PAGE_LIMIT,
-      },
-    },
+    { document_ids: [documentId], domain: filters.domain },
   );
 
-  return response.items.map(adaptRequirement);
+  return items.map(adaptRequirement);
 }
 
 // --- Constats (couples exigence × procédure) --------------------------------
@@ -331,11 +350,16 @@ export async function fetchFindings(
       ).title
     : "";
 
-  const nested = await backendFetch(
-    "/api/mappings/requirements-to-procedures",
-    backendRequirementsToProceduresSchema,
-    { searchParams: { requirement_ids: requirements.map((r) => r.requirement_id) } },
+  const nestedBatches = await Promise.all(
+    inBatches(requirements.map((r) => r.requirement_id)).map((requirement_ids) =>
+      backendFetch(
+        "/api/mappings/requirements-to-procedures",
+        backendRequirementsToProceduresSchema,
+        { searchParams: { requirement_ids } },
+      ),
+    ),
   );
+  const nested = { data: nestedBatches.flatMap((batch) => batch.data) };
 
   const requirementsById = new Map(requirements.map((r) => [r.requirement_id, r]));
 
@@ -436,10 +460,8 @@ export async function fetchEscalationAssignees(
  * répondu.
  */
 export async function fetchUsers(): Promise<User[]> {
-  const response = await backendFetch("/api/users", backendUserListSchema, {
-    searchParams: { limit: PAGE_LIMIT },
-  });
-  return response.items.map(adaptUser);
+  const items = await fetchAllPages("/api/users", backendUserListSchema);
+  return items.map(adaptUser);
 }
 
 /**
@@ -641,11 +663,15 @@ async function fetchDecisionHistory(regulationId: string): Promise<AuditHistoryE
   const requirements = await fetchRequirements(regulationId);
   if (requirements.length === 0) return [];
 
-  const rows = await backendFetch("/api/mappings/history", z.array(backendMappingHistorySchema), {
-    searchParams: { requirement_ids: requirements.map((r) => r.requirement_id) },
-  });
+  const rowBatches = await Promise.all(
+    inBatches(requirements.map((r) => r.requirement_id)).map((requirement_ids) =>
+      backendFetch("/api/mappings/history", z.array(backendMappingHistorySchema), {
+        searchParams: { requirement_ids },
+      }),
+    ),
+  );
 
-  return rows.flatMap((row): AuditHistoryEntry[] => {
+  return rowBatches.flat().flatMap((row): AuditHistoryEntry[] => {
     const action = adaptHumanStatus(row.to_status);
     if (action === "PENDING") return [];
     return [

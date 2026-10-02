@@ -93,9 +93,13 @@ export function MarkdownLine({
     case "listItem":
       return (
         <p className={cn("flex gap-2", className)}>
-          <span aria-hidden className="text-muted-foreground">
-            •
-          </span>
+          {node.marker ? (
+            <span className="tabular-nums text-muted-foreground">{node.marker}</span>
+          ) : (
+            <span aria-hidden className="text-muted-foreground">
+              •
+            </span>
+          )}
           <span>
             {leading}
             <InlineText segments={node.segments} />

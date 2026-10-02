@@ -35,7 +35,7 @@ import {
   extractRequirements,
   processExtractionJobs,
 } from "@/lib/api/regulations";
-import { formatDateDDMMYYYY } from "@/lib/format-date";
+import { formatDateDDMMYYYY, formatLocalDate } from "@/lib/format-date";
 import { useSession } from "@/components/providers/session-provider";
 import { accessProfileForUser, canAnalyzeProcedures } from "@/lib/access-profile";
 
@@ -168,7 +168,7 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
         </span>
         <span className="text-muted-foreground">
           {t("uploadedAtLabel")} :{" "}
-          {formatDateDDMMYYYY(regulation.uploaded_at) ?? common("notAvailable")}
+          {formatLocalDate(regulation.uploaded_at) ?? common("notAvailable")}
         </span>
         {/* 3 dates distinctes demandées par Francis (Phase 6 § 4) : Uploaded (réel,
             ci-dessus) / Created / Last updated. `created_at`/`updated_at` livrés par
@@ -180,7 +180,7 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
         <span className="flex items-center gap-1.5 text-muted-foreground">
           {t("createdDateLabel")} :{" "}
           {regulation.created_at ? (
-            formatDateDDMMYYYY(regulation.created_at)
+            formatLocalDate(regulation.created_at)
           ) : (
             <AwaitingBackendBadge field="DocumentMeta.created_at" />
           )}
@@ -188,7 +188,7 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
         <span className="flex items-center gap-1.5 text-muted-foreground">
           {t("lastUpdatedLabel")} :{" "}
           {regulation.updated_at ? (
-            formatDateDDMMYYYY(regulation.updated_at)
+            formatLocalDate(regulation.updated_at)
           ) : (
             <AwaitingBackendBadge field="DocumentMeta.updated_at" />
           )}

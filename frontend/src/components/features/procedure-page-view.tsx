@@ -27,7 +27,7 @@ import {
   fetchProcedureVersionText,
 } from "@/lib/api/procedures";
 import { queryKeys } from "@/lib/api/query-keys";
-import { formatDateDDMMYYYY } from "@/lib/format-date";
+import { formatLocalDate } from "@/lib/format-date";
 
 /**
  * Page dédiée en lecture seule pour une procédure — « ouvrir dans un nouvel onglet »
@@ -157,7 +157,7 @@ export function ProcedurePageView({ procedureId }: { procedureId: string }) {
             <p className="text-xs text-muted-foreground">
               {t("changeReason")}
               {shownVersion.version_timestamp
-                ? ` · ${formatDateDDMMYYYY(shownVersion.version_timestamp)}`
+                ? ` · ${formatLocalDate(shownVersion.version_timestamp)}`
                 : ""}
             </p>
             <p>{shownVersion.change_reason || common("notAvailable")}</p>

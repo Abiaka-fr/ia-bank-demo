@@ -5,7 +5,7 @@ import { server } from "@/lib/mocks/server";
 
 import { readToken, writeToken } from "../token";
 
-import { fetchEscalationAssignees, signIn } from "./resources";
+import { fetchEscalationAssignees, fetchUsers, signIn } from "./resources";
 
 afterEach(() => window.localStorage.clear());
 
@@ -46,6 +46,37 @@ it("lit l'assigné d'une escalade dans la ligne ESCALATE la plus récente du map
   const assignees = await fetchEscalationAssignees({ requirement_ids: ["REQ-1"] });
 
   expect([...assignees]).toEqual([["MAP-1", "USR-nouveau"]]);
+});
+
+it("enchaîne les pages au-delà de la limite de 200 du backend", async () => {
+  writeToken("jwt");
+  const user = (index: number) => ({
+    user_id: `USR-${index}`,
+    email: `u${index}@iabank.fr`,
+    full_name: `User ${index}`,
+    role: "COMPLIANCE_OFFICER",
+    is_active: true,
+    created_at: "2026-09-01T08:00:00",
+  });
+  const all = Array.from({ length: 201 }, (_, index) => user(index));
+  const offsets: string[] = [];
+  server.use(
+    http.get("/api/users", ({ request }) => {
+      const offset = Number(new URL(request.url).searchParams.get("offset"));
+      offsets.push(String(offset));
+      return HttpResponse.json({
+        total: all.length,
+        items: all.slice(offset, offset + 200),
+        limit: 200,
+        offset,
+      });
+    }),
+  );
+
+  const users = await fetchUsers();
+
+  expect(users).toHaveLength(201);
+  expect(offsets).toEqual(["0", "200"]);
 });
 
 it("renvoie une table vide si l'historique est indisponible", async () => {

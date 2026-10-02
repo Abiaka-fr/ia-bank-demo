@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { fetchRegulationHistory, fetchMappingHistoryById } from "@/lib/api/history";
 import { queryKeys } from "@/lib/api/query-keys";
+import { formatLocalDateTime } from "@/lib/format-date";
 
 /**
  * Onglet « Historique » : qui a pris quelle décision, sur quel couple, quand.
@@ -71,7 +72,7 @@ export function RegulationHistoryTab({
           {entries.map((entry) => (
             <TableRow key={entry.entry_id}>
               <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground">
-                {entry.created_at.slice(0, 16).replace("T", " ")}
+                {formatLocalDateTime(entry.created_at) ?? "—"}
               </TableCell>
               <TableCell className="text-sm">
                 <AssigneeName userId={entry.actor_id} />

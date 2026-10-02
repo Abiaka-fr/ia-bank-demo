@@ -12,7 +12,7 @@ import { fetchPortfolioSummary } from "@/lib/api/dashboard";
 import { fetchProcedures } from "@/lib/api/procedures";
 import { fetchRegulations } from "@/lib/api/regulations";
 import { queryKeys } from "@/lib/api/query-keys";
-import { formatDateDDMMYYYY } from "@/lib/format-date";
+import { formatLocalDate } from "@/lib/format-date";
 
 /** Date au format le plus récent parmi une liste — `undefined` si aucune valeur. */
 function mostRecent(dates: readonly (string | undefined)[]): string | undefined {
@@ -125,7 +125,7 @@ export function KnowledgeBaseView() {
 
           <p className="text-xs text-muted-foreground">
             {t("lastUpdatedLabel")} :{" "}
-            {formatDateDDMMYYYY(lastUpdated) ?? common("notAvailable")}
+            {formatLocalDate(lastUpdated) ?? common("notAvailable")}
           </p>
         </CardContent>
       </Card>

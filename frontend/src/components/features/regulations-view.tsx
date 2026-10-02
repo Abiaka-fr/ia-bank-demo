@@ -40,7 +40,7 @@ import {
 import { Link } from "@/i18n/navigation";
 import { fetchPortfolioSummary } from "@/lib/api/dashboard";
 import { queryKeys } from "@/lib/api/query-keys";
-import { formatDateDDMMYYYY } from "@/lib/format-date";
+import { formatDateDDMMYYYY, formatLocalDate } from "@/lib/format-date";
 import {
   deleteDocument,
   fetchRegulations,
@@ -283,14 +283,14 @@ export function RegulationsView() {
                       réel dès que disponible, badge seulement s'il manque vraiment
                       (mode backend réel aujourd'hui). Jamais réutiliser `uploaded_at`
                       sous ce libellé : ce sont deux dates distinctes pour Francis. */}
-                    <dd>{formatDateDDMMYYYY(regulation.created_at) ?? common("notAvailable")}</dd>
+                    <dd>{formatLocalDate(regulation.created_at) ?? common("notAvailable")}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">
                     {t("lastUpdatedLabel")}
                   </dt>
                   {/* v1.10 — `updated_at` timestamp now available from backend */}
-                  <dd>{formatDateDDMMYYYY(regulation.updated_at) ?? common("notAvailable")}</dd>
+                  <dd>{formatLocalDate(regulation.updated_at) ?? common("notAvailable")}</dd>
                 </div>
               </dl>
 

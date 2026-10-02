@@ -65,6 +65,7 @@ export function RequirementsTab({
   findingsLoaded: boolean;
 }) {
   const t = useTranslations("regulations");
+  const common = useTranslations("common");
   const locale = useLocale();
   const queryClient = useQueryClient();
   const { user } = useSession();
@@ -113,12 +114,8 @@ export function RequirementsTab({
         queryKey: queryKeys.findings(regulationId),
       });
     },
-    onError: (error: unknown) => {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      toast.error(t("analyzeFailed"), {
-        description: errorMessage,
-        duration: 5000,
-      });
+    onError: (error) => {
+      toast.error(t("analyzeFailed"), { description: error.message, duration: 5000 });
     },
     onSettled: () => {
       setAnalyzingRequirementId(null);
@@ -403,7 +400,7 @@ export function RequirementsTab({
                   {t("sourceDocumentEvidence")}
                 </p>
                 {regulationQuery.isPending ? (
-                  <p className="text-xs text-muted-foreground">{t("common.loading")}</p>
+                  <p className="text-xs text-muted-foreground">{common("loading")}</p>
                 ) : regulationQuery.isError ? (
                   <p className="text-xs text-destructive">{t("loadFailed")}</p>
                 ) : (

@@ -51,8 +51,29 @@ describe("parseMarkdownLine", () => {
   });
 
   it("reconnaît un élément de liste, à puce ou numéroté", () => {
-    expect(parseMarkdownLine("- Premier élément")).toMatchObject({ type: "listItem" });
-    expect(parseMarkdownLine("1. Premier élément")).toMatchObject({ type: "listItem" });
+    expect(parseMarkdownLine("- Premier élément")).toEqual({
+      type: "listItem",
+      segments: [{ text: "Premier élément" }],
+    });
+  });
+
+  it("garde le numéro d'un alinéa numéroté", () => {
+    expect(parseMarkdownLine("3. Les établissements vérifient l'identité.")).toEqual({
+      type: "listItem",
+      marker: "3.",
+      segments: [{ text: "Les établissements vérifient l'identité." }],
+    });
+  });
+
+  it("ne lit pas les tirets bas d'un identifiant comme de l'italique", () => {
+    expect(parseInline("statut PARTIALLY_COVERED ou POTENTIAL_GAP")).toEqual([
+      { text: "statut PARTIALLY_COVERED ou POTENTIAL_GAP" },
+    ]);
+    expect(parseInline("un _mot_ en italique")).toEqual([
+      { text: "un " },
+      { text: "mot", italic: true },
+      { text: " en italique" },
+    ]);
   });
 
   it("traite une ligne vide comme telle", () => {
