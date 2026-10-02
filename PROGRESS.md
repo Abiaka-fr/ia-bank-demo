@@ -185,7 +185,28 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Blocages / Questions ouvertes
 
-- **2026-10-02 — pour Thư (revue de code, lecture seule, rien modifié sous `backend/`) :**
+- **2026-10-02 — pour Thư : correctifs proposés sur la branche `fix/be-review` (PR à relire).**
+  À la demande de Hoang, les points ci-dessous ont été corrigés dans `backend/` sur une branche
+  séparée — **rien n'entre dans `main` sans la relecture de Thư**. `backend/API.md` est à jour sur
+  la branche ; 28 tests (17 nouveaux, `tests/test_review_fixes.py`), `ruff check app/` propre,
+  essai HTTP de bout en bout sur une base SQLite temporaire. **Jamais exécuté contre Neon.**
+  À savoir avant de fusionner ou déployer :
+  - **`SECRET_KEY`** : l'application refuse de démarrer si `ENVIRONMENT` n'est pas `development`
+    et que la clé est absente ou vaut la valeur par défaut ; `debug` passe à `False` par défaut.
+  - **Rôles côté serveur** : changer un rôle exige `COMPLIANCE_ADMIN` / `Admin Base de
+    Connaissances` ; un auditeur (`AUDITOR` / `Auditeur Interne`) reçoit 403 sur toute écriture ;
+    `signup` ignore `role`.
+  - **Analyse d'impact** : un mapping est enregistré même sans modification (l'évaluation
+    `COVERED` n'est plus perdue) et un couple déjà analysé n'est pas réanalysé — décision de
+    conception à confirmer par Thư, elle change le nombre de mappings créés.
+  - **Extraction** : `POST /api/requirements/extract` est idempotent et renvoie les jobs restant
+    à traiter (répond en partie à `docs/api-requests.md` #14).
+  - **Données existantes non migrées** : les procédures déjà importées gardent
+    `origin_name = "European Union"` ; les nouvelles reçoivent `BANK` / `Demo Bank`.
+  - **Non traité** : `app/models/procedure.py` (relations cassées, importé seulement par le script
+    de migration ponctuel) ; les migrations Alembic toujours absentes du dépôt.
+
+  Constats d'origine :
   1. **Sécurité** — `POST /api/auth/signup` accepte `role` dans le corps (`auth.py:29`) : n'importe
      qui peut créer un compte `COMPLIANCE_ADMIN` ; aucune route d'écriture ne vérifie le rôle.
      `secret_key` a une valeur par défaut publique et `.env.example` ne liste pas `SECRET_KEY`
