@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, require_admin
 from app.db import get_db
 from app.models.user import User
 from app.schemas.user import RoleUpdate, UserListResponse, UserRead
@@ -43,7 +43,7 @@ def list_users(
         query = query.filter(User.is_active == is_active)
 
     total = query.count()
-    items = query.offset(offset).limit(limit).all()
+    items = query.order_by(User.created_at, User.user_id).offset(offset).limit(limit).all()
 
     return UserListResponse(
         total=total,
@@ -71,11 +71,11 @@ def get_user(
 def update_user_role(
     user_id: str,
     payload: RoleUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> UserRead:
     """
-    Update the role of a user.
+    Update the role of a user. Administrators only (403 otherwise).
 
     **Path Parameters:**
     - `user_id`: The ID of the user to update (e.g., USR-abc123)

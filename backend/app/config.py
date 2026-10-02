@@ -27,6 +27,9 @@ logging.getLogger("sqlalchemy.pool").setLevel(logging.ERROR)
 logging.getLogger("sqlalchemy").setLevel(logging.ERROR)
 
 
+DEFAULT_SECRET_KEY = "dev-secret-key-change-me"
+
+
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
@@ -35,13 +38,13 @@ class Settings(BaseSettings):
 
     # App
     environment: str = "development"
-    debug: bool = True
+    debug: bool = False  # True returns tracebacks to the client
 
     # CORS
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001"]
 
     # Auth (JWT)
-    secret_key: str = "dev-secret-key-change-me"  # override via .env — never use in production
+    secret_key: str = DEFAULT_SECRET_KEY  # override via .env — never use in production
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
 
@@ -58,3 +61,14 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+if settings.secret_key in ("", DEFAULT_SECRET_KEY):
+    # The default is in the repository: anyone can sign a token for any user with it.
+    # Temporary (Hoang, 2026-10-02): warning only, so a deployment without SECRET_KEY still
+    # starts. Once every instance has its own key, refuse to start outside development:
+    #     if settings.environment != "development":
+    #         raise RuntimeError("SECRET_KEY must be set outside development")
+    settings.secret_key = DEFAULT_SECRET_KEY  # an empty SECRET_KEY= line is not a key
+    logging.getLogger(__name__).warning(
+        "SECRET_KEY is the public default: set it in .env before sharing this instance"
+    )

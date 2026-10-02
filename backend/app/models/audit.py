@@ -15,7 +15,7 @@ class AuditHistory(Base):
 
     audit_id = Column(String(26), primary_key=True, default=generate_ulid)
     document_id = Column(String(26), ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
-    version_id = Column(String(26), ForeignKey("document_versions.version_id", ondelete="SET NULL"), nullable=True)
+    version_id = Column(String(64), ForeignKey("document_versions.version_id", ondelete="SET NULL"), nullable=True)
     event_timestamp = Column(DateTime, default=datetime.utcnow)
     event_type = Column(String)  # e.g., CREATED, UPDATED, ACTIVATED
     actor = Column(String)

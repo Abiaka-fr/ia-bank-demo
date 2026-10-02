@@ -42,7 +42,8 @@ class DocumentVersion(Base):
 
     __tablename__ = "document_versions"
 
-    version_id = Column(String(26), primary_key=True, default=generate_ulid)
+    # "VER-{document_id}-{NN}": up to 33 characters with a ULID document id.
+    version_id = Column(String(64), primary_key=True, default=generate_ulid)
     document_id = Column(String(26), ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
     version_no = Column(String)
     version_timestamp = Column(DateTime)
@@ -67,9 +68,10 @@ class DocumentChunk(Base):
 
     __tablename__ = "document_chunks"
 
-    chunk_id = Column(String(26), primary_key=True, default=generate_ulid)
+    # "CHK-{document_id}-{NN}-{NNN}": up to 37 characters with a ULID document id.
+    chunk_id = Column(String(64), primary_key=True, default=generate_ulid)
     document_id = Column(String(26), ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
-    version_id = Column(String(26), ForeignKey("document_versions.version_id", ondelete="CASCADE"), nullable=False)
+    version_id = Column(String(64), ForeignKey("document_versions.version_id", ondelete="CASCADE"), nullable=False)
     chunk_no = Column(Integer)
     section_title = Column(String)
     content = Column(Text)

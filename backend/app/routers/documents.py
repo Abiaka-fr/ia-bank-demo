@@ -1,15 +1,15 @@
 """Document endpoints."""
 
 import json
-import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, require_writer
 from app.db import get_db
 from app.models.audit import AuditHistory
 from app.models.document import Document, DocumentChunk, DocumentVersion
+from app.models.extraction_job import ExtractionJob
 from app.models.mapping import RequirementProcedureMap
 from app.models.requirement import RegulatoryRequirement
 from app.models.user import User
@@ -77,7 +77,10 @@ def list_documents(
         query = query.filter(Document.title.ilike(f"%{title}%"))
 
     total = query.count()
-    items = query.offset(offset).limit(limit).all()
+    # Without ORDER BY, offset/limit pages are not stable on PostgreSQL.
+    items = (
+        query.order_by(Document.created_at, Document.document_id).offset(offset).limit(limit).all()
+    )
 
     return DocumentListResponse(
         total=total,
@@ -91,7 +94,7 @@ def list_documents(
 def update_document_content(
     document_id: str,
     payload: DocumentUpdateRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writer),
     db: Session = Depends(get_db),
 ) -> DocumentVersionResponse:
     """
@@ -102,7 +105,7 @@ def update_document_content(
 
     **Request Body:**
     - `change_reason` (required): Reason for the update
-    - `created_by` (required): User/system that made the update
+    - `created_by` (ignored): the version is attributed to the authenticated user
     - `file_path` (optional): Path to the updated document file
     - `sha256` (optional): SHA256 hash of the file for integrity verification
     - `chunks` (required): Array of document chunks with updated content
@@ -136,7 +139,7 @@ def update_document_content(
         db,
         doc,
         payload.chunks,
-        created_by=payload.created_by,
+        created_by=current_user.user_id,
         change_reason=payload.change_reason,
         file_path=payload.file_path,
     )
@@ -236,7 +239,7 @@ def get_document_content(
 def update_document_assignee(
     document_id: str,
     payload: AssigneeUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writer),
     db: Session = Depends(get_db),
 ) -> DocumentRead:
     """
@@ -267,7 +270,6 @@ def update_document_assignee(
     if doc.assignee != payload.assignee:
         db.add(
             AuditHistory(
-                audit_id=f"AUD-{uuid.uuid4().hex}",
                 document_id=document_id,
                 event_type=ASSIGNEE_CHANGED,
                 actor=current_user.user_id,
@@ -313,14 +315,15 @@ def list_document_history(
 @router.delete("/{document_id}", response_model=DocumentDeleteResponse)
 def delete_document(
     document_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writer),
     db: Session = Depends(get_db),
 ) -> DocumentDeleteResponse:
     """
     Delete a document and all linked data with cascading deletion.
 
     This endpoint performs cascading deletion of:
-    1. All RequirementProcedureMap rows linking to requirements sourced from this document
+    1. All RequirementProcedureMap rows linking to requirements sourced from this document,
+       or to this document when it is a procedure
     2. All RegulatoryRequirement rows where source_document_id = document_id
     3. All DocumentChunk rows linked to this document's versions
     4. All DocumentVersion rows for this document
@@ -371,14 +374,15 @@ def delete_document(
     ).all()
     requirement_ids = [req.requirement_id for req in requirements]
 
-    # Step 2: Delete RequirementProcedureMap rows linking to these requirements
+    # Step 2: Delete RequirementProcedureMap rows linking to these requirements, and those
+    # pointing at this document as their procedure (no FK cascade on Neon: they would
+    # stay behind as mappings to a procedure that no longer exists).
+    mapping_filter = RequirementProcedureMap.procedure_id == document_id
     if requirement_ids:
-        mappings_deleted = (
-            db.query(RequirementProcedureMap)
-            .filter(RequirementProcedureMap.requirement_id.in_(requirement_ids))
-            .delete(synchronize_session=False)
-        )
-        deleted_counts["requirement_mappings"] = mappings_deleted
+        mapping_filter = mapping_filter | RequirementProcedureMap.requirement_id.in_(requirement_ids)
+    deleted_counts["requirement_mappings"] = (
+        db.query(RequirementProcedureMap).filter(mapping_filter).delete(synchronize_session=False)
+    )
 
     # Step 3: Delete RegulatoryRequirement rows
     if requirement_ids:
@@ -412,8 +416,12 @@ def delete_document(
     )
     deleted_counts["document_versions"] = versions_deleted
 
-    # Step 7: Delete assignee history (no FK cascade on Neon, see DATABASE_DESC.md)
+    # Step 7: Delete assignee history and extraction jobs (no FK cascade on Neon, see
+    # DATABASE_DESC.md)
     db.query(AuditHistory).filter(AuditHistory.document_id == document_id).delete(
+        synchronize_session=False
+    )
+    db.query(ExtractionJob).filter(ExtractionJob.document_id == document_id).delete(
         synchronize_session=False
     )
 
@@ -431,7 +439,7 @@ def delete_document(
 @router.post("/regulation-ingest", status_code=201)
 def ingest_regulation(
     payload: IngestDocumentRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writer),
     db: Session = Depends(get_db),
 ):
     """
@@ -449,8 +457,10 @@ def ingest_regulation(
     - `domain` (required): Compliance domain (e.g., AML/CFT, KYC, DORA)
     - `language` (required): Document language (EN, FR)
     - `summary` (optional): Brief summary of the document
-    - `created_by` (required): User/system performing the ingestion
+    - `created_by` (ignored): the document is attributed to the authenticated user
     - `published_at` (optional): Publication date (ISO 8601 format)
+    - `origin_code` / `origin_name` (optional): issuing authority, e.g. `ACPR` /
+      `French Prudential Supervision and Resolution Authority` (default: `EU` / `European Union`)
 
     **Response:** IngestDocumentResponse with document details and chunk count
 
@@ -468,9 +478,11 @@ def ingest_regulation(
             title=payload.title,
             domain=payload.domain,
             language=payload.language,
-            created_by=payload.created_by,
+            created_by=current_user.user_id,
             summary=payload.summary,
             published_at=payload.published_at,
+            origin_code=payload.origin_code,
+            origin_name=payload.origin_name,
         )
         return result
     except ValueError as e:
