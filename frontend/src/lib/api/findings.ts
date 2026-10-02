@@ -41,7 +41,7 @@ export async function fetchFindingDetail(findingId: string): Promise<MappingDeta
   if (!isBackendLive) {
     throw new BackendGapError(
       "Finding detail page is only available with a live backend. " +
-        "Set NEXT_PUBLIC_BACKEND_URL to enable this feature.",
+        "Set NEXT_PUBLIC_API_BASE_URL to enable this feature.",
     );
   }
   const raw = await backend.fetchMappingDetail(findingId);

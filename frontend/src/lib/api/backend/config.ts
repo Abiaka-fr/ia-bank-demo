@@ -1,26 +1,14 @@
 /**
- * Bascule mock <-> backend réel.
+ * API base URL configuration.
  *
- * Un seul interrupteur : `NEXT_PUBLIC_BACKEND_URL`.
+ * Single switch: `NEXT_PUBLIC_API_BASE_URL`.
  *
- * - **vide** (défaut) — tout part en relatif (`/api/...`) et MSW sert l'intégralité du
- *   contrat. C'est le mode de démonstration : corpus `.docx` construit à la main, les
- *   9 écarts KYC/AML qui rendent la démo parlante.
- * - **renseigné** (ex. `http://localhost:8000`) — les endpoints que le backend de Thư
- *   couvre réellement partent en absolu vers ce serveur ; **tout le reste continue de
- *   partir en relatif** et reste donc servi par MSW.
- *
- * Les deux cohabitent sans conflit précisément parce que les URL sont de forme
- * différente : MSW n'intercepte que les chemins relatifs, il laisse passer les URL
- * absolues vers `localhost:8000`.
- *
- * Ce que le backend couvre aujourd'hui (voir `docs/backend-integration.md`) :
- * authentification, documents, exigences. Ce qu'il ne couvre pas et qui reste sur MSW :
- * constats, tableau de bord, validation humaine, liste des utilisateurs.
+ * - **empty** (default) — all requests go relative (`/api/...`). For demo mode.
+ * - **set** (e.g. `http://localhost:8000`) — absolute requests to the backend server.
  */
-const RAW_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
-/** Sans barre oblique finale : les chemins concaténés commencent tous par `/`. */
-export const BACKEND_URL = RAW_BACKEND_URL.replace(/\/+$/, "");
+/** Without trailing slash: concatenated paths always start with `/`. */
+export const API_BASE_URL = RAW_API_URL.replace(/\/+$/, "");
 
-export const isBackendLive = BACKEND_URL !== "";
+export const isBackendLive = API_BASE_URL !== "";

@@ -3,14 +3,15 @@
 import { useEffect, useState } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { isBackendLive } from "@/lib/api/backend/config";
 
 /**
  * Démarre Mock Service Worker avant le premier appel réseau.
  *
- * Le backend de Thư n'existe pas encore : tant que `NEXT_PUBLIC_API_MOCKING` ne vaut
- * pas `disabled`, toutes les requêtes de `docs/api-contract.md` sont servies en local.
+ * MSW est activé uniquement quand le backend réel n'est pas disponible
+ * (NEXT_PUBLIC_API_BASE_URL vide).
  */
-const IS_MOCKING_ENABLED = process.env.NEXT_PUBLIC_API_MOCKING !== "disabled";
+const IS_MOCKING_ENABLED = !isBackendLive;
 
 /**
  * Le démarrage est mémorisé au niveau du module : React remonte les effets deux fois

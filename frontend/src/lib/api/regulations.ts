@@ -21,7 +21,7 @@ export const MOCK_UPLOAD_ID_PREFIX = "REG-UP-";
 
 /**
  * Chaque fonction choisit sa source : backend réel quand il couvre l'endpoint et que
- * `NEXT_PUBLIC_BACKEND_URL` est renseigné, MSW sinon. Voir `./backend/config.ts`.
+ * `NEXT_PUBLIC_API_BASE_URL` est renseigné, MSW sinon. Voir `./backend/config.ts`.
  */
 export function fetchRegulations() {
   if (isBackendLive) return backend.fetchRegulations();
