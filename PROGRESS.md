@@ -276,7 +276,38 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Notes de fin de session
 
-### 2026-10-02 (4) — Lot 3 de la revue : code mort et avertissements lint (non committé)
+### 2026-10-02 (5) — Fin des constats frontend de la revue (non committé)
+
+- **Synchronisation entre onglets** (`lib/api/cross-tab.ts`, `query-provider.tsx`,
+  `use-validate-finding.ts`) : une décision sur un constat prévient les autres onglets par
+  `BroadcastChannel`, qui invalident leur cache. Vérifié : le badge de la liste passe de
+  « En attente » à « Rejeté » sans rechargement.
+- **Rendu Markdown** (`simple-markdown.ts`, `markdown-line.tsx`) : le numéro d'un alinéa
+  (« 3. ») reste affiché ; `_` n'est de l'italique qu'en bord de mot (`PARTIALLY_COVERED` intact).
+- **Dates** (`format-date.ts`) : `formatLocalDateTime` / `formatLocalDate` pour les instants
+  (création, modification, version, historique) — horodatage backend lu comme de l'UTC et affiché
+  en heure locale. Les dates de calendrier (publication, entrée en vigueur) ne changent pas.
+- **Pagination** (`backend/resources.ts`) : `fetchAllPages` enchaîne les pages de 200 ;
+  `requirement_ids` envoyés par lots de 100.
+- **Chaînes en dur** : clé `regulations.common.loading` corrigée, « Unknown error » retiré, titre
+  de la page d'un constat traduit. Reste la référence de section en français de
+  `finding-adapt.ts:138`, qu'aucun écran n'affiche.
+- **Mode mock** (`lib/mocks/handlers.ts`) : `POST /api/requirements/extract` à la forme actuelle
+  (jobs), handlers ajoutés pour `…/jobs/:id/process` et `POST /api/mappings/analyze` — les boutons
+  « Analyser » et « Analyser l'impact » ne tombent plus en erreur en démonstration.
+- **`xlsx` 0.18.5 → 0.20.3** (CVE-2023-30533, CVE-2024-22363), installé depuis
+  `cdn.sheetjs.com` comme le recommande SheetJS (décision de Hoang) : `package.json` et
+  `pnpm-lock.yaml` pointent vers cette archive, plus vers le registre npm.
+- Tests ajoutés : `format-date.test.ts`, cas dans `simple-markdown.test.ts`, `resources.test.ts`,
+  `regulations.test.ts`. `pnpm lint` 0 avertissement, `pnpm typecheck` propre, 184 tests verts.
+  Vérifié dans le navigateur (faux backend local + mode mock).
+- **Piste non traitée** : `fetchFindings` charge le texte complet de chaque procédure
+  (`includeEvidence`) alors que l'écran n'en utilise que le titre, déjà présent dans la réponse
+  des mappings — à supprimer pour réduire le nombre de requêtes de l'onglet Exigences.
+- **Reste côté frontend** : rien d'ouvert dans la revue. Côté backend : voir « Blocages » et
+  `docs/api-requests.md` #14, #15.
+
+### 2026-10-02 (4) — Lot 3 de la revue : code mort et avertissements lint (commit `11ed14a`)
 
 - Supprimés : `finding-detail-dialog.tsx` (remplacé par la page du constat, plus importé nulle
   part), `DocumentViewerWithHighlights` (ne servait qu'à lui ; `HighlightedText` reste),
