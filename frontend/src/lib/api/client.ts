@@ -78,11 +78,12 @@ async function readError(response: Response): Promise<ApiError> {
 /**
  * Effectue un appel API et valide la réponse contre le schéma Zod fourni.
  *
- * Depuis `1a88b12` : une réponse non conforme ne lève plus `ApiContractError` — elle
- * est tracée en `console.warn` puis renvoyée telle quelle (dégradation gracieuse),
- * pour qu'un champ manquant côté backend (ex. une date v1.10 pas encore déployée
- * partout) n'empêche pas le reste de l'écran de s'afficher. La classe
- * `ApiContractError` reste exportée mais n'est plus levée par cette fonction.
+ * Une réponse non conforme lève `ApiContractError` (les écrans affichent alors l'état
+ * d'erreur « contrat ») — même règle que `backendFetch`. Entre `1a88b12` et le 2026-10-02
+ * elle était renvoyée telle quelle, non validée, pour tolérer un champ pas encore livré
+ * par le backend : ce client ne parle plus qu'à MSW et aux routes Next du dépôt (le
+ * backend réel passe par `backend/client.ts`), une divergence y est donc un bug à voir,
+ * pas à faire planter plus loin dans un composant.
  */
 export async function apiFetch<TSchema extends z.ZodType>(
   path: string,
@@ -111,22 +112,14 @@ export async function apiFetch<TSchema extends z.ZodType>(
 
   const payload: unknown = await response.json();
 
-  // Try strict validation first
   const parsed = schema.safeParse(payload);
-
   if (!parsed.success) {
-    // Log validation issues but don't throw - allow partial data to render
-    const issues = parsed.error.issues.map(
-      (issue) => `${issue.path.join(".") || "(racine)"}: ${issue.message}`,
+    throw new ApiContractError(
+      path,
+      parsed.error.issues.map(
+        (issue) => `${issue.path.join(".") || "(racine)"}: ${issue.message}`,
+      ),
     );
-    console.warn(
-      `⚠️ API contract mismatch for ${path}:`,
-      issues.join(", "),
-      "Data will render with available fields.",
-    );
-
-    // Return data with best-effort parsing (allow extra fields, use defaults for missing)
-    return payload as z.infer<TSchema>;
   }
 
   return parsed.data;

@@ -2,16 +2,14 @@
  * Traduction couples exigence × procédure (backend, `POST db41421`) -> `Finding` du
  * contrat. Fonctions pures, testées — même principe que `adapt.ts`.
  *
- * ⚠️ Limite assumée, à documenter dans toute démo utilisant ce mode : le backend ne
- * relie pas un couple exigence × procédure à un passage précis du document interne
- * (pas de `chunk_id` sur `RequirementProcedureMap`). `regulatory_evidence` peut donc
- * citer un passage exact (le texte de l'exigence elle-même, déjà chargé), mais
- * `internal_evidence` ne peut être qu'un extrait non ciblé du début du document —
- * jamais un texte inventé, seulement moins précis. Voir `resources.ts`.
+ * Le backend ne relie pas un couple à un passage précis du document interne (pas de
+ * `chunk_id` sur `RequirementProcedureMap`) : `regulatory_evidence` cite le texte de
+ * l'exigence, `internal_evidence` reste vide — la liste n'affiche que le nom de la
+ * procédure (`procedure_title`). Les passages à modifier sont ceux de la page d'un
+ * constat (`suggested_modifications`, voir `mapping-detail-adapt.ts`).
  */
 import type {
   Assessment,
-  DocumentDetail,
   EvidenceRef,
   Finding,
   HumanStatus,
@@ -20,10 +18,6 @@ import type {
 } from "@/types/api";
 
 import type { BackendMapping, BackendProcedureMinimal } from "./schemas";
-
-/** Longueur de l'extrait non ciblé pris en tête de document — au-delà, la carte de
- * preuve deviendrait illisible pour ce qui reste une approximation. */
-const UNTARGETED_EXCERPT_LENGTH = 400;
 
 /**
  * COVERED/PARTIALLY_COVERED/POTENTIAL_GAP/HUMAN_REVIEW (DB) -> les 5 valeurs du
@@ -116,31 +110,6 @@ export function buildRegulatoryEvidence(
   };
 }
 
-/**
- * Preuve interne : un extrait non ciblé, honnêtement présenté comme tel. Le passage
- * étant un vrai préfixe du document (jamais inventé), `findQuotedLineIndexes` le
- * localise et le surligne normalement dans la fenêtre de lecture ; le libellé de
- * section ne prétend pas à une précision que le mapping ne fournit pas.
- */
-export function buildUntargetedInternalEvidence(
-  document: DocumentDetail,
-  procedure: BackendProcedureMinimal,
-): EvidenceRef | null {
-  const excerpt = document.extracted_text.slice(0, UNTARGETED_EXCERPT_LENGTH).trim();
-  if (!excerpt) return null;
-
-  return {
-    document_id: document.document_id,
-    document_title: procedure.name?.trim() || document.title,
-    // Pas de texte anglais équivalent ici : comme `explanation`/`recommended_action`,
-    // ce libellé vient du backend et n'est pas encore localisable (voir
-    // docs/backend-integration.md, point ouvert n°5).
-    section_reference: "Début du document (passage non ciblé par le mapping)",
-    excerpt,
-    language: document.language,
-  };
-}
-
 /** Assemble un `Finding` pour un couple exigence × procédure réellement mappé. */
 export function assembleMappedFinding(input: {
   mapping: BackendMapping;
@@ -150,24 +119,19 @@ export function assembleMappedFinding(input: {
   riskLevel: string | null | undefined;
   regulationTitle: string;
   procedure: BackendProcedureMinimal;
-  procedureDocument: DocumentDetail | null;
   /** Assigné de l'escalade, lu dans `mapping_history` (`resources.ts::fetchEscalationAssignees`). */
   escalationAssignee?: string;
 }): Finding {
-  const { mapping, requirement, riskLevel, regulationTitle, procedure, procedureDocument } =
-    input;
-
-  const internalEvidence = procedureDocument
-    ? buildUntargetedInternalEvidence(procedureDocument, procedure)
-    : null;
+  const { mapping, requirement, riskLevel, regulationTitle, procedure } = input;
 
   return {
     finding_id: mapping.mapping_id,
     requirement_id: mapping.requirement_id,
     procedure_id: mapping.procedure_id,
+    procedure_title: procedure.name?.trim() || undefined,
     assessment: adaptAssessment(mapping.assessment),
     regulatory_evidence: [buildRegulatoryEvidence(requirement, regulationTitle)],
-    internal_evidence: internalEvidence ? [internalEvidence] : [],
+    internal_evidence: [],
     explanation: mapping.explanation ?? "",
     explanation_fr: mapping.explanation_lang_fr ?? undefined,
     missing_or_ambiguous_elements: [],

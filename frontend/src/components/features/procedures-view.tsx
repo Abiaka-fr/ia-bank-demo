@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Link } from "@/i18n/navigation";
+import { notifyOtherTabs } from "@/lib/api/cross-tab";
 import { queryKeys } from "@/lib/api/query-keys";
 import { deleteDocument } from "@/lib/api/regulations";
 import { fetchProcedures } from "@/lib/api/procedures";
@@ -75,6 +76,9 @@ export function ProceduresView() {
     onSuccess: async () => {
       toast.success(t("deleteSuccess"));
       setDeleteConfirmId(null);
+      notifyOtherTabs();
+      // Les constats rattachés à la procédure disparaissent avec elle.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
       await queryClient.invalidateQueries({ queryKey: queryKeys.procedures() });
     },
     onError: () => toast.error(t("deleteFailed")),

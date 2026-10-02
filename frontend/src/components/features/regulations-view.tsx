@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/select";
 import { Link } from "@/i18n/navigation";
 import { fetchPortfolioSummary } from "@/lib/api/dashboard";
+import { notifyOtherTabs } from "@/lib/api/cross-tab";
 import { queryKeys } from "@/lib/api/query-keys";
 import { formatDateDDMMYYYY, formatLocalDate } from "@/lib/format-date";
 import {
@@ -85,8 +86,9 @@ export function RegulationsView() {
       updateRegulationAssignee(input.regulationId, input.assigneeId),
     onSuccess: async () => {
       toast.success(assigneeT("updated"));
+      notifyOtherTabs();
       await queryClient.invalidateQueries({ queryKey: queryKeys.regulations() });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.portfolioSummary() });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
     },
     onError: () => toast.error(assigneeT("updateFailed")),
   });
@@ -96,8 +98,9 @@ export function RegulationsView() {
     onSuccess: async () => {
       toast.success(t("deleteSuccess"));
       setDeleteConfirmId(null);
+      notifyOtherTabs();
       await queryClient.invalidateQueries({ queryKey: queryKeys.regulations() });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.portfolioSummary() });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
     },
     onError: () => toast.error(t("deleteFailed")),
   });

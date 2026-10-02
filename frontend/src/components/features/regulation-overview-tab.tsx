@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { usePrefetchQuery, useQuery } from "@tanstack/react-query";
 import {
   CircleAlert,
   ClipboardCheck,
@@ -19,7 +19,7 @@ import {
 } from "@/components/features/regulation-mindmap";
 import { ErrorState, LoadingState } from "@/components/features/query-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { fetchDashboardSummary } from "@/lib/api/dashboard";
+import { fetchDashboardSummary, fetchRegulationMap } from "@/lib/api/dashboard";
 import { queryKeys } from "@/lib/api/query-keys";
 
 /** Onglet « Vue d'ensemble » — les KPI d'UNE régulation (ancien écran Dashboard). */
@@ -30,6 +30,11 @@ export function RegulationOverviewTab({ regulationId }: { regulationId: string }
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.dashboardSummary(regulationId),
     queryFn: () => fetchDashboardSummary(regulationId),
+  });
+  // Même chargement que la carte mentale ci-dessous : lancés ensemble, ils le partagent.
+  usePrefetchQuery({
+    queryKey: queryKeys.regulationMap(regulationId),
+    queryFn: () => fetchRegulationMap(regulationId),
   });
 
   if (isPending) return <LoadingState rows={4} />;

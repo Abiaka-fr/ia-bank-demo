@@ -57,8 +57,8 @@ export function RegulationMindmap({
   const [page, setPage] = useState(1);
 
   const { data, isPending, isError, error, refetch } = useQuery({
-    queryKey: queryKeys.regulationMap(),
-    queryFn: fetchRegulationMap,
+    queryKey: queryKeys.regulationMap(regulationId),
+    queryFn: () => fetchRegulationMap(regulationId),
   });
 
   if (isPending) return <LoadingState rows={4} />;

@@ -19,9 +19,13 @@ export function ImpactedProcedureSummary({
   className?: string;
 }) {
   const locale = useLocale();
-  // Nom porté par la preuve interne (`buildUntargetedInternalEvidence` en mode réel,
-  // corpus MSW sinon) — l'identifiant seul ne parle pas à l'utilisateur.
-  const title = finding.internal_evidence[0]?.document_title ?? finding.procedure_id ?? "—";
+  // Nom porté par le constat (backend réel) ou par sa preuve interne (corpus MSW) —
+  // l'identifiant seul ne parle pas à l'utilisateur.
+  const title =
+    finding.procedure_title ??
+    finding.internal_evidence[0]?.document_title ??
+    finding.procedure_id ??
+    "—";
   const explanation = pickLocalizedText(locale, finding.explanation, finding.explanation_fr);
 
   return (
