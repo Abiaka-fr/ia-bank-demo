@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { extractFileChunks, type ExtractedChunk } from "@/lib/file-extract";
 
@@ -17,9 +17,13 @@ export function useFileExtraction() {
   const [file, setFile] = useState<File | null>(null);
   const [chunks, setChunks] = useState<readonly ExtractedChunk[]>([]);
   const [status, setStatus] = useState<FileExtractionStatus>("idle");
+  // Une extraction lente qui se termine après un nouveau choix (ou un reset) ne doit pas
+  // écraser l'état : le contenu d'un fichier partait sinon sous le titre d'un autre.
+  const latestRequest = useRef(0);
 
   /** `selected` est supposé déjà filtré par extension — ce hook ne fait qu'extraire. */
   const selectFile = useCallback((selected: File | null) => {
+    const request = ++latestRequest.current;
     setFile(selected);
     setChunks([]);
 
@@ -31,15 +35,17 @@ export function useFileExtraction() {
     setStatus("extracting");
     extractFileChunks(selected)
       .then((extracted) => {
+        if (request !== latestRequest.current) return;
         setChunks(extracted);
         setStatus("done");
       })
       .catch(() => {
-        setStatus("error");
+        if (request === latestRequest.current) setStatus("error");
       });
   }, []);
 
   const reset = useCallback(() => {
+    latestRequest.current += 1;
     setFile(null);
     setChunks([]);
     setStatus("idle");

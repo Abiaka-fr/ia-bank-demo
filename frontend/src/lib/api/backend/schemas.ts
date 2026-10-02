@@ -196,8 +196,6 @@ export const backendMappingSchema = z
   })
   .passthrough();
 
-export const backendMappingListSchema = paginated(backendMappingSchema);
-
 /** Version allégée de `backendDocumentSchema` — c'est ce que renvoient les nœuds imbriqués. */
 export const backendProcedureMinimalSchema = z.object({
   procedure_id: z.string(),
@@ -238,15 +236,6 @@ export const backendRequirementsToProceduresSchema = z.object({
   total_requirements: z.number(),
   total_mappings: z.number(),
   data: z.array(backendRequirementWithProceduresSchema),
-});
-
-/**
- * Response from POST /api/requirements/extract — contains extracted requirement IDs and count.
- */
-export const backendExtractRequirementsSchema = z.object({
-  document_id: z.string(),
-  requirements_count: z.number(),
-  requirement_ids: z.array(z.string()),
 });
 
 /** Response from POST /api/requirements/extract (new job-based workflow). */
@@ -305,12 +294,6 @@ export type BackendDocumentVersion = z.infer<typeof backendDocumentVersionSchema
 export type BackendRequirement = z.infer<typeof backendRequirementSchema>;
 export type BackendMapping = z.infer<typeof backendMappingSchema>;
 export type BackendProcedureMinimal = z.infer<typeof backendProcedureMinimalSchema>;
-export type BackendRequirementWithProcedures = z.infer<
-  typeof backendRequirementWithProceduresSchema
->;
-export type BackendSuggestedModification = z.infer<
-  typeof backendSuggestedModificationSchema
->;
 
 // Nested response from GET /api/mappings/{mapping_id}
 export const backendMappingDetailRequirementSchema = backendRequirementMinimalSchema.extend({
@@ -330,9 +313,3 @@ export const backendMappingDetailSchema = z.object({
 });
 
 export type BackendMappingDetail = z.infer<typeof backendMappingDetailSchema>;
-export type BackendMappingDetailRequirement = z.infer<
-  typeof backendMappingDetailRequirementSchema
->;
-export type BackendMappingDetailProcedure = z.infer<
-  typeof backendMappingDetailProcedureSchema
->;

@@ -39,7 +39,7 @@ import { Link } from "@/i18n/navigation";
 import { queryKeys } from "@/lib/api/query-keys";
 import { deleteDocument } from "@/lib/api/regulations";
 import { fetchProcedures } from "@/lib/api/procedures";
-import { formatDateDDMMYYYY } from "@/lib/format-date";
+import { formatDateDDMMYYYY, formatLocalDate } from "@/lib/format-date";
 import { cn } from "cn";
 import { useSession } from "@/components/providers/session-provider";
 import { accessProfileForUser, canUploadRegulations } from "@/lib/access-profile";
@@ -215,13 +215,13 @@ export function ProceduresView() {
                   <dt className="text-xs text-muted-foreground">
                     {regulationsT("createdDateLabel")}
                   </dt>
-                  <dd>{formatDateDDMMYYYY(procedure.created_at) ?? common("notAvailable")}</dd>
+                  <dd>{formatLocalDate(procedure.created_at) ?? common("notAvailable")}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">
                     {regulationsT("lastUpdatedLabel")}
                   </dt>
-                  <dd>{formatDateDDMMYYYY(procedure.updated_at) ?? common("notAvailable")}</dd>
+                  <dd>{formatLocalDate(procedure.updated_at) ?? common("notAvailable")}</dd>
                 </div>
               </dl>
 

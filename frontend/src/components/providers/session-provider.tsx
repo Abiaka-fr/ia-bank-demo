@@ -8,6 +8,8 @@ import { userSchema, type User } from "@/types/api";
 
 type SessionContextValue = {
   user: User | null;
+  /** Faux pendant le rendu serveur et l'hydratation : `user: null` n'y veut pas dire « déconnecté ». */
+  isReady: boolean;
   signIn: (user: User, token: string) => void;
   /** Remplace l'utilisateur en session (même jeton) — ex. rôle changé côté serveur. */
   updateUser: (user: User) => void;
@@ -48,8 +50,11 @@ function getSnapshot(): string | null {
   }
 }
 
+/** Session pas encore lue (serveur, hydratation) — jamais une valeur possible du stockage. */
+const NOT_READ = "\0";
+
 function getServerSnapshot(): string | null {
-  return null;
+  return NOT_READ;
 }
 
 function parseUser(raw: string | null): User | null {
@@ -64,7 +69,8 @@ function parseUser(raw: string | null): User | null {
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const user = useMemo(() => parseUser(raw), [raw]);
+  const isReady = raw !== NOT_READ;
+  const user = useMemo(() => (isReady ? parseUser(raw) : null), [raw, isReady]);
 
   const updateUser = useCallback((nextUser: User) => {
     try {
@@ -88,8 +94,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, signIn, updateUser, signOut }),
-    [user, signIn, updateUser, signOut],
+    () => ({ user, isReady, signIn, updateUser, signOut }),
+    [user, isReady, signIn, updateUser, signOut],
   );
 
   return <SessionContext value={value}>{children}</SessionContext>;

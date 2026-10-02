@@ -151,6 +151,8 @@ export function assembleMappedFinding(input: {
   regulationTitle: string;
   procedure: BackendProcedureMinimal;
   procedureDocument: DocumentDetail | null;
+  /** Assigné de l'escalade, lu dans `mapping_history` (`resources.ts::fetchEscalationAssignees`). */
+  escalationAssignee?: string;
 }): Finding {
   const { mapping, requirement, riskLevel, regulationTitle, procedure, procedureDocument } =
     input;
@@ -174,10 +176,9 @@ export function assembleMappedFinding(input: {
     priority: adaptPriorityFromRiskLevel(riskLevel),
     confidence_or_evidence_strength: mapping.confidence ?? undefined,
     human_status: adaptHumanStatus(mapping.human_status),
-    // Sans cette ligne, l'assigné choisi à une escalade (persisté par `validateMapping`
-    // via `PUT .../assignee`) redevenait « Non assigné » au chargement suivant : la
-    // valeur était bien sauvegardée côté backend, seulement jamais relue.
-    assignee_id: mapping.assignee ?? undefined,
+    // Le mapping lui-même ne porte plus d'assigné côté backend (`MappingRead`) : sans la
+    // valeur relue dans l'historique, un constat escaladé redevenait « Non assigné ».
+    assignee_id: input.escalationAssignee ?? mapping.assignee ?? undefined,
     // Le backend ne date pas ses constats : horodatage de synchronisation, pas une
     // vraie date de dernière décision (il n'y a pas encore de validation humaine réelle).
     updated_at: new Date().toISOString(),

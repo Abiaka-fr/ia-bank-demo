@@ -143,6 +143,29 @@ export function processExtractionJob(jobId: string) {
 }
 
 /**
+ * Traite des jobs d'extraction en parallèle et renvoie les identifiants de ceux qui ont
+ * échoué — appel rejeté ou réponse `FAILED`. Le backend accepte de relancer un job
+ * `FAILED` qui n'a rien extrait (`backend/API.md`, `POST .../jobs/{job_id}/process`).
+ */
+export async function processExtractionJobs(
+  jobIds: readonly string[],
+  onJobSettled?: () => void,
+): Promise<string[]> {
+  const succeeded = await Promise.all(
+    jobIds.map((jobId) =>
+      processExtractionJob(jobId)
+        .then((result) => result.status === "COMPLETED")
+        .catch((error: unknown) => {
+          console.error(`Extraction job ${jobId} failed`, error);
+          return false;
+        })
+        .finally(onJobSettled),
+    ),
+  );
+  return jobIds.filter((_, index) => !succeeded[index]);
+}
+
+/**
  * Analyze impact of requirements on internal procedures and generate mappings.
  * Takes a list of requirement IDs and uses LLM to assess impact on each procedure.
  *

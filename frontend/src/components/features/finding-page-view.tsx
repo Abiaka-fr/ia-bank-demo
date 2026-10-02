@@ -118,14 +118,17 @@ export function FindingPageView({ findingId }: { findingId: string }) {
     language: requirementSummary.language as "FR" | "EN",
   }));
 
+  // Choix en cours, sinon la personne déjà désignée lors d'une escalade précédente.
+  const selectedAssigneeId = assigneeId ?? finding.assignee_id;
+
   function handleDecide(status: "ACCEPTED" | "REJECTED" | "ESCALATED") {
-    if (status === "ESCALATED" && !assigneeId) {
+    if (status === "ESCALATED" && !selectedAssigneeId) {
       toast.error(actionsT("escalateNeedsAssignee"));
       return;
     }
     decide(finding.finding_id, status, {
       custom_action: customAction.trim() || undefined,
-      assignee_id: status === "ESCALATED" ? assigneeId : undefined,
+      assignee_id: status === "ESCALATED" ? selectedAssigneeId : undefined,
       actor_id: user?.user_id ?? "",
     });
   }
@@ -271,6 +274,38 @@ export function FindingPageView({ findingId }: { findingId: string }) {
           <CardTitle className="text-sm">{t("suggestedModifications")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Justification de l'évaluation : une seule fois, et aussi quand aucune
+              modification n'est suggérée (elle était répétée par modification, et absente
+              sans modification — le relecteur décidait alors sans explication). */}
+          {finding.explanation || finding.recommended_action ? (
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-3">
+              {finding.explanation && (
+                <div className="space-y-2">
+                  <h5 className="text-xs font-bold uppercase tracking-wide text-blue-900 dark:text-blue-100">
+                    {t("explanation")}
+                  </h5>
+                  <p className="text-sm leading-relaxed text-foreground font-medium">
+                    {pickLocalizedText(locale, finding.explanation, finding.explanation_fr)}
+                  </p>
+                </div>
+              )}
+
+              {finding.recommended_action && (
+                <div className="space-y-2 pt-2 border-t border-blue-200 dark:border-blue-800">
+                  <h5 className="text-xs font-bold uppercase tracking-wide text-blue-900 dark:text-blue-100">
+                    {t("recommendedAction")}
+                  </h5>
+                  <p className="text-sm leading-relaxed text-foreground font-medium">
+                    {pickLocalizedText(
+                      locale,
+                      finding.recommended_action,
+                      finding.recommended_action_fr,
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : null}
           {suggestedModifications.length > 0 ? (
             <div className="space-y-4">
               {suggestedModifications.map((mod, idx) => (
@@ -293,35 +328,6 @@ export function FindingPageView({ findingId }: { findingId: string }) {
                         {mod.newText}
                       </p>
                     </div>
-                  </div>
-
-                  {/* Explanation and reasoning below */}
-                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-3">
-                    {finding.explanation && (
-                      <div className="space-y-2">
-                        <h5 className="text-xs font-bold uppercase tracking-wide text-blue-900 dark:text-blue-100">
-                          {t("explanation")}
-                        </h5>
-                        <p className="text-sm leading-relaxed text-foreground font-medium">
-                          {pickLocalizedText(locale, finding.explanation, finding.explanation_fr)}
-                        </p>
-                      </div>
-                    )}
-
-                    {finding.recommended_action && (
-                      <div className="space-y-2 pt-2 border-t border-blue-200 dark:border-blue-800">
-                        <h5 className="text-xs font-bold uppercase tracking-wide text-blue-900 dark:text-blue-100">
-                          {t("recommendedAction")}
-                        </h5>
-                        <p className="text-sm leading-relaxed text-foreground font-medium">
-                          {pickLocalizedText(
-                            locale,
-                            finding.recommended_action,
-                            finding.recommended_action_fr,
-                          )}
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}
@@ -388,7 +394,7 @@ export function FindingPageView({ findingId }: { findingId: string }) {
                 </div>
 
                 <AssigneeSelect
-                  value={assigneeId}
+                  value={selectedAssigneeId}
                   onChange={setAssigneeId}
                   disabled={isPending}
                   className="w-full"

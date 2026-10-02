@@ -12,7 +12,7 @@ import { fetchPortfolioSummary } from "@/lib/api/dashboard";
 import { fetchProcedures } from "@/lib/api/procedures";
 import { fetchRegulations } from "@/lib/api/regulations";
 import { queryKeys } from "@/lib/api/query-keys";
-import { formatDateDDMMYYYY } from "@/lib/format-date";
+import { formatLocalDate } from "@/lib/format-date";
 
 /** Date au format le plus récent parmi une liste — `undefined` si aucune valeur. */
 function mostRecent(dates: readonly (string | undefined)[]): string | undefined {
@@ -73,10 +73,12 @@ export function KnowledgeBaseView() {
   const sources = Array.from(
     new Set(regulations.map((regulation) => regulation.authority_or_owner)),
   ).sort((a, b) => a.localeCompare(b));
-  const lastUpdated = mostRecent([
-    ...regulations.map((regulation) => regulation.uploaded_at),
-    ...procedures.map((procedure) => procedure.uploaded_at),
-  ]);
+  // `updated_at`/`created_at` : seules dates connues du backend réel (pas d'`uploaded_at`).
+  const lastUpdated = mostRecent(
+    [...regulations, ...procedures].map(
+      (document) => document.updated_at ?? document.created_at ?? document.uploaded_at,
+    ),
+  );
 
   const stats = [
     { label: t("regulationsCount"), value: regulations.length, icon: ScrollText },
@@ -123,7 +125,7 @@ export function KnowledgeBaseView() {
 
           <p className="text-xs text-muted-foreground">
             {t("lastUpdatedLabel")} :{" "}
-            {formatDateDDMMYYYY(lastUpdated) ?? common("notAvailable")}
+            {formatLocalDate(lastUpdated) ?? common("notAvailable")}
           </p>
         </CardContent>
       </Card>
