@@ -46,8 +46,8 @@ export function ProcedureBody({
         <p className="text-xs text-muted-foreground print:hidden">{t("noHighlight")}</p>
       ) : null}
 
-      {/* `overflow-y-auto` natif plutôt que `ScrollArea` (Radix) : dans ce dialogue
-          comme dans `FindingDetailDialog`, le viewport interne de `ScrollArea` ne se
+      {/* `overflow-y-auto` natif plutôt que `ScrollArea` (Radix) : dans ce dialogue,
+          le viewport interne de `ScrollArea` ne se
           limitait jamais à la hauteur donnée par flexbox (`height:100%` refusait de se
           résoudre ici, cause non identifiée avec certitude) et le contenu débordait
           sans défiler — un document plus long que la fenêtre restait coupé après sa

@@ -24,15 +24,19 @@ export type MarkdownLineNode =
   | { type: "empty" }
   | { type: "heading"; level: 1 | 2 | 3 | 4 | 5 | 6; segments: InlineSegment[] }
   | { type: "blockquote"; segments: InlineSegment[] }
-  | { type: "listItem"; segments: InlineSegment[] }
+  // `marker` : le numéro d'une liste ordonnée (« 3. ») — c'est du texte source (alinéa
+  // numéroté d'un règlement), il doit rester visible. Absent pour une liste à puces.
+  | { type: "listItem"; marker?: string; segments: InlineSegment[] }
   | { type: "paragraph"; segments: InlineSegment[] };
 
 const HEADING_PATTERN = /^(#{1,6})\s+(.*)$/;
 const BLOCKQUOTE_PATTERN = /^>\s?(.*)$/;
-const LIST_ITEM_PATTERN = /^(?:[-*]|\d+\.)\s+(.*)$/;
+const LIST_ITEM_PATTERN = /^(?:[-*]|(\d+\.))\s+(.*)$/;
 /** `**gras**`, `` `code` ``, `*italique*` ou `_italique_` — dans cet ordre pour que
- * `**` ne soit jamais lu comme deux `*` italiques imbriqués. */
-const INLINE_TOKEN_PATTERN = /(\*\*.+?\*\*|`.+?`|\*.+?\*|_.+?_)/;
+ * `**` ne soit jamais lu comme deux `*` italiques imbriqués. `_` seulement en bord de
+ * mot : `PARTIALLY_COVERED` ou `INT_PROC_KYC` ne sont pas de l'italique. */
+const INLINE_TOKEN_PATTERN =
+  /(\*\*.+?\*\*|`.+?`|\*.+?\*|(?<![\p{L}\p{N}_])_.+?_(?![\p{L}\p{N}_]))/u;
 
 /** Découpe une ligne déjà identifiée comme du texte en segments gras/italique/code. */
 export function parseInline(text: string): InlineSegment[] {
@@ -75,7 +79,11 @@ export function parseMarkdownLine(line: string): MarkdownLineNode {
 
   const listItem = LIST_ITEM_PATTERN.exec(line);
   if (listItem) {
-    return { type: "listItem", segments: parseInline(listItem[1]) };
+    return {
+      type: "listItem",
+      ...(listItem[1] ? { marker: listItem[1] } : {}),
+      segments: parseInline(listItem[2]),
+    };
   }
 
   return { type: "paragraph", segments: parseInline(line) };

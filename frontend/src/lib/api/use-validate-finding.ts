@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { notifyOtherTabs } from "@/lib/api/cross-tab";
 import { validateFinding } from "@/lib/api/findings";
 import { queryKeys } from "@/lib/api/query-keys";
 import type { HumanStatus, ValidateFindingBody } from "@/types/api";
@@ -29,6 +30,7 @@ export function useValidateFinding(regulationId: string) {
       toast.success(t("saved"), {
         description: statusLabels(updated.human_status),
       });
+      notifyOtherTabs();
       await queryClient.invalidateQueries({
         queryKey: queryKeys.findings(regulationId),
       });

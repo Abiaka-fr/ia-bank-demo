@@ -185,6 +185,23 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Blocages / Questions ouvertes
 
+- **2026-10-02 — pour Thư (revue de code, lecture seule, rien modifié sous `backend/`) :**
+  1. **Sécurité** — `POST /api/auth/signup` accepte `role` dans le corps (`auth.py:29`) : n'importe
+     qui peut créer un compte `COMPLIANCE_ADMIN` ; aucune route d'écriture ne vérifie le rôle.
+     `secret_key` a une valeur par défaut publique et `.env.example` ne liste pas `SECRET_KEY`
+     (`config.py:44`). `created_by` vient du corps de la requête, pas de l'utilisateur authentifié.
+  2. **Analyse d'impact** — un mapping sans modification « groundée » est abandonné
+     (`requirement_procedure_mapping.py:349`) : `COVERED` n'est jamais enregistré, l'exigence
+     apparaît « aucune procédure pertinente » et reste analysable sans fin. Aucune garde
+     d'idempotence sur `analyze` ni sur `extract` (doublons).
+  3. **Extraction** — `process_extraction_job` libère le verrou du job avant d'écrire `COMPLETED`
+     (`requirements.py:356`) : deux appels concurrents dupliquent les exigences.
+  4. **Données** — supprimer une procédure laisse ses mappings orphelins (`documents.py:374`) ;
+     `origin_name = "European Union"` codé en dur pour toute régulation et toute procédure interne ;
+     identifiants générés de 33–37 caractères pour des colonnes `String(26)` ; listes paginées
+     sans `ORDER BY` ; N+1 dans `requirements-to-procedures` ; mot de passe > 72 octets → 500
+     (bcrypt 5) ; `ruff check app/` échoue (F601, `llm_client.py:93`).
+
 - **2026-09-30 — pour Thư :** `new_text` des modifications suggérées généré en anglais sur une
   procédure française (réécrit en anglais dans la procédure à l'ACCEPT). Cause et correctif proposé
   (une ligne de prompt) : `docs/api-requests.md` #12. Non corrigé depuis le FE (`backend/` en
@@ -258,6 +275,151 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   n'arrivent jamais sur Vercel.
 
 ## Notes de fin de session
+
+### 2026-10-02 (5) — Fin des constats frontend de la revue (non committé)
+
+- **Synchronisation entre onglets** (`lib/api/cross-tab.ts`, `query-provider.tsx`,
+  `use-validate-finding.ts`) : une décision sur un constat prévient les autres onglets par
+  `BroadcastChannel`, qui invalident leur cache. Vérifié : le badge de la liste passe de
+  « En attente » à « Rejeté » sans rechargement.
+- **Rendu Markdown** (`simple-markdown.ts`, `markdown-line.tsx`) : le numéro d'un alinéa
+  (« 3. ») reste affiché ; `_` n'est de l'italique qu'en bord de mot (`PARTIALLY_COVERED` intact).
+- **Dates** (`format-date.ts`) : `formatLocalDateTime` / `formatLocalDate` pour les instants
+  (création, modification, version, historique) — horodatage backend lu comme de l'UTC et affiché
+  en heure locale. Les dates de calendrier (publication, entrée en vigueur) ne changent pas.
+- **Pagination** (`backend/resources.ts`) : `fetchAllPages` enchaîne les pages de 200 ;
+  `requirement_ids` envoyés par lots de 100.
+- **Chaînes en dur** : clé `regulations.common.loading` corrigée, « Unknown error » retiré, titre
+  de la page d'un constat traduit. Reste la référence de section en français de
+  `finding-adapt.ts:138`, qu'aucun écran n'affiche.
+- **Mode mock** (`lib/mocks/handlers.ts`) : `POST /api/requirements/extract` à la forme actuelle
+  (jobs), handlers ajoutés pour `…/jobs/:id/process` et `POST /api/mappings/analyze` — les boutons
+  « Analyser » et « Analyser l'impact » ne tombent plus en erreur en démonstration.
+- **`xlsx` 0.18.5 → 0.20.3** (CVE-2023-30533, CVE-2024-22363), installé depuis
+  `cdn.sheetjs.com` comme le recommande SheetJS (décision de Hoang) : `package.json` et
+  `pnpm-lock.yaml` pointent vers cette archive, plus vers le registre npm.
+- Tests ajoutés : `format-date.test.ts`, cas dans `simple-markdown.test.ts`, `resources.test.ts`,
+  `regulations.test.ts`. `pnpm lint` 0 avertissement, `pnpm typecheck` propre, 184 tests verts.
+  Vérifié dans le navigateur (faux backend local + mode mock).
+- **Piste non traitée** : `fetchFindings` charge le texte complet de chaque procédure
+  (`includeEvidence`) alors que l'écran n'en utilise que le titre, déjà présent dans la réponse
+  des mappings — à supprimer pour réduire le nombre de requêtes de l'onglet Exigences.
+- **Reste côté frontend** : rien d'ouvert dans la revue. Côté backend : voir « Blocages » et
+  `docs/api-requests.md` #14, #15.
+
+### 2026-10-02 (4) — Lot 3 de la revue : code mort et avertissements lint (commit `11ed14a`)
+
+- Supprimés : `finding-detail-dialog.tsx` (remplacé par la page du constat, plus importé nulle
+  part), `DocumentViewerWithHighlights` (ne servait qu'à lui ; `HighlightedText` reste),
+  `lib/api/documents.ts` et la clé `documentContent`, les schémas backend inutilisés
+  `backendExtractRequirementsSchema` / `backendMappingListSchema` et quatre types exportés jamais
+  importés, plus les imports et variables inutilisés.
+- `procedure-page-view.tsx` : bloc commenté de la carte « Analyze » (masquée par Thư le 2026-09-20,
+  commit `2191d67`) retiré avec son état et ses imports — décision de Hoang : **les composants sont
+  conservés** (`FindingsActionsTable`, `FindingActionRow`, `RegulatoryScopeSelector`,
+  `analyzeProcedure`, handler MSW) pour réactivation ; le bloc JSX se reprend dans git.
+- `pnpm lint` : **0 erreur, 0 avertissement** (18 avant) ; `pnpm typecheck` propre ; 178 tests verts.
+  Page procédure vérifiée dans le navigateur (mode mock).
+- Volontairement conservés bien qu'inutilisés : `analyzeRegulation`, `fetchFindingsByRequirement`
+  (décision antérieure, voir plus bas), `evidence-strength.tsx` (plus affiché nulle part depuis la
+  suppression du dialogue — à réintégrer sur la page du constat ou à supprimer : décision produit).
+- **Reste** : rafraîchissement entre onglets ; rendu Markdown (numérotation, `_`) ; troncature à
+  200 ; heures UTC ; `xlsx@0.18.5` ; chaînes en dur ; handlers MSW d'extraction obsolètes.
+
+### 2026-10-02 (3) — Corrections du lot 2 de la revue (branche `fix/fe-review-lot-1`, commit `356c1fb`)
+
+- **Mauvais mot de passe en mode backend réel** (`backend/client.ts`) : un 401 sur une requête
+  sans jeton (`signin`) devient `INVALID_CREDENTIALS` et ne purge plus la session en cours.
+- **Tri par date et « Dernière mise à jour »** (`regulations-view.tsx`, `knowledge-base-view.tsx`) :
+  repli sur `created_at` / `updated_at`, seules dates connues du backend réel.
+- **Page d'un constat** (`finding-page-view.tsx`) : explication et action recommandée affichées une
+  seule fois, y compris sans modification suggérée.
+- **Assigné d'une escalade** (`resources.ts::fetchEscalationAssignees`, `finding-adapt.ts`,
+  `findings.ts`) : relu dans `GET /api/mappings/history` (dernière ligne `ESCALATE`), une requête
+  de plus seulement s'il existe une escalade ; la page du constat présélectionne cet assigné.
+- **Analyse sans correspondance** (`requirements-tab.tsx`) : `mappings_created: 0` affiche un
+  avertissement (clé `analyzeNoMapping`, FR + EN) avec les `warnings` du backend, plus un succès.
+  Cause côté backend : `docs/api-requests.md` #15.
+- Vérifié dans le navigateur contre un faux backend local (fixtures) : les cinq points ci-dessus.
+  Test ajouté : `backend/resources.test.ts`. `pnpm lint` 0 erreur, `pnpm typecheck` propre, 178 tests.
+- **Reste après le lot 2** : code mort et 18 avertissements lint (faits au lot 3) ; rafraîchissement entre
+  onglets (`refetchOnWindowFocus`) ; rendu Markdown (numérotation, `_`) ; troncature à 200 ; heures
+  UTC ; `xlsx@0.18.5` ; chaînes en dur ; handlers MSW d'extraction obsolètes.
+
+### 2026-10-02 (2) — Corrections du lot 1 de la revue (branche `fix/fe-review-lot-1`, commit `3c49790`)
+
+- **Garde de session** (`session-provider.tsx`, `auth-guard.tsx`) : le contexte expose `isReady`
+  (faux au rendu serveur et à l'hydratation) et la garde ne redirige plus avant. Vérifié dans le
+  navigateur, MSW désactivé : `/fr/procedures` et `/fr/copilot` restent en place avec une session,
+  `/fr/login` sans session.
+- **Course d'extraction de fichier** (`use-file-extraction.ts`) : un résultat d'extraction arrivé
+  après un nouveau choix de fichier ou un reset est ignoré. Vérifié : aperçu = dernier fichier choisi.
+- **Extraction des exigences** (`regulation-detail-view.tsx`, `processExtractionJobs` dans
+  `lib/api/regulations.ts`) : la création des jobs fait partie de la mutation (bouton désactivé
+  dès le clic), un job rejeté ou `FAILED` n'est plus compté comme réussi (toast d'erreur + bandeau
+  « Relancer les sections en échec », qui ne relance que ces jobs). Clés `extractionIncomplete` /
+  `retryFailedExtraction` (FR + EN). Vérifié dans le navigateur avec des réponses simulées.
+  **Limite** : les jobs en échec ne sont gardés qu'en mémoire — `docs/api-requests.md` #14.
+- **Analyse d'impact** (`requirements-tab.tsx`) : la mutation attend le rechargement des constats
+  avant de se terminer. Non vérifiable hors backend réel (pas de handler MSW).
+- Tests ajoutés : `session-provider.test.tsx`, `use-file-extraction.test.ts`, `regulations.test.ts`.
+  `pnpm lint` 0 erreur (18 avertissements inchangés, lot 3), `pnpm typecheck` propre, 175 tests verts.
+- **Trouvé au passage, non corrigé** : en mode mock, « Analyser » (extraction) échoue toujours —
+  le handler MSW de `POST /api/requirements/extract` renvoie l'ancienne forme (sans `jobs`) et
+  `POST /api/requirements/jobs/:id/process` n'a pas de handler (`lib/mocks/handlers.ts:277`).
+- **Vérification sur l'instance déployée** (`debian-01…ts.net`, backend réel, code sans le lot 1) :
+  - reproduits : tri par date sans effet (même ordre en « plus récent » et « plus ancien ») ;
+    « Last updated : Not provided » sur la base de connaissances ; explication et action
+    recommandée absentes de la page d'un constat sans modification (mapping `…9N1PM6`, pourtant
+    renseignées côté backend) ; constat escaladé affiché « Unassigned » (l'assigné n'existe que
+    dans `mapping_history`) ; historique en heure UTC (06:03 affiché pour 13:03 heure locale) ;
+    bouton « Analyze impact » réactivé ~3 s avant la fin du rechargement des constats ; aucun
+    rechargement au retour sur l'onglet malgré des données périmées.
+  - **confirmé côté backend (pour Thư)** : « Analyze impact » sur `…BRFN51` renvoie
+    `mappings_created: 0` avec les avertissements « no valid modifications » / « Original text not
+    found » pour les deux procédures — l'analyse est perdue, le frontend affiche « ✓ 0 mapping(s)
+    created successfully » et n'affiche pas `warnings`. Deux appels LLM, aucune donnée créée.
+  - **à corriger dans la revue** : la clé manquante `regulations.common.loading` n'est jamais
+    affichée en pratique (le texte de la régulation est déjà en cache quand le dialogue s'ouvre).
+  - non testés : message de mauvais mot de passe (saisie de mot de passe hors localhost), décision
+    Reject/Accept (aucun constat réel modifié).
+- **Reste** : lots 2 et 3 (points 5 à 8 de la note ci-dessous).
+
+### 2026-10-02 — Revue de code complète (frontend puis backend), aucun code modifié
+
+- `main` et `feat/copilot-chat` avancés sur `origin/main` (`1ab113d`). État vérifié : frontend
+  `pnpm lint` 0 erreur / 18 avertissements (imports inutilisés), `pnpm typecheck` propre, 172 tests
+  verts ; backend 11 tests verts, `ruff` 1 erreur.
+- **Frontend — à corriger en priorité** (rien n'est corrigé) :
+  1. `regulation-detail-view.tsx:88` — un job d'extraction en échec est compté comme réussi (toast
+     de succès), et les chunks manquants ne peuvent plus être relancés ; double-clic = deux séries
+     de jobs (`:270`).
+  2. `auth-guard.tsx:51` — avec `NEXT_PUBLIC_API_MOCKING=disabled`, tout rechargement ou lien
+     direct est renvoyé vers la page d'atterrissage (effet lancé avant la resynchronisation de la
+     session à l'hydratation). Invisible tant que MSW reste activé.
+  3. `use-file-extraction.ts:32` — course entre deux extractions : le contenu d'un fichier peut
+     être importé sous le titre d'un autre.
+  4. `requirements-tab.tsx:99` — le bouton « Analyser » se réactive avant le rechargement des
+     constats (mappings en double) ; `:397` — clé `regulations.common.loading` inexistante.
+  5. `query-provider.tsx:14` — une décision prise dans le nouvel onglet ne met jamais à jour
+     l'onglet d'origine (`refetchOnWindowFocus: false`).
+  6. Mode backend réel : mauvais mot de passe → message générique (`backend/client.ts:52`) ; tri
+     par date inopérant (`regulations-view.tsx:130`, `uploaded_at` jamais renseigné) ; assigné
+     d'une escalade jamais relu (`finding-adapt.ts:180`) ; troncature silencieuse à 200.
+  7. `finding-page-view.tsx:299` — explication et action recommandée absentes quand il n'y a
+     aucune modification suggérée.
+  8. Divers : numérotation et `_` perdus au rendu Markdown (`simple-markdown.ts:32`), heures UTC
+     affichées telles quelles, `xlsx@0.18.5` (CVE connues), ~700 lignes de code mort
+     (`findings-actions-table`, `finding-action-row`, `finding-detail-dialog`, bloc commenté de
+     `procedure-page-view.tsx`).
+- **Backend** : constats notés dans « Blocages » ci-dessus (zone de Thư, non modifiée).
+- **Vérification navigateur (même jour)** — reproduits : (2) `auth-guard` : MSW désactivé + session
+  présente, `/fr/procedures` et `/fr/copilot` aboutissent à `/fr/dashboard` (témoin MSW activé :
+  reste sur `/fr/procedures`) ; (3) course d'extraction : fichier sélectionné `small-B.xlsx`,
+  titre « small-B », aperçu = contenu de `big-A.xlsx`. Non testables ici : bouton « Analyser »
+  (pas de handler MSW pour `/api/mappings/analyze`) et rafraîchissement entre onglets (page de
+  constat réservée au backend réel) — ils restent des constats de lecture de code.
+  Config de test : `frontend-nomock` ajoutée à `.claude/launch.json` (fichier non versionné).
 
 ### 2026-09-30 — Session partagée entre onglets + historique Copilot en colonne
 

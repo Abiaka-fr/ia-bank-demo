@@ -274,17 +274,64 @@ export const handlers = [
     return HttpResponse.json(requirementsForRegulation(String(params.id)));
   }),
 
+  // Extraction par jobs et analyse d'impact : routes du backend réel (`backend/API.md`),
+  // pas du contrat historique — simulées pour que les boutons du mode démonstration
+  // répondent. Le corpus mock est déjà extrait : un seul job, qui renvoie les exigences
+  // connues de la régulation.
   http.post("/api/requirements/extract", async ({ request }) => {
     await delay();
-    const body = await request.json() as { document_id: string };
-    const extractedRequirements = requirementsForRegulation(body.document_id);
+    const { document_id } = (await request.json()) as { document_id: string };
+    const document_version_id = `VER-${document_id}-01`;
+    const now = new Date().toISOString();
     return HttpResponse.json(
       {
-        document_id: body.document_id,
-        requirements_count: extractedRequirements.length,
-        requirement_ids: extractedRequirements.map((req) => req.requirement_id),
+        document_id,
+        document_version_id,
+        total_jobs_created: 1,
+        jobs: [
+          {
+            job_id: `JOB-${document_id}`,
+            document_id,
+            document_version_id,
+            chunk_no: 1,
+            status: "PENDING",
+            extracted_requirement_ids: null,
+            error_message: null,
+            created_at: now,
+            updated_at: now,
+          },
+        ],
       },
-      { status: 201 }
+      { status: 201 },
+    );
+  }),
+
+  http.post("/api/requirements/jobs/:jobId/process", async ({ params }) => {
+    await delay();
+    const jobId = String(params.jobId);
+    return HttpResponse.json({
+      job_id: jobId,
+      status: "COMPLETED",
+      extracted_requirement_ids: requirementsForRegulation(jobId.replace(/^JOB-/, "")).map(
+        (requirement) => requirement.requirement_id,
+      ),
+      error_message: null,
+      chunks_processed: 1,
+    });
+  }),
+
+  // Les constats du corpus mock existent déjà : une analyse n'en crée pas de nouveaux.
+  http.post("/api/mappings/analyze", async ({ request }) => {
+    await delay();
+    const { requirement_ids } = (await request.json()) as { requirement_ids: string[] };
+    return HttpResponse.json(
+      requirement_ids.map((requirement_id) => ({
+        requirement_id,
+        mappings_created: 0,
+        mapping_ids: [],
+        warnings: [],
+      })),
+      { status: 201 },
     );
   }),
 

@@ -65,6 +65,7 @@ export function RequirementsTab({
   findingsLoaded: boolean;
 }) {
   const t = useTranslations("regulations");
+  const common = useTranslations("common");
   const locale = useLocale();
   const queryClient = useQueryClient();
   const { user } = useSession();
@@ -96,20 +97,25 @@ export function RequirementsTab({
       setAnalyzingRequirementId(requirementId);
     },
     onSuccess: (data) => {
-      void queryClient.invalidateQueries({
+      const mappingsCreated = data.reduce((sum, item) => sum + item.mappings_created, 0);
+      if (mappingsCreated > 0) {
+        toast.success(t("analyzeSuccess", { count: mappingsCreated }), { duration: 3000 });
+      } else {
+        // Rien d'enregistré : pas un succès. Les avertissements du backend disent pourquoi
+        // (texte introuvable dans la procédure, aucune procédure du domaine…).
+        toast.warning(t("analyzeNoMapping"), {
+          description: data.flatMap((item) => item.warnings).join("\n") || undefined,
+          duration: 10000,
+        });
+      }
+      // Renvoyé : la mutation reste en cours tant que les constats ne sont pas rechargés,
+      // sinon le bouton de l'exigence tout juste analysée redevenait cliquable (doublons).
+      return queryClient.invalidateQueries({
         queryKey: queryKeys.findings(regulationId),
       });
-      const mappingsCreated = data.reduce((sum, item) => sum + item.mappings_created, 0);
-      toast.success(t("analyzeSuccess", { count: mappingsCreated }), {
-        duration: 3000,
-      });
     },
-    onError: (error: unknown) => {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      toast.error(t("analyzeFailed"), {
-        description: errorMessage,
-        duration: 5000,
-      });
+    onError: (error) => {
+      toast.error(t("analyzeFailed"), { description: error.message, duration: 5000 });
     },
     onSettled: () => {
       setAnalyzingRequirementId(null);
@@ -394,7 +400,7 @@ export function RequirementsTab({
                   {t("sourceDocumentEvidence")}
                 </p>
                 {regulationQuery.isPending ? (
-                  <p className="text-xs text-muted-foreground">{t("common.loading")}</p>
+                  <p className="text-xs text-muted-foreground">{common("loading")}</p>
                 ) : regulationQuery.isError ? (
                   <p className="text-xs text-destructive">{t("loadFailed")}</p>
                 ) : (

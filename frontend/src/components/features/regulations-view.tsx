@@ -40,7 +40,7 @@ import {
 import { Link } from "@/i18n/navigation";
 import { fetchPortfolioSummary } from "@/lib/api/dashboard";
 import { queryKeys } from "@/lib/api/query-keys";
-import { formatDateDDMMYYYY } from "@/lib/format-date";
+import { formatDateDDMMYYYY, formatLocalDate } from "@/lib/format-date";
 import {
   deleteDocument,
   fetchRegulations,
@@ -122,13 +122,13 @@ export function RegulationsView() {
       return matchesSearch && matchesAuthority && matchesDocumentFilters(reg, filters);
     });
     // Comparaison inversée pour "newest" : la date la plus récente en premier.
-    // `uploaded_at` absent (aucun cas dans le corpus actuel) est traité comme le plus
-    // ancien, pas comme le plus récent — pour ne pas faire remonter une donnée
-    // manquante en tête de liste.
+    // Date d'import : `uploaded_at` (mock) ou `created_at` (backend réel, qui n'a pas
+    // `uploaded_at` — sans ce repli le tri ne changeait rien). Absente, elle est traitée
+    // comme la plus ancienne, pour ne pas faire remonter une donnée manquante en tête.
     return [...filtered].sort((a, b) => {
       if (sort === "title") return a.title.localeCompare(b.title);
-      const dateA = a.uploaded_at ?? "";
-      const dateB = b.uploaded_at ?? "";
+      const dateA = a.uploaded_at ?? a.created_at ?? "";
+      const dateB = b.uploaded_at ?? b.created_at ?? "";
       return sort === "newest" ? dateB.localeCompare(dateA) : dateA.localeCompare(dateB);
     });
   }, [regulationsQuery.data, search, authority, sort, filters]);
@@ -283,14 +283,14 @@ export function RegulationsView() {
                       réel dès que disponible, badge seulement s'il manque vraiment
                       (mode backend réel aujourd'hui). Jamais réutiliser `uploaded_at`
                       sous ce libellé : ce sont deux dates distinctes pour Francis. */}
-                    <dd>{formatDateDDMMYYYY(regulation.created_at) ?? common("notAvailable")}</dd>
+                    <dd>{formatLocalDate(regulation.created_at) ?? common("notAvailable")}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">
                     {t("lastUpdatedLabel")}
                   </dt>
                   {/* v1.10 — `updated_at` timestamp now available from backend */}
-                  <dd>{formatDateDDMMYYYY(regulation.updated_at) ?? common("notAvailable")}</dd>
+                  <dd>{formatLocalDate(regulation.updated_at) ?? common("notAvailable")}</dd>
                 </div>
               </dl>
 

@@ -26,11 +26,11 @@ import type { Finding, Requirement } from "@/types/api";
  * Une ligne = un couple (exigence × procédure) — contrat v1.1.
  *
  * « Action retenue » vide signifie que l'action recommandée s'applique telle quelle.
- * Cliquer sur la ligne ouvre `FindingDetailDialog` (preuves, explication, éléments
- * manquants) — jamais un constat affiché sans sa traçabilité (`docs/ui-guardrails.md`),
- * seulement dans une fenêtre dédiée plutôt qu'un panneau poussant les lignes suivantes
- * (retour Giang, 2026-09-09 : plusieurs panneaux ouverts à la fois rendaient le
- * tableau difficile à suivre).
+ * Cliquer sur la ligne ouvre la page du constat dans un nouvel onglet (preuves,
+ * explication) — jamais un constat affiché sans sa traçabilité (`docs/ui-guardrails.md`).
+ *
+ * Utilisé seulement par `FindingsActionsTable`, lui-même hors écran depuis que la carte
+ * « Analyze » de la page procédure est masquée (voir `procedure-page-view.tsx`).
  */
 export function FindingActionRow({
   finding,

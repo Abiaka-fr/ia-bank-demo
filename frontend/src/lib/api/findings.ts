@@ -45,7 +45,15 @@ export async function fetchFindingDetail(findingId: string): Promise<MappingDeta
     );
   }
   const raw = await backend.fetchMappingDetail(findingId);
-  return adaptMappingDetail(raw, await backend.fetchRequirement(raw.mapping.requirement_id));
+  const detail = adaptMappingDetail(
+    raw,
+    await backend.fetchRequirement(raw.mapping.requirement_id),
+  );
+  if (detail.finding.human_status === "ESCALATED") {
+    const assignees = await backend.fetchEscalationAssignees({ mapping_id: findingId });
+    detail.finding.assignee_id = assignees.get(findingId) ?? detail.finding.assignee_id;
+  }
+  return detail;
 }
 
 /**

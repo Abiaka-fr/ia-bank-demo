@@ -46,10 +46,13 @@ function buildUrl(path: string, searchParams: BackendRequestOptions["searchParam
 }
 
 /** Traduit `{detail: "..."}` vers l'`ApiError` que les écrans savent déjà afficher. */
-async function readBackendError(response: Response): Promise<ApiError> {
-  // 401 : jeton absent, invalide ou expiré (24 h). On le purge (avec l'utilisateur) pour que la garde de
-  // session renvoie vers l'écran de connexion au lieu de boucler sur des 401.
+async function readBackendError(response: Response, skipAuth: boolean): Promise<ApiError> {
   if (response.status === 401) {
+    // Sans jeton envoyé (`signin`), un 401 ne peut être qu'un refus des identifiants — même
+    // code que le mock, que l'écran de connexion sait déjà afficher.
+    if (skipAuth) return new ApiError("INVALID_CREDENTIALS", "Identifiants invalides", 401);
+    // Sinon : jeton absent, invalide ou expiré (24 h). On le purge (avec l'utilisateur) pour que la
+    // garde de session renvoie vers l'écran de connexion au lieu de boucler sur des 401.
     clearToken();
     return new ApiError("UNAUTHENTICATED", "Session expirée", 401);
   }
@@ -94,7 +97,7 @@ export async function backendFetch<TSchema extends z.ZodType>(
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 
-  if (!response.ok) throw await readBackendError(response);
+  if (!response.ok) throw await readBackendError(response, skipAuth);
 
   const parsed = schema.safeParse(await response.json());
   if (!parsed.success) {
