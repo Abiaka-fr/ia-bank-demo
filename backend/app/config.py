@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     debug: bool = False  # True returns tracebacks to the client
 
     # CORS
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001"]
+    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001", "https://ia-bank-demo-one.vercel.app"]
 
     # Auth (JWT)
     secret_key: str = DEFAULT_SECRET_KEY  # override via .env — never use in production
