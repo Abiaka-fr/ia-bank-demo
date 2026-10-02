@@ -23,7 +23,7 @@ import {
  * l'authentification réelle reste à construire côté backend.
  */
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, updateUser } = useSession();
+  const { user, isReady, updateUser } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   const userId = user?.user_id;
@@ -48,9 +48,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     (pathname.startsWith("/knowledge-base") && !canSeeKnowledgeBase(profile));
 
   useEffect(() => {
+    // À l'hydratation la session n'est pas encore lue : rediriger ici renvoyait tout
+    // rechargement ou lien direct vers la page d'atterrissage.
+    if (!isReady) return;
     if (!user) router.replace("/login");
     else if (forbidden) router.replace(landingRouteForUser(user));
-  }, [user, forbidden, router]);
+  }, [isReady, user, forbidden, router]);
 
   if (!user || forbidden) {
     return (

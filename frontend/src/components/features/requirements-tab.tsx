@@ -96,12 +96,14 @@ export function RequirementsTab({
       setAnalyzingRequirementId(requirementId);
     },
     onSuccess: (data) => {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.findings(regulationId),
-      });
       const mappingsCreated = data.reduce((sum, item) => sum + item.mappings_created, 0);
       toast.success(t("analyzeSuccess", { count: mappingsCreated }), {
         duration: 3000,
+      });
+      // Renvoyé : la mutation reste en cours tant que les constats ne sont pas rechargés,
+      // sinon le bouton de l'exigence tout juste analysée redevenait cliquable (doublons).
+      return queryClient.invalidateQueries({
+        queryKey: queryKeys.findings(regulationId),
       });
     },
     onError: (error: unknown) => {

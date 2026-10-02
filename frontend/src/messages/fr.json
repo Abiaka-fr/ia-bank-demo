@@ -115,6 +115,8 @@
     "extractionProgress": "Progression : {percent}% terminée",
     "extractionSuccess": "✓ Exigences extraites avec succès.",
     "extractionFailed": "L'extraction des exigences a échoué. Veuillez réessayer.",
+    "extractionIncomplete": "{count} section(s) du document n'ont pas pu être analysées : les exigences affichées sont incomplètes.",
+    "retryFailedExtraction": "Relancer les sections en échec",
     "impactedActivity": "Activités impactées",
     "tabOverview": "Vue d'ensemble",
     "uploadedBy": "Importé par",

@@ -115,6 +115,8 @@
     "extractionProgress": "Progress: {percent}% completed",
     "extractionSuccess": "✓ Requirements extracted successfully.",
     "extractionFailed": "Requirement extraction failed. Please try again.",
+    "extractionIncomplete": "{count} section(s) of the document could not be analysed: the requirements shown are incomplete.",
+    "retryFailedExtraction": "Retry failed sections",
     "impactedActivity": "Impacted activities",
     "tabOverview": "Overview",
     "uploadedBy": "Uploaded by",

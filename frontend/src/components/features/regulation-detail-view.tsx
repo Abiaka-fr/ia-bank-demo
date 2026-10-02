@@ -33,6 +33,7 @@ import {
   fetchRegulation,
   fetchRegulationRequirements,
   extractRequirements,
+  processExtractionJobs,
 } from "@/lib/api/regulations";
 import { formatDateDDMMYYYY } from "@/lib/format-date";
 import { useSession } from "@/components/providers/session-provider";
@@ -65,56 +66,48 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
   const [extractionProgress, setExtractionProgress] = useState<{
     totalJobs: number;
     completedJobs: number;
-    isProcessing: boolean;
   } | null>(null);
+  // ponytail: jobs en échec gardés en mémoire seulement — perdus au rechargement tant que
+  // le backend ne sait pas lister les jobs d'un document (`docs/api-requests.md` #14).
+  const [failedJobIds, setFailedJobIds] = useState<string[]>([]);
 
   const extractMutation = useMutation({
-    mutationFn: async (data: { total_jobs_created: number; jobs: Array<{ job_id: string }> }) => {
-      setExtractionProgress({
-        totalJobs: data.total_jobs_created,
-        completedJobs: 0,
-        isProcessing: true,
-      });
-
-      // Process all jobs in parallel
-      const { processExtractionJob } = await import("@/lib/api/regulations");
-      const processPromises = data.jobs.map((job) =>
-        processExtractionJob(job.job_id)
-          .then(() => {
-            setExtractionProgress((prev) =>
-              prev ? { ...prev, completedJobs: prev.completedJobs + 1 } : null
-            );
-          })
-          .catch((error: unknown) => {
-            console.error(`Failed to process job ${job.job_id}:`, error);
-            setExtractionProgress((prev) =>
-              prev ? { ...prev, completedJobs: prev.completedJobs + 1 } : null
-            );
-          })
+    // Sans argument : crée les jobs du document. Avec : relance ces seuls jobs en échec.
+    // La création fait partie de la mutation, pour que `isPending` désactive le bouton
+    // dès le clic (un double-clic créait deux séries de jobs).
+    mutationFn: async (retryJobIds: string[] | void) => {
+      const jobIds =
+        retryJobIds ??
+        (await extractRequirements(regulationId)).jobs.map((job) => job.job_id);
+      setExtractionProgress({ totalJobs: jobIds.length, completedJobs: 0 });
+      return processExtractionJobs(jobIds, () =>
+        setExtractionProgress((prev) =>
+          prev ? { ...prev, completedJobs: prev.completedJobs + 1 } : null,
+        ),
       );
-
-      await Promise.all(processPromises);
     },
-    onSuccess: () => {
-      // Refetch requirements after extraction jobs are processed
+    onSuccess: (failed) => {
+      setFailedJobIds(failed);
       void queryClient.invalidateQueries({
         queryKey: queryKeys.regulationRequirements(regulationId),
       });
-      setExtractionProgress(null);
-      toast.success(t("extractionSuccess"), {
-        duration: 3000,
-      });
+      if (failed.length > 0) {
+        toast.error(t("extractionIncomplete", { count: failed.length }), { duration: 5000 });
+      } else {
+        toast.success(t("extractionSuccess"), { duration: 3000 });
+      }
     },
-    onError: (error: unknown) => {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      console.error("Requirement extraction failed:", error, errorMessage);
-      setExtractionProgress(null);
-      toast.error(t("extractionFailed"), {
-        description: errorMessage,
-        duration: 5000,
-      });
+    onError: (error) => {
+      console.error("Requirement extraction failed:", error);
+      toast.error(t("extractionFailed"), { description: error.message, duration: 5000 });
     },
+    onSettled: () => setExtractionProgress(null),
   });
+  const extractionPercent = extractionProgress
+    ? Math.round(
+        (extractionProgress.completedJobs / (extractionProgress.totalJobs || 1)) * 100,
+      )
+    : 0;
 
   // Le backend réel ne renseigne jamais `status: ANALYZED` (voir
   // docs/backend-integration.md — aucun champ d'avancement d'analyse côté serveur) :
@@ -263,55 +256,46 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
                       {t("requirementsAnalyzeHint")}
                     </p>
                   </div>
-                  {canAnalyze ? (
-                    <Button
-                      onClick={async () => {
-                        try {
-                          const extractResult = await extractRequirements(regulationId);
-                          setExtractionProgress({
-                            totalJobs: extractResult.total_jobs_created,
-                            completedJobs: 0,
-                            isProcessing: true,
-                          });
-                          extractMutation.mutate(extractResult);
-                        } catch (error) {
-                          console.error("Failed to extract requirements:", error);
-                          setExtractionProgress(null);
-                          toast.error(t("extractionFailed"), {
-                            description: error instanceof Error ? error.message : "Unknown error",
-                            duration: 5000,
-                          });
-                        }
-                      }}
-                      disabled={extractMutation.isPending}
-                      size="lg"
-                      className="mt-2"
-                    >
-                      {extractMutation.isPending ? t("analyzing") : t("analyzeButton")}
+                  {/* Des jobs en échec : on les relance (bandeau ci-dessous) plutôt que
+                      d'en créer une nouvelle série pour les mêmes sections. */}
+                  {canAnalyze && failedJobIds.length === 0 ? (
+                    <Button onClick={() => extractMutation.mutate()} size="lg" className="mt-2">
+                      {t("analyzeButton")}
                     </Button>
                   ) : null}
                 </>
               )}
             </div>
           )}
+          {failedJobIds.length > 0 && !extractMutation.isPending ? (
+            <div
+              role="alert"
+              className="my-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed bg-card p-3 text-sm"
+            >
+              <span>{t("extractionIncomplete", { count: failedJobIds.length })}</span>
+              {canAnalyze ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => extractMutation.mutate(failedJobIds)}
+                >
+                  {t("retryFailedExtraction")}
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
           {extractionProgress && (
             <div className="space-y-4">
               <div className="rounded-lg border bg-card p-4 shadow-sm">
                 <div className="mb-2">
                   <p className="text-sm font-medium">
-                    {t("extractionProgress", {
-                      percent: Math.round(
-                        (extractionProgress.completedJobs / extractionProgress.totalJobs) * 100
-                      ),
-                    })}
+                    {t("extractionProgress", { percent: extractionPercent })}
                   </p>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                   <div
                     className="h-full bg-foreground transition-all duration-300"
-                    style={{
-                      width: `${(extractionProgress.completedJobs / extractionProgress.totalJobs) * 100}%`,
-                    }}
+                    style={{ width: `${extractionPercent}%` }}
                   />
                 </div>
               </div>
