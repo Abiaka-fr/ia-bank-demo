@@ -64,8 +64,10 @@ settings = Settings()
 
 if settings.secret_key in ("", DEFAULT_SECRET_KEY):
     # The default is in the repository: anyone can sign a token for any user with it.
-    if settings.environment != "development":
-        raise RuntimeError("SECRET_KEY must be set outside development")
+    # Temporary (Hoang, 2026-10-02): warning only, so a deployment without SECRET_KEY still
+    # starts. Once every instance has its own key, refuse to start outside development:
+    #     if settings.environment != "development":
+    #         raise RuntimeError("SECRET_KEY must be set outside development")
     settings.secret_key = DEFAULT_SECRET_KEY  # an empty SECRET_KEY= line is not a key
     logging.getLogger(__name__).warning(
         "SECRET_KEY is the public default: set it in .env before sharing this instance"

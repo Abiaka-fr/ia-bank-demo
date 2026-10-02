@@ -191,8 +191,10 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   la branche ; 28 tests (17 nouveaux, `tests/test_review_fixes.py`), `ruff check app/` propre,
   essai HTTP de bout en bout sur une base SQLite temporaire. **Jamais exécuté contre Neon.**
   À savoir avant de fusionner ou déployer :
-  - **`SECRET_KEY`** : l'application refuse de démarrer si `ENVIRONMENT` n'est pas `development`
-    et que la clé est absente ou vaut la valeur par défaut ; `debug` passe à `False` par défaut.
+  - **`SECRET_KEY`** : si la clé est absente ou vaut la valeur par défaut (publique), l'application
+    démarre quand même et écrit un avertissement au démarrage — le refus de démarrer hors
+    `development` a été retiré provisoirement à la demande de Hoang (le code à rétablir est en
+    commentaire dans `app/config.py`). `debug` passe à `False` par défaut.
   - **Rôles côté serveur** : changer un rôle exige `COMPLIANCE_ADMIN` / `Admin Base de
     Connaissances` ; un auditeur (`AUDITOR` / `Auditeur Interne`) reçoit 403 sur toute écriture ;
     `signup` ignore `role`.
