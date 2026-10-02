@@ -122,13 +122,13 @@ export function RegulationsView() {
       return matchesSearch && matchesAuthority && matchesDocumentFilters(reg, filters);
     });
     // Comparaison inversée pour "newest" : la date la plus récente en premier.
-    // `uploaded_at` absent (aucun cas dans le corpus actuel) est traité comme le plus
-    // ancien, pas comme le plus récent — pour ne pas faire remonter une donnée
-    // manquante en tête de liste.
+    // Date d'import : `uploaded_at` (mock) ou `created_at` (backend réel, qui n'a pas
+    // `uploaded_at` — sans ce repli le tri ne changeait rien). Absente, elle est traitée
+    // comme la plus ancienne, pour ne pas faire remonter une donnée manquante en tête.
     return [...filtered].sort((a, b) => {
       if (sort === "title") return a.title.localeCompare(b.title);
-      const dateA = a.uploaded_at ?? "";
-      const dateB = b.uploaded_at ?? "";
+      const dateA = a.uploaded_at ?? a.created_at ?? "";
+      const dateB = b.uploaded_at ?? b.created_at ?? "";
       return sort === "newest" ? dateB.localeCompare(dateA) : dateA.localeCompare(dateB);
     });
   }, [regulationsQuery.data, search, authority, sort, filters]);

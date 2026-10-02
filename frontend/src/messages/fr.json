@@ -140,6 +140,7 @@
     "impactedProceduresToggle": "Procédures impactées ({count})",
     "impactedProceduresHint": "Procédures internes rapprochées de cette exigence par le système — constats proposés, à valider par le Responsable Conformité.",
     "analyzeSuccess": "✓ {count} correspondance(s) créée(s) avec succès.",
+    "analyzeNoMapping": "Analyse terminée : aucune correspondance n'a été enregistrée pour cette exigence.",
     "analyzeFailed": "L'analyse d'impact a échoué. Veuillez réessayer.",
     "searchByTitlePlaceholder": "Rechercher une régulation (titre, identifiant)…",
     "summaryLabel": "Résumé",

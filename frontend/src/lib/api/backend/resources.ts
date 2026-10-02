@@ -340,6 +340,18 @@ export async function fetchFindings(
 
   const requirementsById = new Map(requirements.map((r) => [r.requirement_id, r]));
 
+  // Une requête de plus seulement s'il existe au moins une escalade.
+  const escalatedRequirementIds = nested.data
+    .filter((item) =>
+      item.procedures.some(
+        ({ mapping }) => adaptHumanStatus(mapping.human_status) === "ESCALATED",
+      ),
+    )
+    .map((item) => item.requirement.requirement_id);
+  const escalationAssignees = escalatedRequirementIds.length
+    ? await fetchEscalationAssignees({ requirement_ids: escalatedRequirementIds })
+    : new Map<string, string>();
+
   const procedureDocuments = includeEvidence
     ? await fetchProcedureDocumentsByDocumentId(
         nested.data.flatMap((item) => item.procedures.map(({ procedure }) => procedure.document_id)),
@@ -380,12 +392,40 @@ export async function fetchFindings(
           regulationTitle,
           procedure: typedProcedure,
           procedureDocument: procedureDocuments.get(typedProcedure.document_id) ?? null,
+          escalationAssignee: escalationAssignees.get(mapping.mapping_id),
         }),
       );
     }
   }
 
   return findings;
+}
+
+/**
+ * Personne à qui chaque constat escaladé est confié, par `mapping_id`. `MappingRead` n'a pas
+ * de champ `assignee` : l'escalade n'est écrite que dans `mapping_history` — on prend la
+ * ligne `ESCALATE` la plus récente (`GET /api/mappings/history` trie du plus récent au plus
+ * ancien). Un échec ne casse pas l'écran : le constat s'affiche simplement « non assigné ».
+ */
+export async function fetchEscalationAssignees(
+  filter: { requirement_ids: string[] } | { mapping_id: string },
+): Promise<Map<string, string>> {
+  const assignees = new Map<string, string>();
+  try {
+    const rows = await backendFetch(
+      "/api/mappings/history",
+      z.array(backendMappingHistorySchema),
+      { searchParams: filter },
+    );
+    for (const row of rows) {
+      if (row.to_status === "ESCALATE" && row.assignee && !assignees.has(row.mapping_id)) {
+        assignees.set(row.mapping_id, row.assignee);
+      }
+    }
+  } catch (error) {
+    console.error("Assignés des escalades indisponibles", error);
+  }
+  return assignees;
 }
 
 // --- Utilisateurs -------------------------------------------------------------

@@ -73,10 +73,12 @@ export function KnowledgeBaseView() {
   const sources = Array.from(
     new Set(regulations.map((regulation) => regulation.authority_or_owner)),
   ).sort((a, b) => a.localeCompare(b));
-  const lastUpdated = mostRecent([
-    ...regulations.map((regulation) => regulation.uploaded_at),
-    ...procedures.map((procedure) => procedure.uploaded_at),
-  ]);
+  // `updated_at`/`created_at` : seules dates connues du backend réel (pas d'`uploaded_at`).
+  const lastUpdated = mostRecent(
+    [...regulations, ...procedures].map(
+      (document) => document.updated_at ?? document.created_at ?? document.uploaded_at,
+    ),
+  );
 
   const stats = [
     { label: t("regulationsCount"), value: regulations.length, icon: ScrollText },

@@ -97,9 +97,16 @@ export function RequirementsTab({
     },
     onSuccess: (data) => {
       const mappingsCreated = data.reduce((sum, item) => sum + item.mappings_created, 0);
-      toast.success(t("analyzeSuccess", { count: mappingsCreated }), {
-        duration: 3000,
-      });
+      if (mappingsCreated > 0) {
+        toast.success(t("analyzeSuccess", { count: mappingsCreated }), { duration: 3000 });
+      } else {
+        // Rien d'enregistré : pas un succès. Les avertissements du backend disent pourquoi
+        // (texte introuvable dans la procédure, aucune procédure du domaine…).
+        toast.warning(t("analyzeNoMapping"), {
+          description: data.flatMap((item) => item.warnings).join("\n") || undefined,
+          duration: 10000,
+        });
+      }
       // Renvoyé : la mutation reste en cours tant que les constats ne sont pas rechargés,
       // sinon le bouton de l'exigence tout juste analysée redevenait cliquable (doublons).
       return queryClient.invalidateQueries({
