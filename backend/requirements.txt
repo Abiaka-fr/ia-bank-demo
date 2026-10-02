@@ -17,7 +17,7 @@ h11==0.16.0
 httpcore==1.0.9
 httptools==0.8.0
 httpx==0.28.1
--e git+https://github.com/Abiaka-fr/ia-bank-demo.git@1ab113d19cbc8fb171887ceb372d47383a763f6f#egg=ia_bank_backend&subdirectory=backend
+-e git+https://github.com/Abiaka-fr/ia-bank-demo.git@f758c91d01454571e532700b00793c8bd1a84c50#egg=ia_bank_backend&subdirectory=backend
 idna==3.19
 iniconfig==2.3.0
 librt==0.15.0
@@ -31,7 +31,7 @@ platformdirs==4.11.7
 pluggy==1.6.0
 psycopg==3.3.5
 psycopg-binary==3.3.5
-psycopg2==2.9.12
+psycopg2-binary==2.9.13
 pydantic==2.13.5
 pydantic-settings==2.15.0
 pydantic_core==2.46.5
