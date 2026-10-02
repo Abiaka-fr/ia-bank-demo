@@ -276,7 +276,26 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Notes de fin de session
 
-### 2026-10-02 (3) — Corrections du lot 2 de la revue (branche `fix/fe-review-lot-1`, non committé)
+### 2026-10-02 (4) — Lot 3 de la revue : code mort et avertissements lint (non committé)
+
+- Supprimés : `finding-detail-dialog.tsx` (remplacé par la page du constat, plus importé nulle
+  part), `DocumentViewerWithHighlights` (ne servait qu'à lui ; `HighlightedText` reste),
+  `lib/api/documents.ts` et la clé `documentContent`, les schémas backend inutilisés
+  `backendExtractRequirementsSchema` / `backendMappingListSchema` et quatre types exportés jamais
+  importés, plus les imports et variables inutilisés.
+- `procedure-page-view.tsx` : bloc commenté de la carte « Analyze » (masquée par Thư le 2026-09-20,
+  commit `2191d67`) retiré avec son état et ses imports — décision de Hoang : **les composants sont
+  conservés** (`FindingsActionsTable`, `FindingActionRow`, `RegulatoryScopeSelector`,
+  `analyzeProcedure`, handler MSW) pour réactivation ; le bloc JSX se reprend dans git.
+- `pnpm lint` : **0 erreur, 0 avertissement** (18 avant) ; `pnpm typecheck` propre ; 178 tests verts.
+  Page procédure vérifiée dans le navigateur (mode mock).
+- Volontairement conservés bien qu'inutilisés : `analyzeRegulation`, `fetchFindingsByRequirement`
+  (décision antérieure, voir plus bas), `evidence-strength.tsx` (plus affiché nulle part depuis la
+  suppression du dialogue — à réintégrer sur la page du constat ou à supprimer : décision produit).
+- **Reste** : rafraîchissement entre onglets ; rendu Markdown (numérotation, `_`) ; troncature à
+  200 ; heures UTC ; `xlsx@0.18.5` ; chaînes en dur ; handlers MSW d'extraction obsolètes.
+
+### 2026-10-02 (3) — Corrections du lot 2 de la revue (branche `fix/fe-review-lot-1`, commit `356c1fb`)
 
 - **Mauvais mot de passe en mode backend réel** (`backend/client.ts`) : un 401 sur une requête
   sans jeton (`signin`) devient `INVALID_CREDENTIALS` et ne purge plus la session en cours.
@@ -292,7 +311,7 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   Cause côté backend : `docs/api-requests.md` #15.
 - Vérifié dans le navigateur contre un faux backend local (fixtures) : les cinq points ci-dessus.
   Test ajouté : `backend/resources.test.ts`. `pnpm lint` 0 erreur, `pnpm typecheck` propre, 178 tests.
-- **Reste (lot 3 et suivants)** : code mort et 18 avertissements lint ; rafraîchissement entre
+- **Reste après le lot 2** : code mort et 18 avertissements lint (faits au lot 3) ; rafraîchissement entre
   onglets (`refetchOnWindowFocus`) ; rendu Markdown (numérotation, `_`) ; troncature à 200 ; heures
   UTC ; `xlsx@0.18.5` ; chaînes en dur ; handlers MSW d'extraction obsolètes.
 
