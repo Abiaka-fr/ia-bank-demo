@@ -1,22 +1,17 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Play, Printer } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Printer } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { toast } from "sonner";
 
-import { AwaitingBackendBadge } from "@/components/features/awaiting-backend-badge";
-import { FindingsActionsTable } from "@/components/features/findings-actions-table";
 import { ProcedureBody } from "@/components/features/procedure-body";
 import { ErrorState, LoadingState } from "@/components/features/query-state";
-import { RegulatoryScopeSelector } from "@/components/features/regulatory-scope-selector";
 import { BreadcrumbTrail } from "@/components/layout/breadcrumb-trail";
 import { useSession } from "@/components/providers/session-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -24,17 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { accessProfileForUser, canAnalyzeProcedures, canPrint } from "@/lib/access-profile";
+import { accessProfileForUser, canPrint } from "@/lib/access-profile";
 import { isBackendLive } from "@/lib/api/backend/config";
 import {
-  analyzeProcedure,
   fetchProcedure,
   fetchProcedureVersions,
   fetchProcedureVersionText,
 } from "@/lib/api/procedures";
 import { queryKeys } from "@/lib/api/query-keys";
 import { formatDateDDMMYYYY } from "@/lib/format-date";
-import type { AnalyzeProcedureResponse, RegulatoryScope } from "@/types/api";
 
 /**
  * Page dédiée en lecture seule pour une procédure — « ouvrir dans un nouvel onglet »
@@ -57,10 +50,6 @@ export function ProcedurePageView({ procedureId }: { procedureId: string }) {
   const regulationId = searchParams.get("regulationId");
   const requirementId = searchParams.get("requirementId");
 
-  const analyzeT = useTranslations("procedureAnalysis");
-  const [scope, setScope] = useState<RegulatoryScope>("BANK");
-  const [result, setResult] = useState<AnalyzeProcedureResponse | null>(null);
-
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.procedure(procedureId),
     queryFn: () => fetchProcedure(procedureId),
@@ -81,15 +70,6 @@ export function ProcedurePageView({ procedureId }: { procedureId: string }) {
     queryKey: queryKeys.documentVersionText(shownVersion?.version_id ?? ""),
     queryFn: () => fetchProcedureVersionText(shownVersion?.version_id ?? ""),
     enabled: isOldVersion,
-  });
-
-  const analyzeMutation = useMutation({
-    mutationFn: () => analyzeProcedure(procedureId, scope),
-    onSuccess: (response) => {
-      setResult(response);
-      toast.success(analyzeT("succeeded"));
-    },
-    onError: () => toast.error(analyzeT("failed")),
   });
 
   if (isPending) return <LoadingState rows={5} />;
@@ -154,78 +134,10 @@ export function ProcedurePageView({ procedureId }: { procedureId: string }) {
         {procedureId} — {data.title}
       </h1>
 
-      {/* Écran « Analyze » — Phase 6 § 2.2 / Phase 7 Jour 0 : sélecteur de scope +
-          déclenchement de l'analyse Bank(+Europe), fusionnés sur cette même page
-          plutôt qu'un écran séparé (décision de Francis, 2026-09-11). Masqué à
-          l'impression : sans intérêt sur le papier, comme le reste des contrôles. */}
-      {/* {canAnalyzeProcedures(accessProfileForUser(user)) ? (
-        <Card className="print:hidden">
-          <CardHeader>
-            <CardTitle className="text-sm">{analyzeT("title")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap items-end gap-3">
-              <RegulatoryScopeSelector
-                value={scope}
-                onChange={setScope}
-                disabled={analyzeMutation.isPending}
-              />
-              <Button
-                size="sm"
-                onClick={() => analyzeMutation.mutate()}
-                disabled={analyzeMutation.isPending}
-              >
-                <Play aria-hidden />
-                {analyzeMutation.isPending ? analyzeT("analyzing") : analyzeT("analyzeButton")}
-              </Button>
-            </div>
-
-            {result ? (
-              <div className="space-y-3 border-t pt-4">
-                <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                  <p>
-                    {analyzeT("bankRequirementsIdentified")}:{" "}
-                    <span className="font-medium">{result.bank_requirements_identified}</span>
-                  </p>
-                  {scope === "BANK_PLUS_EU" ? (
-                    <>
-                      <p className="flex items-center gap-1.5">
-                        {analyzeT("euCandidateRequirements")}:{" "}
-                        {result.eu_candidate_requirements ?? (
-                          <AwaitingBackendBadge field="AnalyzeProcedureResponse.eu_candidate_requirements" />
-                        )}
-                      </p>
-                      <p className="flex items-center gap-1.5">
-                        {analyzeT("additionalEuCandidates")}:{" "}
-                        {result.additional_eu_candidates ?? (
-                          <AwaitingBackendBadge field="AnalyzeProcedureResponse.additional_eu_candidates" />
-                        )}
-                      </p>
-                    </>
-                  ) : null}
-                </div>
-
-                {result.findings.length ? (
-                  <FindingsActionsTable
-                    findings={result.findings}
-                    requirements={result.requirements}
-                    // Sert uniquement de clé de cache pour l'invalidation après une
-                    // décision (Accepter/Rejeter/Escalader) — ces constats ne sont
-                    // pas rattachés à UNE régulation unique ici (direction inverse,
-                    // Procédure → exigences), l'identifiant de procédure fait office
-                    // de portée équivalente, sans effet indésirable : aucune requête
-                    // n'est mise en cache sous cette clé ailleurs dans l'app.
-                    regulationId={procedureId}
-                  />
-                ) : (
-                  <p className="text-sm text-muted-foreground">{analyzeT("noFindings")}</p>
-                )}
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-      ) : null} */}
-
+      {/* La carte « Analyze » (scope Bank/Europe + `FindingsActionsTable`, Phase 6 § 2.2)
+          était ici : masquée le 2026-09-20 (commit `2191d67`), bloc retiré le 2026-10-02.
+          Composants et `analyzeProcedure` conservés — reprendre le bloc dans git pour la
+          réactiver. */}
       {shownVersion ? (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-3 text-sm print:hidden">
           <Select value={shownVersion.version_id} onValueChange={setSelectedVersionId}>

@@ -31,7 +31,6 @@ export function RegulationDocumentDialog({
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const t = useTranslations("procedureDialog");
   const common = useTranslations("common");
 
   const { data, isPending, isError, error, refetch } = useQuery({

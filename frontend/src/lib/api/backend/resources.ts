@@ -57,7 +57,6 @@ import {
   backendCreateExtractionJobsSchema,
   backendDeleteDocumentSchema,
   backendDocumentContentSchema,
-  backendExtractRequirementsSchema,
   backendDocumentListSchema,
   backendDocumentSchema,
   backendDocumentVersionSchema,
