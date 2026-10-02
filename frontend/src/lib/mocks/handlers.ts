@@ -443,7 +443,7 @@ export const handlers = [
     await delay();
     const procedureId = String(params.id);
     // Pas de `notFound` ici, volontairement : en mode backend réel
-    // (`NEXT_PUBLIC_BACKEND_URL` renseigné), l'identifiant vient du backend de Thư et
+    // (`NEXT_PUBLIC_API_BASE_URL` renseigné), l'identifiant vient du backend de Thư et
     // n'existe jamais dans le corpus mock — un 404 romprait l'analyse pour toute
     // procédure réelle. On répond avec ce que le corpus de démo connaît (souvent rien),
     // jamais avec une erreur : `bank_requirements_identified: 0` est une réponse

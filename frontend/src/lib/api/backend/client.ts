@@ -11,7 +11,7 @@ import { z } from "zod";
 import { ApiContractError, ApiError } from "../client";
 import { clearToken, readToken } from "../token";
 
-import { BACKEND_URL } from "./config";
+import { API_BASE_URL } from "./config";
 import { backendErrorSchema } from "./schemas";
 
 /** Levée quand le backend ne couvre pas encore ce que l'écran demande. */
@@ -42,7 +42,7 @@ function buildUrl(path: string, searchParams: BackendRequestOptions["searchParam
     }
   }
   const suffix = query.toString();
-  return `${BACKEND_URL}${path}${suffix ? `?${suffix}` : ""}`;
+  return `${API_BASE_URL}${path}${suffix ? `?${suffix}` : ""}`;
 }
 
 /** Traduit `{detail: "..."}` vers l'`ApiError` que les écrans savent déjà afficher. */
