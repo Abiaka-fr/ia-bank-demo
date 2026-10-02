@@ -276,7 +276,27 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Notes de fin de session
 
-### 2026-10-02 (2) — Corrections du lot 1 de la revue (branche `fix/fe-review-lot-1`, non committé)
+### 2026-10-02 (3) — Corrections du lot 2 de la revue (branche `fix/fe-review-lot-1`, non committé)
+
+- **Mauvais mot de passe en mode backend réel** (`backend/client.ts`) : un 401 sur une requête
+  sans jeton (`signin`) devient `INVALID_CREDENTIALS` et ne purge plus la session en cours.
+- **Tri par date et « Dernière mise à jour »** (`regulations-view.tsx`, `knowledge-base-view.tsx`) :
+  repli sur `created_at` / `updated_at`, seules dates connues du backend réel.
+- **Page d'un constat** (`finding-page-view.tsx`) : explication et action recommandée affichées une
+  seule fois, y compris sans modification suggérée.
+- **Assigné d'une escalade** (`resources.ts::fetchEscalationAssignees`, `finding-adapt.ts`,
+  `findings.ts`) : relu dans `GET /api/mappings/history` (dernière ligne `ESCALATE`), une requête
+  de plus seulement s'il existe une escalade ; la page du constat présélectionne cet assigné.
+- **Analyse sans correspondance** (`requirements-tab.tsx`) : `mappings_created: 0` affiche un
+  avertissement (clé `analyzeNoMapping`, FR + EN) avec les `warnings` du backend, plus un succès.
+  Cause côté backend : `docs/api-requests.md` #15.
+- Vérifié dans le navigateur contre un faux backend local (fixtures) : les cinq points ci-dessus.
+  Test ajouté : `backend/resources.test.ts`. `pnpm lint` 0 erreur, `pnpm typecheck` propre, 178 tests.
+- **Reste (lot 3 et suivants)** : code mort et 18 avertissements lint ; rafraîchissement entre
+  onglets (`refetchOnWindowFocus`) ; rendu Markdown (numérotation, `_`) ; troncature à 200 ; heures
+  UTC ; `xlsx@0.18.5` ; chaînes en dur ; handlers MSW d'extraction obsolètes.
+
+### 2026-10-02 (2) — Corrections du lot 1 de la revue (branche `fix/fe-review-lot-1`, commit `3c49790`)
 
 - **Garde de session** (`session-provider.tsx`, `auth-guard.tsx`) : le contexte expose `isReady`
   (faux au rendu serveur et à l'hydratation) et la garde ne redirige plus avant. Vérifié dans le

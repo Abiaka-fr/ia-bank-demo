@@ -13,6 +13,22 @@ banner at its top) and is no longer the thing to check before calling an endpoin
 
 ## Open / deferred
 
+15. **Impact analysis drops the assessment when no modification can be grounded** (2026-10-02).
+    `requirement_procedure_mapping.py:349` skips the mapping (`continue`) when `grounded_mods` is
+    empty: a `COVERED` result (`suggested_modifications: []`) is never stored, and neither is a gap
+    whose `original_text` is not found verbatim. Seen on the hosted instance, requirement
+    `01M3R64NHQW4D2615C63BRFN51`: `mappings_created: 0` with warnings "Original text not found in
+    any chunk…" and "Skipping mapping … no valid modifications" for both procedures. The
+    requirement then shows as never analysed (no finding, "Analyze impact" still offered, a new LLM
+    call each time); 127 requirements, 15 mappings, none `COVERED`. Suggested: store the mapping
+    with its assessment and explanation and an empty `suggested_modifications`. Frontend side
+    (done): a `0 mapping` result now shows a warning with the returned `warnings` instead of a
+    success toast, and the finding page shows explanation / recommended action without
+    modifications.
+    Related: `MappingRead` has no `assignee` — the frontend now reads the escalation assignee from
+    `GET /api/mappings/history` (latest `ESCALATE` row). Returning it on the mapping would save
+    that request.
+
 14. **List the extraction jobs of a document** (2026-10-02).
     `POST /api/requirements/jobs/{job_id}/process` can retry a `FAILED` job, but no endpoint
     returns a document's jobs: the frontend only knows the ids from the `POST /api/requirements/extract`
