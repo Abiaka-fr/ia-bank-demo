@@ -290,41 +290,13 @@ export async function fetchRequirements(
 // --- Constats (couples exigence × procédure) --------------------------------
 
 /**
- * Un seul appel réseau, même si plusieurs couples pointent vers le même document
- * interne : les échecs individuels (procédure sans version exploitable, etc.) ne
- * font pas échouer tout l'onglet — la ligne concernée perd juste sa preuve interne.
- */
-async function fetchProcedureDocumentsByDocumentId(
-  documentIds: readonly string[],
-): Promise<Map<string, DocumentDetail | null>> {
-  const uniqueIds = [...new Set(documentIds)];
-  const entries = await Promise.all(
-    uniqueIds.map(async (documentId): Promise<[string, DocumentDetail | null]> => {
-      try {
-        return [documentId, await fetchDocumentDetail(documentId)];
-      } catch (error) {
-        console.error(
-          `Texte de la procédure ${documentId} indisponible pour la preuve interne`,
-          error,
-        );
-        return [documentId, null];
-      }
-    }),
-  );
-  return new Map(entries);
-}
-
-/**
  * Constats d'une régulation, à partir de `GET /api/mappings/requirements-to-procedures`
- * (ajouté par Thư le 2026-09-07). Voir `finding-adapt.ts` pour la limite assumée sur
- * `internal_evidence` (extrait non ciblé, faute de lien exigence×procédure vers un
- * passage précis côté backend).
+ * (ajouté par Thư le 2026-09-07).
  *
- * `includeEvidence: false` saute le chargement du texte des procédures (et donc
- * `internal_evidence`) — utile pour les agrégats du tableau de bord (portefeuille,
- * carte mentale), qui n'ont besoin que de `assessment`/`human_status`/`procedure_id`
- * et n'affichent aucune preuve. Sur 8 régulations, charger le texte de chaque
- * procédure impactée pour rien aurait fait exploser le nombre de requêtes.
+ * Aucun texte de procédure n'est chargé : la liste n'affiche que le nom de la procédure,
+ * déjà présent dans la réponse (`procedure.name` → `Finding.procedure_title`). Le charger
+ * coûtait deux requêtes par procédure à chaque (re)chargement de l'onglet « Exigences ».
+ * Les preuves détaillées sont celles de la page d'un constat (`fetchMappingDetail`).
  *
  * `requirements`, si fourni, évite un second appel à `fetchRequirements` quand
  * l'appelant les a déjà en main (voir `dashboard.ts`, qui construit le portefeuille
@@ -332,23 +304,14 @@ async function fetchProcedureDocumentsByDocumentId(
  */
 export async function fetchFindings(
   regulationId: string,
-  options: { includeEvidence?: boolean; requirements?: Requirement[] } = {},
+  options: { requirements?: Requirement[] } = {},
 ): Promise<Finding[]> {
-  const { includeEvidence = true } = options;
-
   const requirements = options.requirements ?? (await fetchRequirements(regulationId));
   if (requirements.length === 0) return [];
 
-  // Le titre ne sert qu'à `regulatory_evidence.document_title`, jamais affiché en
-  // mode agrégats (`includeEvidence: false`) : pas la peine de le charger.
-  const regulationTitle = includeEvidence
-    ? (
-        await backendFetch(
-          `/api/documents/${encodeURIComponent(regulationId)}`,
-          backendDocumentSchema,
-        )
-      ).title
-    : "";
+  // Titre de `regulatory_evidence` : aucun écran ne l'affiche depuis cette liste,
+  // l'identifiant évite un appel de plus.
+  const regulationTitle = regulationId;
 
   const nestedBatches = await Promise.all(
     inBatches(requirements.map((r) => r.requirement_id)).map((requirement_ids) =>
@@ -374,12 +337,6 @@ export async function fetchFindings(
   const escalationAssignees = escalatedRequirementIds.length
     ? await fetchEscalationAssignees({ requirement_ids: escalatedRequirementIds })
     : new Map<string, string>();
-
-  const procedureDocuments = includeEvidence
-    ? await fetchProcedureDocumentsByDocumentId(
-        nested.data.flatMap((item) => item.procedures.map(({ procedure }) => procedure.document_id)),
-      )
-    : new Map<string, DocumentDetail | null>();
 
   const findings: Finding[] = [];
 
@@ -414,7 +371,6 @@ export async function fetchFindings(
           riskLevel: item.requirement.risk_level,
           regulationTitle,
           procedure: typedProcedure,
-          procedureDocument: procedureDocuments.get(typedProcedure.document_id) ?? null,
           escalationAssignee: escalationAssignees.get(mapping.mapping_id),
         }),
       );

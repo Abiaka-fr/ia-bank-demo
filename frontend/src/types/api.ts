@@ -122,6 +122,9 @@ export const findingSchema = z
     requirement_id: z.string(),
     // v1.1 : un constat porte UNE procédure (ou aucune), pas une liste.
     procedure_id: z.string().nullable(),
+    /** Nom de la procédure, quand la source le fournit avec le constat (backend réel) —
+     * évite de charger le document de la procédure pour un simple libellé. */
+    procedure_title: z.string().optional(),
     assessment: assessmentSchema,
     regulatory_evidence: z.array(evidenceRefSchema),
     internal_evidence: z.array(evidenceRefSchema),

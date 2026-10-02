@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { usePrefetchQuery, useQuery } from "@tanstack/react-query";
 import {
   ChevronRight,
   CircleAlert,
@@ -38,7 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useRouter } from "@/i18n/navigation";
-import { fetchPortfolioSummary } from "@/lib/api/dashboard";
+import { fetchPortfolioSummary, fetchRegulationMap } from "@/lib/api/dashboard";
 import { queryKeys } from "@/lib/api/query-keys";
 import { isRegulationFullyHandled } from "@/lib/mocks/summary";
 
@@ -58,6 +58,12 @@ export function PortfolioDashboardView() {
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.portfolioSummary(),
     queryFn: fetchPortfolioSummary,
+  });
+  // La carte mentale n'est montée qu'une fois les agrégats chargés : sans ce préchargement
+  // lancé en même temps, elle rechargeait tout le portefeuille une seconde fois.
+  usePrefetchQuery({
+    queryKey: queryKeys.regulationMap(),
+    queryFn: () => fetchRegulationMap(),
   });
 
   if (isPending) return <LoadingState rows={5} />;

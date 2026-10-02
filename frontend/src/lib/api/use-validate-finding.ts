@@ -34,12 +34,8 @@ export function useValidateFinding(regulationId: string) {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.findings(regulationId),
       });
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.dashboardSummary(regulationId),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.portfolioSummary(),
-      });
+      // Agrégats, portefeuille et carte mentale d'un coup (préfixe commun).
+      await queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
       await queryClient.invalidateQueries({
         queryKey: queryKeys.regulationHistory(regulationId),
       });

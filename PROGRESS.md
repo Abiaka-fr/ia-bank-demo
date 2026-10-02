@@ -276,7 +276,38 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Notes de fin de session
 
-### 2026-10-02 (5) — Fin des constats frontend de la revue (non committé)
+### 2026-10-02 (6) — Suites de la revue : requêtes, validation mock, onglets (branche `chore/fe-review-followups`)
+
+- **État** : les notes (2) à (5) ci-dessous sont sur `main` (PR #5, commit `ccb632b`).
+  **L'instance hébergée (`debian-01`) tourne encore sur l'ancien code** : la branche
+  `origin/production` part de `1ab113d` et ne contient pas la fusion — à déployer, puis à
+  revérifier contre le backend réel (aucune de ces corrections ne l'a encore été).
+- **Moins de requêtes en mode backend réel** :
+  - `fetchFindings` ne charge plus le texte des procédures (deux requêtes par procédure) ni le
+    titre de la régulation : la liste n'affiche que le nom de la procédure, lu dans la réponse des
+    mappings (`Finding.procedure_title`). `includeEvidence` et `buildUntargetedInternalEvidence`
+    supprimés — avec la dernière chaîne française en dur.
+  - `dashboard.ts` : agrégats et carte mentale partagent un seul chargement (`loadPortfolio`,
+    préchargement de la carte lancé avec les agrégats) ; la carte d'une régulation ne charge plus
+    tout le portefeuille (`fetchRegulationMap(regulationId)`).
+  - Mesuré contre le faux backend local (3 régulations, 1 procédure) : tableau de bord 15 → 9
+    requêtes, onglet « Vue d'ensemble » 17 → 13.
+- **`apiFetch` redevient strict** : une réponse non conforme lève `ApiContractError` au lieu
+  d'être renvoyée non validée. Revient sur le choix de `1a88b12` (Thư, 2026-09-13), justifié
+  quand ce client parlait au backend réel ; il ne sert plus que MSW et les routes Next. Tous les
+  écrans du mode mock vérifiés dans le navigateur, aucun en erreur.
+- **Synchronisation entre onglets étendue** : import, suppression, assignation, extraction et
+  analyse préviennent aussi les autres onglets ; ces actions invalident tous les agrégats
+  (`queryKeys.dashboard()`), carte mentale comprise.
+- `pnpm lint` 0 avertissement, `pnpm typecheck` propre, 183 tests verts (`dashboard.test.ts` ajouté).
+- **Laissés en l'état (décision de Hoang)** : `evidence-strength.tsx`, plus affiché nulle part —
+  décision produit à prendre avec Francis/Giang ; composants de la carte « Analyze » de la page
+  procédure, conservés pour réactivation.
+- **Reste** : relance des jobs d'extraction en échec après rechargement (attend
+  `docs/api-requests.md` #14) ; l'onglet Exigences charge encore deux fois les exigences
+  (requête de l'onglet + `fetchFindings`).
+
+### 2026-10-02 (5) — Fin des constats frontend de la revue (PR #5)
 
 - **Synchronisation entre onglets** (`lib/api/cross-tab.ts`, `query-provider.tsx`,
   `use-validate-finding.ts`) : une décision sur un constat prévient les autres onglets par
@@ -301,9 +332,8 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 - Tests ajoutés : `format-date.test.ts`, cas dans `simple-markdown.test.ts`, `resources.test.ts`,
   `regulations.test.ts`. `pnpm lint` 0 avertissement, `pnpm typecheck` propre, 184 tests verts.
   Vérifié dans le navigateur (faux backend local + mode mock).
-- **Piste non traitée** : `fetchFindings` charge le texte complet de chaque procédure
-  (`includeEvidence`) alors que l'écran n'en utilise que le titre, déjà présent dans la réponse
-  des mappings — à supprimer pour réduire le nombre de requêtes de l'onglet Exigences.
+- **Piste traitée en (6)** : `fetchFindings` chargeait le texte complet de chaque procédure
+  (`includeEvidence`) alors que l'écran n'en utilise que le titre.
 - **Reste côté frontend** : rien d'ouvert dans la revue. Côté backend : voir « Blocages » et
   `docs/api-requests.md` #14, #15.
 

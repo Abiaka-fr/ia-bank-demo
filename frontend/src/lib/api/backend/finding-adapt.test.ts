@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { DocumentDetail, Requirement } from "@/types/api";
+import type { Requirement } from "@/types/api";
 
 import type { BackendMapping, BackendProcedureMinimal } from "./schemas";
 import {
@@ -11,7 +11,6 @@ import {
   assembleMappedFinding,
   assembleUnmappedFinding,
   buildRegulatoryEvidence,
-  buildUntargetedInternalEvidence,
 } from "./finding-adapt";
 
 function requirement(overrides: Partial<Requirement> = {}): Requirement {
@@ -51,21 +50,6 @@ function procedure(overrides: Partial<BackendProcedureMinimal> = {}): BackendPro
     owner: null,
     status: "ACTIVE",
     current_version: "3.0",
-    ...overrides,
-  };
-}
-
-function documentDetail(overrides: Partial<DocumentDetail> = {}): DocumentDetail {
-  return {
-    document_id: "INT-PROC-AML",
-    title: "Risk Classification Process",
-    document_type: "INTERNAL_PROCEDURE",
-    authority_or_owner: "",
-    domain: ["AML/CFT"],
-    language: "EN",
-    version: "3.0",
-    status: "NOT_ANALYZED",
-    extracted_text: "First paragraph of the procedure.\n\nSecond paragraph.",
     ...overrides,
   };
 }
@@ -159,27 +143,6 @@ describe("buildRegulatoryEvidence", () => {
   });
 });
 
-describe("buildUntargetedInternalEvidence", () => {
-  it("prend un vrai préfixe du document, jamais un texte inventé", () => {
-    // Arrange
-    const document = documentDetail();
-    // Act
-    const evidence = buildUntargetedInternalEvidence(document, procedure());
-    // Assert
-    expect(evidence?.excerpt).toBe(
-      "First paragraph of the procedure.\n\nSecond paragraph.",
-    );
-    expect(document.extracted_text).toContain(evidence?.excerpt ?? "");
-  });
-
-  it("renvoie null si le document n'a pas de texte extrait", () => {
-    // Arrange
-    const document = documentDetail({ extracted_text: "" });
-    // Act / Assert
-    expect(buildUntargetedInternalEvidence(document, procedure())).toBeNull();
-  });
-});
-
 describe("assembleMappedFinding", () => {
   it("assemble un constat complet à partir d'un couple mappé", () => {
     // Arrange / Act
@@ -189,7 +152,6 @@ describe("assembleMappedFinding", () => {
       riskLevel: "HIGH",
       regulationTitle: "EU AML/CFT Standard",
       procedure: procedure(),
-      procedureDocument: documentDetail(),
     });
     // Assert
     expect(finding.assessment).toBe("COVERED");
@@ -197,20 +159,19 @@ describe("assembleMappedFinding", () => {
     expect(finding.human_status).toBe("PENDING");
     expect(finding.procedure_id).toBe("PRC-AML-007");
     expect(finding.regulatory_evidence).toHaveLength(1);
-    expect(finding.internal_evidence).toHaveLength(1);
     expect(finding.confidence_or_evidence_strength).toBe(0.93);
   });
 
-  it("laisse internal_evidence vide si le document de la procédure n'a pas pu être chargé", () => {
-    // Un constat garde tout de même sa preuve réglementaire : jamais entièrement nu.
+  it("porte le nom de la procédure, sans charger son texte", () => {
     const finding = assembleMappedFinding({
       mapping: mapping(),
       requirement: requirement(),
       riskLevel: null,
       regulationTitle: "EU AML/CFT Standard",
       procedure: procedure(),
-      procedureDocument: null,
     });
+    expect(finding.procedure_title).toBe("Risk Classification Process");
+    // Un constat garde sa preuve réglementaire : jamais entièrement nu.
     expect(finding.internal_evidence).toEqual([]);
     expect(finding.regulatory_evidence).toHaveLength(1);
   });
@@ -225,7 +186,6 @@ describe("assembleMappedFinding", () => {
       riskLevel: "HIGH",
       regulationTitle: "EU AML/CFT Standard",
       procedure: procedure(),
-      procedureDocument: documentDetail(),
     });
     expect(finding.explanation_fr).toBe("Explication en français.");
     expect(finding.recommended_action_fr).toBe("Action recommandée en français.");
@@ -240,7 +200,6 @@ describe("assembleMappedFinding", () => {
       riskLevel: "HIGH",
       regulationTitle: "EU AML/CFT Standard",
       procedure: procedure(),
-      procedureDocument: documentDetail(),
     });
     expect(finding.explanation_fr).toBeUndefined();
     expect(finding.recommended_action_fr).toBeUndefined();
@@ -256,7 +215,6 @@ describe("assembleMappedFinding", () => {
       riskLevel: "HIGH",
       regulationTitle: "EU AML/CFT Standard",
       procedure: procedure(),
-      procedureDocument: documentDetail(),
     });
     expect(finding.assignee_id).toBe("USR-002");
   });
@@ -268,7 +226,6 @@ describe("assembleMappedFinding", () => {
       riskLevel: "HIGH",
       regulationTitle: "EU AML/CFT Standard",
       procedure: procedure(),
-      procedureDocument: documentDetail(),
     });
     expect(finding.assignee_id).toBeUndefined();
   });

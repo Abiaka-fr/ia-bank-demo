@@ -34,6 +34,7 @@ import { pickLocalizedText } from "@/lib/localized-text";
 import { highlightSegments } from "@/lib/evidence-match";
 import { adaptRequirementEvidenceToEvidenceRef } from "@/lib/api/backend/adapt";
 import { analyzeMappings, fetchRegulation } from "@/lib/api/regulations";
+import { notifyOtherTabs } from "@/lib/api/cross-tab";
 import { queryKeys } from "@/lib/api/query-keys";
 import { openInNewTabWithSession } from "@/lib/open-in-new-tab";
 import type { Finding, Requirement } from "@/types/api";
@@ -108,6 +109,8 @@ export function RequirementsTab({
           duration: 10000,
         });
       }
+      notifyOtherTabs();
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
       // Renvoyé : la mutation reste en cours tant que les constats ne sont pas rechargés,
       // sinon le bouton de l'exigence tout juste analysée redevenait cliquable (doublons).
       return queryClient.invalidateQueries({

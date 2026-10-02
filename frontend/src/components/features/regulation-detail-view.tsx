@@ -28,6 +28,7 @@ import { fetchFindingsByRegulation } from "@/lib/api/findings";
 import { ReviewProgressBar } from "@/components/features/review-progress";
 import { useRegulationTab } from "@/lib/use-regulation-tab";
 import { humanStatusValues } from "@/lib/assessment";
+import { notifyOtherTabs } from "@/lib/api/cross-tab";
 import { queryKeys } from "@/lib/api/query-keys";
 import {
   fetchRegulation,
@@ -88,9 +89,11 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
     },
     onSuccess: (failed) => {
       setFailedJobIds(failed);
+      notifyOtherTabs();
       void queryClient.invalidateQueries({
         queryKey: queryKeys.regulationRequirements(regulationId),
       });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
       if (failed.length > 0) {
         toast.error(t("extractionIncomplete", { count: failed.length }), { duration: 5000 });
       } else {
