@@ -3,7 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { LogIn, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import { LocaleToggle } from "@/components/layout/locale-toggle";
 import { useSession } from "@/components/providers/session-provider";
@@ -65,7 +65,9 @@ export function SignupForm() {
             <ShieldCheck className="size-5" aria-hidden />
             <span className="text-sm font-semibold">{t("productName")}</span>
           </div>
-          <LocaleToggle />
+          <Suspense fallback={null}>
+            <LocaleToggle />
+          </Suspense>
         </div>
 
         <Card>
