@@ -13,6 +13,14 @@ banner at its top) and is no longer the thing to check before calling an endpoin
 
 ## Open / deferred
 
+14. **List the extraction jobs of a document** (2026-10-02).
+    `POST /api/requirements/jobs/{job_id}/process` can retry a `FAILED` job, but no endpoint
+    returns a document's jobs: the frontend only knows the ids from the `POST /api/requirements/extract`
+    response. It now keeps the failed ids in memory and offers "Retry failed sections", but after
+    a page reload (or a closed tab mid-run) the `PENDING`/`FAILED` jobs can no longer be found, so
+    those chunks are never extracted. Suggested: `GET /api/requirements/jobs?document_id=…`
+    returning `ExtractionJobRead[]` (optionally `&status=PENDING&status=FAILED`).
+
 13. **Copilot "remaining requirements" ignores `ESCALATE`** (2026-09-30).
     `backend/app/routers/copilot.py:71-75` counts a requirement as remaining when it has no mapping
     or a `PENDING_REVIEW` mapping. A requirement whose only open mapping is `ESCALATE` (waiting for
