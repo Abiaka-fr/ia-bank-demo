@@ -185,7 +185,30 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Blocages / Questions ouvertes
 
-- **2026-10-02 — pour Thư (revue de code, lecture seule, rien modifié sous `backend/`) :**
+- **2026-10-02 — pour Thư : correctifs proposés sur la branche `fix/be-review` (PR à relire).**
+  À la demande de Hoang, les points ci-dessous ont été corrigés dans `backend/` sur une branche
+  séparée — **rien n'entre dans `main` sans la relecture de Thư**. `backend/API.md` est à jour sur
+  la branche ; 28 tests (17 nouveaux, `tests/test_review_fixes.py`), `ruff check app/` propre,
+  essai HTTP de bout en bout sur une base SQLite temporaire. **Jamais exécuté contre Neon.**
+  À savoir avant de fusionner ou déployer :
+  - **`SECRET_KEY`** : si la clé est absente ou vaut la valeur par défaut (publique), l'application
+    démarre quand même et écrit un avertissement au démarrage — le refus de démarrer hors
+    `development` a été retiré provisoirement à la demande de Hoang (le code à rétablir est en
+    commentaire dans `app/config.py`). `debug` passe à `False` par défaut.
+  - **Rôles côté serveur** : changer un rôle exige `COMPLIANCE_ADMIN` / `Admin Base de
+    Connaissances` ; un auditeur (`AUDITOR` / `Auditeur Interne`) reçoit 403 sur toute écriture ;
+    `signup` ignore `role`.
+  - **Analyse d'impact** : un mapping est enregistré même sans modification (l'évaluation
+    `COVERED` n'est plus perdue) et un couple déjà analysé n'est pas réanalysé — décision de
+    conception à confirmer par Thư, elle change le nombre de mappings créés.
+  - **Extraction** : `POST /api/requirements/extract` est idempotent et renvoie les jobs restant
+    à traiter (répond en partie à `docs/api-requests.md` #14).
+  - **Données existantes non migrées** : les procédures déjà importées gardent
+    `origin_name = "European Union"` ; les nouvelles reçoivent `BANK` / `Demo Bank`.
+  - **Non traité** : `app/models/procedure.py` (relations cassées, importé seulement par le script
+    de migration ponctuel) ; les migrations Alembic toujours absentes du dépôt.
+
+  Constats d'origine :
   1. **Sécurité** — `POST /api/auth/signup` accepte `role` dans le corps (`auth.py:29`) : n'importe
      qui peut créer un compte `COMPLIANCE_ADMIN` ; aucune route d'écriture ne vérifie le rôle.
      `secret_key` a une valeur par défaut publique et `.env.example` ne liste pas `SECRET_KEY`
@@ -276,7 +299,38 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Notes de fin de session
 
-### 2026-10-02 (5) — Fin des constats frontend de la revue (non committé)
+### 2026-10-02 (6) — Suites de la revue : requêtes, validation mock, onglets (branche `chore/fe-review-followups`)
+
+- **État** : les notes (2) à (5) ci-dessous sont sur `main` (PR #5, commit `ccb632b`).
+  **L'instance hébergée (`debian-01`) tourne encore sur l'ancien code** : la branche
+  `origin/production` part de `1ab113d` et ne contient pas la fusion — à déployer, puis à
+  revérifier contre le backend réel (aucune de ces corrections ne l'a encore été).
+- **Moins de requêtes en mode backend réel** :
+  - `fetchFindings` ne charge plus le texte des procédures (deux requêtes par procédure) ni le
+    titre de la régulation : la liste n'affiche que le nom de la procédure, lu dans la réponse des
+    mappings (`Finding.procedure_title`). `includeEvidence` et `buildUntargetedInternalEvidence`
+    supprimés — avec la dernière chaîne française en dur.
+  - `dashboard.ts` : agrégats et carte mentale partagent un seul chargement (`loadPortfolio`,
+    préchargement de la carte lancé avec les agrégats) ; la carte d'une régulation ne charge plus
+    tout le portefeuille (`fetchRegulationMap(regulationId)`).
+  - Mesuré contre le faux backend local (3 régulations, 1 procédure) : tableau de bord 15 → 9
+    requêtes, onglet « Vue d'ensemble » 17 → 13.
+- **`apiFetch` redevient strict** : une réponse non conforme lève `ApiContractError` au lieu
+  d'être renvoyée non validée. Revient sur le choix de `1a88b12` (Thư, 2026-09-13), justifié
+  quand ce client parlait au backend réel ; il ne sert plus que MSW et les routes Next. Tous les
+  écrans du mode mock vérifiés dans le navigateur, aucun en erreur.
+- **Synchronisation entre onglets étendue** : import, suppression, assignation, extraction et
+  analyse préviennent aussi les autres onglets ; ces actions invalident tous les agrégats
+  (`queryKeys.dashboard()`), carte mentale comprise.
+- `pnpm lint` 0 avertissement, `pnpm typecheck` propre, 183 tests verts (`dashboard.test.ts` ajouté).
+- **Laissés en l'état (décision de Hoang)** : `evidence-strength.tsx`, plus affiché nulle part —
+  décision produit à prendre avec Francis/Giang ; composants de la carte « Analyze » de la page
+  procédure, conservés pour réactivation.
+- **Reste** : relance des jobs d'extraction en échec après rechargement (attend
+  `docs/api-requests.md` #14) ; l'onglet Exigences charge encore deux fois les exigences
+  (requête de l'onglet + `fetchFindings`).
+
+### 2026-10-02 (5) — Fin des constats frontend de la revue (PR #5)
 
 - **Synchronisation entre onglets** (`lib/api/cross-tab.ts`, `query-provider.tsx`,
   `use-validate-finding.ts`) : une décision sur un constat prévient les autres onglets par
@@ -301,9 +355,8 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 - Tests ajoutés : `format-date.test.ts`, cas dans `simple-markdown.test.ts`, `resources.test.ts`,
   `regulations.test.ts`. `pnpm lint` 0 avertissement, `pnpm typecheck` propre, 184 tests verts.
   Vérifié dans le navigateur (faux backend local + mode mock).
-- **Piste non traitée** : `fetchFindings` charge le texte complet de chaque procédure
-  (`includeEvidence`) alors que l'écran n'en utilise que le titre, déjà présent dans la réponse
-  des mappings — à supprimer pour réduire le nombre de requêtes de l'onglet Exigences.
+- **Piste traitée en (6)** : `fetchFindings` chargeait le texte complet de chaque procédure
+  (`includeEvidence`) alors que l'écran n'en utilise que le titre.
 - **Reste côté frontend** : rien d'ouvert dans la revue. Côté backend : voir « Blocages » et
   `docs/api-requests.md` #14, #15.
 

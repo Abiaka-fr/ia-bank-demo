@@ -5,6 +5,15 @@
 
 ---
 
+## Roles
+
+`User.role` is a free string (profile code or French label). Two server-side checks apply:
+
+- **Read-only roles** — `AUDITOR`, `Auditeur Interne`: every write endpoint answers `403 Forbidden` (document update / assignee / delete / ingest, procedure ingest, requirement extract and job processing, mapping human-status and analyze).
+- **Administrator roles** — `COMPLIANCE_ADMIN`, `Admin Base de Connaissances`: required for `PUT /api/users/{user_id}/role`.
+
+List endpoints (`/api/documents`, `/api/requirements`, `/api/procedures`, `/api/users`, `/api/mappings/all`) return a stable order (creation date, then id), so `limit`/`offset` pages do not overlap.
+
 ## Endpoints
 
 ### 1. Health Check
@@ -150,7 +159,7 @@ Update document content, create a new version, and auto-increment the version nu
 
 **Request Body**
 - `change_reason` (required): Reason/description of the changes
-- `created_by` (required): User or system that made the update  
+- `created_by` (ignored): the version is attributed to the authenticated user  
 - `file_path` (optional): Path to the updated document file (for audit trail reference)
 - `chunks` (required): Array of document chunks with updated content
 
@@ -515,8 +524,9 @@ This endpoint accepts raw regulation text and:
 - `domain` (required): Compliance domain (e.g., AML/CFT, KYC, DORA, MIFID, SANCTIONS, OUTSOURCING, DATA_PROTECTION, COMPLIANCE, AI_GOVERNANCE)
 - `language` (required): Document language (EN or FR)
 - `summary` (optional): Brief summary of the document
-- `created_by` (required): User ID or email who is ingesting the document
+- `created_by` (ignored): the document is attributed to the authenticated user
 - `published_at` (optional): When the document was published (ISO 8601 datetime format)
+- `origin_code` / `origin_name` (optional): issuing authority, e.g. `ACPR` / `French Prudential Supervision and Resolution Authority`. Default: `EU` / `European Union`
 
 **Request Example**
 ```json
@@ -593,7 +603,7 @@ This endpoint accepts raw procedure text and:
 - `domain` (required): Compliance domain (e.g., AML/CFT, KYC, DORA, MIFID, SANCTIONS, OUTSOURCING, DATA_PROTECTION, COMPLIANCE, AI_GOVERNANCE)
 - `language` (required): Document language (EN or FR)
 - `summary` (optional): Brief summary of the procedure
-- `created_by` (required): User ID or email who is ingesting the procedure
+- `created_by` (ignored): the procedure is attributed to the authenticated user
 - `published_at` (optional): When the procedure was published (ISO 8601 datetime format)
 
 **Request Example**
@@ -649,7 +659,7 @@ POST /api/procedures/ingest
 - **Metadata must be provided by the client** (title, domain, language, summary)
 - Document IDs are generated sequentially per origin_code (INT-EU-\<seq\>)
 - All procedures start at version 1.0
-- Category: INTERNAL, Origin: European Union (EU)
+- Category: INTERNAL, Origin: Demo Bank (`origin_code` = `BANK`), as in the reference corpus
 - Stored as Document with DOCUMENT_TYPE="PROCEDURE" to identify internal procedures
 
 ---
@@ -734,6 +744,7 @@ POST /api/requirements/extract
 
 **Notes:**
 - Jobs are created but NOT processed immediately — caller must trigger processing
+- **Idempotent**: if jobs already exist for the document's active version, no new job is created. The response then has `total_jobs_created: 0` and `jobs` lists only the jobs still to process (PENDING, or FAILED with nothing extracted) — calling it again is how a client resumes an interrupted extraction
 - Each job extracts requirements from one document chunk
 - Use POST /api/jobs/{job_id}/process to process each job
 - Ingested document must have chunks (via /api/documents/regulation-ingest)
@@ -813,7 +824,7 @@ POST /api/requirements/jobs/550e8400-e29b-41d4-a716-446655440000/process
 - Requirement IDs are generated sequentially globally
 - All extracted requirements are marked as ACTIVE status
 - On failure, job status is updated to FAILED with error_message set (allows retry)
-- On success, job status is updated to COMPLETED with extracted_requirement_ids set (prevents accidental reprocessing)
+- On success, job status is updated to COMPLETED with extracted_requirement_ids set (prevents accidental reprocessing). The requirements and the job status are committed together
 
 ---
 
@@ -879,6 +890,8 @@ POST /api/mappings/analyze
 - Mapping IDs are generated sequentially globally
 - All mappings start with human_status = PENDING_REVIEW
 - Suggested modifications are grounded with actual chunk offsets
+- A mapping is stored for every procedure analysed, **also when no modification is suggested or none could be located in the procedure text** (`suggested_modifications: null`): the assessment (e.g. `COVERED`) is kept
+- A requirement × procedure pair that already has a mapping is not analysed again (no LLM call, warning `... already analysed: mapping kept as is`)
 - Warnings are returned for individual failures; request doesn't fail entirely
 - Review mappings via GET /api/mappings/all
 
@@ -1197,6 +1210,7 @@ Update the human review status of a requirement-procedure mapping.
   - `PENDING_REVIEW` — Awaiting human review (default)
   - `ESCALATE` — Escalate to senior review/approval. **`assignee` is required** and is saved
     on the procedure document (`documents.assignee`, same field as `PUT /api/documents/{id}/assignee`)
+    and logged in that document's history (`GET /api/documents/{id}/history`) when it changes
   - `ACCEPT` — Approved by human reviewer. The mapping's `suggested_modifications` are applied
     to the procedure's active version and saved as a **new version** (`VER-{doc}-{NN}`, previous
     one SUPERSEDED, `documents.current_version` bumped, `created_by` = current user). No new
@@ -1684,7 +1698,7 @@ GET /api/users/USR-a1b2c3d4e5f6g7h8i9j0
 ### Update User Role
 
 #### `PUT /api/users/{user_id}/role`
-Update the role of a user.
+Update the role of a user. **Administrators only**: the caller's role must be `COMPLIANCE_ADMIN` or `Admin Base de Connaissances`, otherwise `403 Forbidden`.
 
 **Path Parameters**
 - `user_id` (required): The ID of the user (e.g., USR-a1b2c3d4e5f6g7h8i9j0)
@@ -1733,16 +1747,15 @@ Create a new user account and receive a JWT access token.
 {
   "email": "user@example.com",
   "password": "SecurePassword123",
-  "full_name": "John Doe",
-  "role": "ANALYST"
+  "full_name": "John Doe"
 }
 ```
 
 **Field Requirements**
 - `email` (required): Valid email address
-- `password` (required): Minimum 8 characters
+- `password` (required): Minimum 8 characters, at most 72 bytes (bcrypt limit)
 - `full_name` (optional): User's full name
-- `role` (optional): User role (defaults to COMPLIANCE_OFFICER if not provided)
+- A new account always gets the role `COMPLIANCE_OFFICER`; a `role` sent in the body is ignored. An administrator changes it with `PUT /api/users/{user_id}/role`
 
 **Response (201 Created)**
 ```json
@@ -1940,7 +1953,7 @@ Answer a question (FR or EN) from the indexed corpus: documents, requirements, m
 | 200 | OK — request succeeded |
 | 201 | Created — resource created successfully |
 | 401 | Unauthorized — invalid/missing credentials or expired token |
-| 403 | Forbidden — authenticated but not allowed (e.g., disabled account) |
+| 403 | Forbidden — authenticated but not allowed (disabled account, role change by a non-administrator, write action by a read-only role) |
 | 409 | Conflict — resource already exists (e.g., email taken) |
 | 422 | Unprocessable Entity — invalid input validation |
 | 500 | Internal Server Error |

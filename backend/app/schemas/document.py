@@ -105,7 +105,8 @@ class DocumentUpdateRequest(BaseModel):
     """
 
     change_reason: str
-    created_by: str
+    # Ignored: the version is attributed to the authenticated user.
+    created_by: str | None = None
     file_path: str | None = None
     chunks: list[DocumentChunkInput]
 
@@ -185,8 +186,12 @@ class IngestDocumentRequest(BaseModel):
     domain: str  # e.g., AML/CFT, KYC, DORA, MIFID, etc.
     language: str  # EN, FR
     summary: str | None = None
-    created_by: str
+    # Ignored: the document is attributed to the authenticated user.
+    created_by: str | None = None
     published_at: datetime | None = None
+    # Issuing authority; European Union when omitted.
+    origin_code: str | None = None
+    origin_name: str | None = None
 
     class Config:
         json_schema_extra = {

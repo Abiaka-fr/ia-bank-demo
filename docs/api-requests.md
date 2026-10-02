@@ -14,6 +14,8 @@ banner at its top) and is no longer the thing to check before calling an endpoin
 ## Open / deferred
 
 15. **Impact analysis drops the assessment when no modification can be grounded** (2026-10-02).
+    **Proposed fix on branch `fix/be-review` (PR awaiting Thư's review):** the mapping is stored
+    without modifications, and an already analysed pair is skipped.
     `requirement_procedure_mapping.py:349` skips the mapping (`continue`) when `grounded_mods` is
     empty: a `COVERED` result (`suggested_modifications: []`) is never stored, and neither is a gap
     whose `original_text` is not found verbatim. Seen on the hosted instance, requirement
@@ -30,6 +32,10 @@ banner at its top) and is no longer the thing to check before calling an endpoin
     that request.
 
 14. **List the extraction jobs of a document** (2026-10-02).
+    **Partly covered on branch `fix/be-review`:** `POST /api/requirements/extract` becomes
+    idempotent and returns the jobs still to process, so calling it again resumes an interrupted
+    extraction. The frontend does not use this yet (its button only shows when there is no
+    requirement at all).
     `POST /api/requirements/jobs/{job_id}/process` can retry a `FAILED` job, but no endpoint
     returns a document's jobs: the frontend only knows the ids from the `POST /api/requirements/extract`
     response. It now keeps the failed ids in memory and offers "Retry failed sections", but after

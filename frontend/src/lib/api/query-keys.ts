@@ -13,7 +13,10 @@ export const queryKeys = {
   dashboardSummary: (regulationId?: string) =>
     ["dashboard", "summary", regulationId ?? null] as const,
   portfolioSummary: () => ["dashboard", "overview"] as const,
-  regulationMap: () => ["dashboard", "map"] as const,
+  /** Préfixe commun des agrégats (`summary`, `overview`, `map`) : tout invalider d'un coup. */
+  dashboard: () => ["dashboard"] as const,
+  regulationMap: (regulationId?: string) =>
+    ["dashboard", "map", regulationId ?? null] as const,
   regulationHistory: (id: string) => ["regulations", id, "history"] as const,
   mappingHistory: (id: string) => ["mappings", id, "history"] as const,
   users: () => ["users"] as const,

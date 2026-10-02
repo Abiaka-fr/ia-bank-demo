@@ -74,8 +74,9 @@ class ProcedureIngestionService:
         # Use constants for fixed metadata
         CATEGORY = "INTERNAL"
         DOCUMENT_TYPE = "PROCEDURE"
-        ORIGIN_CODE = "EU"
-        ORIGIN_NAME = "European Union"
+        # Internal documents belong to the bank (same values as the reference corpus).
+        ORIGIN_CODE = "BANK"
+        ORIGIN_NAME = "Demo Bank"
         DATA_CLASSIFICATION = ""
 
         document_id = ProcedureIngestionService.generate_document_id(db, ORIGIN_CODE, CATEGORY)

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { DocumentMeta, Finding, Requirement } from "@/types/api";
+import type { Finding, Requirement } from "@/types/api";
 import {
   dashboardSummarySchema,
   portfolioSummarySchema,
@@ -12,48 +12,64 @@ import * as backend from "./backend/resources";
 import { apiFetch } from "./client";
 
 /**
- * Charge exigences + constats de plusieurs régulations en parallèle, sans texte de
- * procédure (`includeEvidence: false`) : les agrégats de portefeuille et la carte
- * mentale n'ont besoin que de compter par `assessment`/`human_status`/domaine, jamais
- * d'afficher une preuve. Sur 8 régulations, charger le texte de chaque procédure
- * impactée pour rien aurait multiplié le nombre de requêtes sans utilité.
+ * Régulations (toutes, ou une seule) avec leurs exigences et leurs constats, chargés en
+ * parallèle — matière première des agrégats et de la carte mentale, recalculés côté
+ * client faute d'endpoint `/api/dashboard/*` côté backend.
  */
-async function loadPortfolioData(regulations: readonly DocumentMeta[]) {
+async function loadPortfolioData(regulationId?: string) {
+  const all = await backend.fetchRegulations();
+  const regulations = regulationId
+    ? all.filter((regulation) => regulation.document_id === regulationId)
+    : all;
+
   const perRegulation = await Promise.all(
     regulations.map(async (regulation) => {
       const requirements = await backend.fetchRequirements(regulation.document_id);
-      const findings = await backend.fetchFindings(regulation.document_id, {
-        includeEvidence: false,
-        requirements,
-      });
+      const findings = await backend.fetchFindings(regulation.document_id, { requirements });
       return { regulationId: regulation.document_id, requirements, findings };
     }),
   );
 
   const requirementsById = new Map<string, Requirement[]>(
-    perRegulation.map(({ regulationId, requirements }) => [regulationId, requirements]),
+    perRegulation.map((entry) => [entry.regulationId, entry.requirements]),
   );
   const findingsById = new Map<string, Finding[]>(
-    perRegulation.map(({ regulationId, findings }) => [regulationId, findings]),
+    perRegulation.map((entry) => [entry.regulationId, entry.findings]),
   );
 
   return {
+    regulations,
     requirementsOf: (id: string) => requirementsById.get(id) ?? [],
     findingsOf: (id: string) => findingsById.get(id) ?? [],
   };
 }
 
+// ponytail: seuls les appels simultanés sont partagés — un écran lance agrégats et carte
+// en même temps, et chargeait donc deux fois le même portefeuille. Pas de cache dans le
+// temps : c'est le rôle de TanStack Query.
+const portfolioInFlight = new Map<string, ReturnType<typeof loadPortfolioData>>();
+
+function loadPortfolio(regulationId?: string) {
+  const key = regulationId ?? "";
+  let pending = portfolioInFlight.get(key);
+  if (!pending) {
+    pending = loadPortfolioData(regulationId).finally(() => portfolioInFlight.delete(key));
+    portfolioInFlight.set(key, pending);
+  }
+  return pending;
+}
+
 /**
- * Arborescence Régulation → Exigence → Procédure (carte mentale du tableau de bord).
- * `/api/dashboard/map` n'existe pas côté backend : recalculée côté client avec
- * `buildRegulationMap`, la même fonction pure que MSW utilise déjà — voir
- * `loadPortfolioData` pour la limite assumée (pas de preuve chargée).
+ * Arborescence Régulation → Exigence → Procédure (carte mentale). `/api/dashboard/map`
+ * n'existe pas côté backend : recalculée côté client avec `buildRegulationMap`, la même
+ * fonction pure que MSW utilise déjà. `regulationId` limite le chargement à une seule
+ * régulation (onglet « Vue d'ensemble ») au lieu de tout le portefeuille ; en mode mock
+ * la réponse reste complète et l'appelant filtre.
  */
-export async function fetchRegulationMap() {
+export async function fetchRegulationMap(regulationId?: string) {
   if (isBackendLive) {
     const { buildRegulationMap } = await import("@/lib/mocks/summary");
-    const regulations = await backend.fetchRegulations();
-    const { requirementsOf, findingsOf } = await loadPortfolioData(regulations);
+    const { regulations, requirementsOf, findingsOf } = await loadPortfolio(regulationId);
     return buildRegulationMap(regulations, requirementsOf, findingsOf);
   }
 
@@ -68,8 +84,7 @@ export async function fetchRegulationMap() {
 export async function fetchPortfolioSummary() {
   if (isBackendLive) {
     const { buildPortfolioSummary } = await import("@/lib/mocks/summary");
-    const regulations = await backend.fetchRegulations();
-    const { requirementsOf, findingsOf } = await loadPortfolioData(regulations);
+    const { regulations, requirementsOf, findingsOf } = await loadPortfolio();
     return buildPortfolioSummary(regulations, requirementsOf, findingsOf);
   }
 
@@ -79,23 +94,15 @@ export async function fetchPortfolioSummary() {
 /**
  * `/api/dashboard/summary` n'existe pas côté backend. En mode réel, on recalcule les
  * mêmes agrégats **côté client** avec `buildDashboardSummary` — la fonction pure que
- * MSW utilise déjà pour ce même calcul (`src/lib/mocks/summary.ts`) — à partir des
- * exigences et des constats réels (`GET /api/mappings/*`, ajouté par Thư le
- * 2026-09-07). Un seul calcul d'agrégation dans tout le projet, jamais deux à
- * maintenir en parallèle. `includeEvidence: false` : cet onglet ne fait qu'agréger des
- * compteurs, jamais afficher une preuve — la requête distincte de l'onglet « Analyse
- * d'impact » (`fetchFindingsByRegulation`, cache TanStack Query séparé) recharge les
- * constats avec leurs preuves quand l'utilisateur l'ouvre.
+ * MSW utilise déjà pour ce même calcul (`src/lib/mocks/summary.ts`). Un seul calcul
+ * d'agrégation dans tout le projet, jamais deux à maintenir en parallèle. Partage son
+ * chargement avec la carte mentale de la même régulation (`loadPortfolio`).
  */
 export async function fetchDashboardSummary(regulationId: string) {
   if (isBackendLive) {
     const { buildDashboardSummary } = await import("@/lib/mocks/summary");
-    const requirements = await backend.fetchRequirements(regulationId);
-    const findings = await backend.fetchFindings(regulationId, {
-      includeEvidence: false,
-      requirements,
-    });
-    return buildDashboardSummary(requirements, findings);
+    const { requirementsOf, findingsOf } = await loadPortfolio(regulationId);
+    return buildDashboardSummary(requirementsOf(regulationId), findingsOf(regulationId));
   }
 
   return apiFetch("/api/dashboard/summary", dashboardSummarySchema, {

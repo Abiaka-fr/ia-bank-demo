@@ -31,6 +31,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "@/i18n/navigation";
 import { accessProfileForUser, canUploadRegulations } from "@/lib/access-profile";
+import { notifyOtherTabs } from "@/lib/api/cross-tab";
 import { queryKeys } from "@/lib/api/query-keys";
 import {
   DOCUMENT_DOMAINS,
@@ -61,7 +62,7 @@ const EMPTY_METADATA: DocumentMetadata = {
 const KINDS = {
   regulation: {
     namespace: "upload",
-    listKeys: [queryKeys.regulations(), queryKeys.portfolioSummary()],
+    listKeys: [queryKeys.regulations(), queryKeys.dashboard()],
     route: "/regulations",
   },
   procedure: {
@@ -114,6 +115,7 @@ export function UploadDocumentDialog({ kind }: { kind: DocumentKind }) {
       // Pas d'`await` : en mode backend réel, recharger le portefeuille prend plusieurs
       // secondes et la modale restait bloquée sur « Import en cours… » après le succès.
       for (const queryKey of config.listKeys) void queryClient.invalidateQueries({ queryKey });
+      notifyOtherTabs();
       handleOpenChange(false);
       router.push(`${config.route}/${created.document_id}`);
     },
