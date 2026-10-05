@@ -327,6 +327,7 @@ class RequirementProcedureMappingService:
                                         "- If procedure already fully covers requirement, set suggested_modifications to []\n"
                                         "- Provide exact original_text as it appears in the procedure (will be matched by string search)\n"
                                         "- Provide new_text with updated content that addresses the requirement\n"
+                                        "- CRITICAL: new_text MUST be in the SAME LANGUAGE as original_text (if original is English, new_text in English; if French, new_text in French)\n"
                                     ),
                                 }
                             ],
