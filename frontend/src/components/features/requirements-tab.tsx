@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
 import { ChevronDown, Search, Zap } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AssessmentBadge } from "@/components/features/assessment-badge";
@@ -79,7 +79,6 @@ export function RequirementsTab({
   );
   const [selectedRequirementId, setSelectedRequirementId] = useState<string | null>(null);
   const [analyzingRequirementId, setAnalyzingRequirementId] = useState<string | null>(null);
-  const evidenceContainerRef = useRef<HTMLDivElement>(null);
 
   const selectedReq = requirements.find((req) => req.requirement_id === selectedRequirementId);
 
@@ -92,15 +91,6 @@ export function RequirementsTab({
   useEffect(() => {
     if (focus) document.getElementById(`requirement-${focus}`)?.scrollIntoView({ block: "center" });
   }, [focus]);
-
-  useEffect(() => {
-    if (evidenceContainerRef.current && regulationQuery.isSuccess) {
-      const firstHighlight = evidenceContainerRef.current.querySelector("mark");
-      if (firstHighlight) {
-        firstHighlight.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    }
-  }, [regulationQuery.isSuccess, selectedRequirementId]);
 
   const analyzeMutation = useMutation({
     mutationFn: (requirementId: string) => analyzeMappings([requirementId]),
@@ -417,7 +407,7 @@ export function RequirementsTab({
                 ) : regulationQuery.isError ? (
                   <p className="text-xs text-destructive">{t("loadFailed")}</p>
                 ) : (
-                  <div ref={evidenceContainerRef} className="bg-muted/30 p-4 rounded max-h-96 overflow-y-auto">
+                  <div className="bg-muted/30 p-4 rounded max-h-96 overflow-y-auto">
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">
                       {(() => {
                         const docText = regulationQuery.data?.extracted_text || "";
