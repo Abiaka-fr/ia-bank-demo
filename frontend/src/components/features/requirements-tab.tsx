@@ -41,6 +41,12 @@ import type { Finding, Requirement } from "@/types/api";
 
 const ALL_DOMAINS = "ALL";
 
+// Référence stable (hors composant) : React ne la rappelle qu'au montage du `<mark>`,
+// donc un re-rendu ne ramène pas l'utilisateur au surlignage pendant qu'il lit ailleurs.
+const scrollToMark = (element: HTMLElement | null) => {
+  element?.scrollIntoView({ block: "center" });
+};
+
 /**
  * Onglet « Exigences » : le texte source extrait, exigence par exigence, avec l'état
  * de traitement de ses constats. Recherche plein texte (identifiant, référence, texte
@@ -418,10 +424,12 @@ export function RequirementsTab({
                           regulationQuery.data?.title,
                         );
                         const segments = highlightSegments(docText, evidenceRefs);
+                        const firstMatchIndex = segments.findIndex((segment) => segment.isMatch);
                         return segments.map((segment, idx) =>
                           segment.isMatch ? (
                             <mark
                               key={idx}
+                              ref={idx === firstMatchIndex ? scrollToMark : undefined}
                               className="bg-yellow-200 dark:bg-yellow-900/40 rounded px-0.5"
                             >
                               {segment.text}

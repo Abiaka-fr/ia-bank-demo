@@ -74,8 +74,8 @@ SECRET_FILE="$REPO_ROOT/.local/public-secret-key"
 
 # --- Frontend : build de production (NEXT_PUBLIC_* est figé au build) ------------
 if [ "${SKIP_BUILD:-0}" != "1" ]; then
-  echo "Build du frontend (NEXT_PUBLIC_BACKEND_URL=$BACKEND_URL) …"
-  (cd frontend && NEXT_PUBLIC_BACKEND_URL="$BACKEND_URL" pnpm build)
+  echo "Build du frontend (NEXT_PUBLIC_API_BASE_URL=$BACKEND_URL) …"
+  (cd frontend && NEXT_PUBLIC_API_BASE_URL="$BACKEND_URL" pnpm build)
 fi
 
 PIDS=()
