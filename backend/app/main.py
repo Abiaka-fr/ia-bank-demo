@@ -4,7 +4,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import auth, copilot, documents, health, mappings, procedures, requirements, users
+from app.routers import (
+    auth,
+    copilot,
+    dashboard,
+    documents,
+    health,
+    mappings,
+    procedures,
+    requirements,
+    users,
+)
 
 # Create FastAPI app
 app = FastAPI(
@@ -30,6 +40,7 @@ app.include_router(documents.router)
 app.include_router(requirements.router)
 app.include_router(procedures.router)
 app.include_router(mappings.router)
+app.include_router(dashboard.router)
 app.include_router(users.router)
 app.include_router(copilot.router)
 
