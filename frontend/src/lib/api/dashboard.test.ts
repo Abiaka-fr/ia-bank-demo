@@ -1,4 +1,4 @@
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { server } from "@/lib/mocks/server";
@@ -7,7 +7,7 @@ import { fetchPortfolioSummary, fetchRegulationMap } from "./dashboard";
 import { writeToken } from "./token";
 
 // Mode backend réel, servi ici par MSW (URL relative).
-vi.mock("./backend/config", () => ({ isBackendLive: true, BACKEND_URL: "" }));
+vi.mock("./backend/config", () => ({ isBackendLive: true, API_BASE_URL: "" }));
 
 afterEach(() => window.localStorage.clear());
 
@@ -16,7 +16,9 @@ it("ne charge le portefeuille qu'une fois pour les agrégats et la carte lancés
   const calls: string[] = [];
   const page = (items: unknown[]) => ({ total: items.length, items, limit: 200, offset: 0 });
   server.use(
-    http.get("/api/documents", () => {
+    http.get("/api/documents", async () => {
+      // Notée à la réponse : permet de voir ce qui est parti sans l'attendre.
+      await delay(30);
       calls.push("documents");
       return HttpResponse.json(
         page([{ document_id: "REG-1", title: "Regulation", category: "EXTERNAL", created_at: null }]),
@@ -61,5 +63,11 @@ it("ne charge le portefeuille qu'une fois pour les agrégats et la carte lancés
   expect(summary.requirements_identified).toBe(1);
   expect(map).toHaveLength(1);
   // Une liste, une page d'exigences, un lot de mappings — et aucun texte de procédure.
-  expect(calls.sort()).toEqual(["documents", "mappings", "requirements"]);
+  expect([...calls].sort()).toEqual(["documents", "mappings", "requirements"]);
+
+  // Une seule régulation : ses exigences partent sans attendre la liste des documents.
+  calls.length = 0;
+  expect(await fetchRegulationMap("REG-1")).toHaveLength(1);
+  expect(calls[0]).toBe("requirements");
+  expect([...calls].sort()).toEqual(["documents", "mappings", "requirements"]);
 });

@@ -1,6 +1,11 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  usePrefetchQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Loader } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
@@ -29,6 +34,7 @@ import { ReviewProgressBar } from "@/components/features/review-progress";
 import { useRegulationTab } from "@/lib/use-regulation-tab";
 import { humanStatusValues } from "@/lib/assessment";
 import { notifyOtherTabs } from "@/lib/api/cross-tab";
+import { fetchDashboardSummary, fetchRegulationMap } from "@/lib/api/dashboard";
 import { queryKeys } from "@/lib/api/query-keys";
 import {
   fetchRegulation,
@@ -61,6 +67,18 @@ export function RegulationDetailView({ regulationId }: { regulationId: string })
   const findingsQuery = useQuery({
     queryKey: queryKeys.findings(regulationId),
     queryFn: () => fetchFindingsByRegulation(regulationId),
+  });
+
+  // « Vue d'ensemble » n'est montée qu'une fois la régulation chargée : sans ce
+  // préchargement, ses agrégats et sa carte ne partaient qu'après, à la suite. Lancés
+  // ici, ils partagent en plus les requêtes d'exigences et de constats ci-dessus.
+  usePrefetchQuery({
+    queryKey: queryKeys.dashboardSummary(regulationId),
+    queryFn: () => fetchDashboardSummary(regulationId),
+  });
+  usePrefetchQuery({
+    queryKey: queryKeys.regulationMap(regulationId),
+    queryFn: () => fetchRegulationMap(regulationId),
   });
 
   const queryClient = useQueryClient();

@@ -17,18 +17,25 @@ import { apiFetch } from "./client";
  * client faute d'endpoint `/api/dashboard/*` côté backend.
  */
 async function loadPortfolioData(regulationId?: string) {
-  const all = await backend.fetchRegulations();
+  const loadOne = async (id: string) => {
+    const requirements = await backend.fetchRequirements(id);
+    const findings = await backend.fetchFindings(id, { requirements });
+    return { regulationId: id, requirements, findings };
+  };
+
+  // Une seule régulation : son identifiant est déjà connu, ses exigences partent en même
+  // temps que la liste au lieu de l'attendre (un aller-retour de moins avant l'affichage).
+  const [all, single] = await Promise.all([
+    backend.fetchRegulations(),
+    regulationId ? loadOne(regulationId) : undefined,
+  ]);
   const regulations = regulationId
     ? all.filter((regulation) => regulation.document_id === regulationId)
     : all;
 
-  const perRegulation = await Promise.all(
-    regulations.map(async (regulation) => {
-      const requirements = await backend.fetchRequirements(regulation.document_id);
-      const findings = await backend.fetchFindings(regulation.document_id, { requirements });
-      return { regulationId: regulation.document_id, requirements, findings };
-    }),
-  );
+  const perRegulation = single
+    ? [single]
+    : await Promise.all(regulations.map((regulation) => loadOne(regulation.document_id)));
 
   const requirementsById = new Map<string, Requirement[]>(
     perRegulation.map((entry) => [entry.regulationId, entry.requirements]),

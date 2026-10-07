@@ -299,6 +299,35 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Notes de fin de session
 
+### 2026-10-07 — Retour de démo : carte des impacts repliée sur le tableau de bord, chargement plus court (branche `develop`)
+
+- **Carte des impacts, tableau de bord** : seules les régulations sont affichées ; un clic sur
+  l'une d'elles déplie ses exigences et procédures, un second clic la replie (plusieurs peuvent
+  rester ouvertes). Le nœud régulation n'y est donc plus un lien : on rejoint la régulation par
+  ses exigences ou par le tableau « Détail par régulation » juste au-dessus. Une régulation sans
+  exigence garde son lien. **L'onglet « Vue d'ensemble » d'une régulation est inchangé** (tout
+  affiché). Même composant `RegulationMindmap`, aucun nouveau texte.
+- **Chargement, mode backend réel** :
+  - `backendFetch` partage les GET identiques lancés en même temps. Chrome les met en file
+    (verrou du cache HTTP) : chaque doublon coûtait un aller-retour entier. Aucun cache dans le
+    temps, et toute écriture vide la table.
+  - Page d'une régulation : agrégats et carte préchargés dès l'ouverture
+    (`regulation-detail-view.tsx`) au lieu d'attendre le montage de l'onglet, et
+    `loadPortfolio(regulationId)` ne fait plus attendre les exigences derrière la liste des
+    documents.
+  - Mesuré contre un faux backend local répondant en 400 ms : « Vue d'ensemble » affichée en
+    1,0 à 1,4 s au lieu de 2,3 s, 6 requêtes au lieu de 10. **Tableau de bord inchangé**
+    (environ 1,5 s) : trois allers-retours qui se suivent (documents → exigences → mappings),
+    incompressibles sans endpoint d'agrégats côté backend. **Rien n'a été mesuré sur l'instance
+    hébergée.**
+- **Vérifications** : `pnpm lint`, `pnpm typecheck` et `pnpm check:i18n` propres, 149 tests verts
+  (`regulation-mindmap.test.tsx` ajouté, `resources.test.ts` et `dashboard.test.ts` complétés).
+  Les deux écrans vus dans le navigateur contre le faux backend.
+- **⚠️ 19 tests échouaient déjà sur `develop` avant cette session** (`auth.test.ts`,
+  `client.test.ts`, `regulations.test.ts`, `users.test.ts`) : ils testent le mode mock, dont les
+  handlers MSW ont été retirés par `4f56230`. À supprimer ou réécrire. `dashboard.test.ts`
+  échouait aussi (son mock exportait encore `BACKEND_URL` au lieu d'`API_BASE_URL`) : corrigé.
+
 ### 2026-10-02 (6) — Suites de la revue : requêtes, validation mock, onglets (branche `chore/fe-review-followups`)
 
 - **État** : les notes (2) à (5) ci-dessous sont sur `main` (PR #5, commit `ccb632b`).

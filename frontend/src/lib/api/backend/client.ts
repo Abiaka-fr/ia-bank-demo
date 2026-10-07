@@ -68,6 +68,12 @@ async function readBackendError(response: Response, skipAuth: boolean): Promise<
   return new ApiError("HTTP_ERROR", `HTTP ${response.status}`, response.status);
 }
 
+// ponytail: GET identiques lancés en même temps = une seule requête. Le navigateur les met
+// en file (verrou du cache HTTP) : chaque doublon coûtait un aller-retour entier. Aucun
+// cache dans le temps (rôle de TanStack Query), et toute écriture vide la table pour
+// qu'un rechargement ne rejoigne jamais une lecture partie avant elle.
+const inFlightGets = new Map<string, Promise<unknown>>();
+
 /**
  * Appelle le backend réel et valide la réponse contre le schéma **backend** fourni
  * (`./schemas.ts`), jamais contre un schéma du contrat : la traduction vers le contrat
@@ -91,15 +97,37 @@ export async function backendFetch<TSchema extends z.ZodType>(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(buildUrl(path, searchParams), {
-    method,
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  const url = buildUrl(path, searchParams);
+  const request = async (): Promise<unknown> => {
+    const response = await fetch(url, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    if (!response.ok) throw await readBackendError(response, skipAuth);
+    return response.json();
+  };
 
-  if (!response.ok) throw await readBackendError(response, skipAuth);
+  let json: unknown;
+  if (method === "GET") {
+    const key = `${headers.Authorization ?? ""} ${url}`;
+    let pending = inFlightGets.get(key);
+    if (!pending) {
+      pending = request().finally(() => {
+        if (inFlightGets.get(key) === pending) inFlightGets.delete(key);
+      });
+      inFlightGets.set(key, pending);
+    }
+    json = await pending;
+  } else {
+    try {
+      json = await request();
+    } finally {
+      inFlightGets.clear();
+    }
+  }
 
-  const parsed = schema.safeParse(await response.json());
+  const parsed = schema.safeParse(json);
   if (!parsed.success) {
     // Même règle qu'en mode mock : on ne relâche pas le schéma pour faire passer une
     // réponse. Un échec ici signale que `backend/API.md` a bougé.

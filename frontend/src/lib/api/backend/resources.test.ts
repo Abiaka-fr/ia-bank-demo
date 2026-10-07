@@ -1,4 +1,4 @@
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { server } from "@/lib/mocks/server";
@@ -85,4 +85,38 @@ it("renvoie une table vide si l'historique est indisponible", async () => {
   server.use(http.get("/api/mappings/history", () => new HttpResponse(null, { status: 500 })));
 
   expect((await fetchEscalationAssignees({ mapping_id: "MAP-1" })).size).toBe(0);
+});
+
+it("partage les GET identiques simultanés, jamais par-dessus une écriture", async () => {
+  writeToken("jwt");
+  const user = {
+    user_id: "USR-1",
+    email: "u1@iabank.fr",
+    full_name: "User 1",
+    role: "COMPLIANCE_OFFICER",
+    is_active: true,
+    created_at: "2026-09-01T08:00:00",
+  };
+  let reads = 0;
+  server.use(
+    http.get("/api/users", async () => {
+      reads += 1;
+      await delay(30);
+      return HttpResponse.json({ total: 1, items: [user], limit: 200, offset: 0 });
+    }),
+    http.post("/api/auth/signin", () =>
+      HttpResponse.json({ access_token: "jwt", token_type: "bearer", user }),
+    ),
+  );
+
+  // Deux lectures lancées ensemble : une seule requête, deux résultats.
+  const [first, second] = await Promise.all([fetchUsers(), fetchUsers()]);
+  expect(reads).toBe(1);
+  expect(first).toEqual(second);
+
+  // Une lecture partie avant une écriture n'est pas resservie à celle lancée après.
+  const before = fetchUsers();
+  await signIn({ email: "u1@iabank.fr", password: "x" });
+  await Promise.all([before, fetchUsers()]);
+  expect(reads).toBe(3);
 });
