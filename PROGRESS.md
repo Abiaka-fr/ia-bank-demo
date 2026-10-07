@@ -313,20 +313,28 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Notes de fin de session
 
-### 2026-10-07 (3) — Lenteur mesurée sur l'instance hébergée, tableau de bord en 3 requêtes, PR backend #8
+### 2026-10-07 (3) — Lenteur mesurée sur l'instance hébergée, tableau de bord par groupes, PR backend #8
 
 - **Mesure** (`ia-bank-demo-one.vercel.app`, backend Railway) : tableau de bord affiché après
   5,5 à 6,5 s, page d'une régulation après 4,7 à 5,0 s. Le temps est celui du backend : 0,75 s
   au minimum par requête qui touche la base, et 5 requêtes servies vite à la fois. Détail dans
   « Blocages » ci-dessus et `docs/api-requests.md` #16.
-- **Frontend (`b4d68ca`)** : `loadPortfolioData` charge tout le portefeuille en trois requêtes
-  (liste, exigences de toutes les régulations, constats de toutes les exigences) au lieu de
-  `1 + N + N`. `fetchRequirements` accepte plusieurs documents ; `fetchFindingsOfRequirements`
-  remplace l'option `requirements` de `fetchFindings`. Vérifié dans le navigateur contre le faux
-  backend local (4 à 5 requêtes au lieu de 11, mêmes écrans). **Gain non mesuré sur l'instance
-  hébergée** tant que ce n'est pas déployé.
+- **Frontend, deux essais mesurés sur l'instance hébergée (7 régulations, 213 exigences)** :
+  - `b4d68ca`, tout en une requête d'exigences puis de constats : **plus lent**, 6,3 à 8,3 s.
+    Au-delà de 200 exigences les pages se suivent, et un lot de 100 exigences répond en ~2 s
+    contre ~1,3 s pour un petit. Resté en ligne une dizaine de minutes.
+  - `15510ba`, régulations en 4 groupes parallèles au plus (`MAX_PARALLEL_GROUPS`,
+    `lib/api/dashboard.ts`) : **5,1 à 5,3 s**, 10 requêtes au lieu de 16. Gain réel faible
+    (appels API : 4,6 à 4,9 s contre 5,0 à 5,1 s). Le frontend ne peut guère faire mieux tant
+    que chaque requête coûte plus d'une seconde.
+  - `fetchRequirements` accepte plusieurs documents ; `fetchFindingsOfRequirements` remplace
+    l'option `requirements` de `fetchFindings`.
+- **Déploiement, constaté** : Vercel (production) et Railway déploient la branche `production`,
+  pas `main`. Chaque push sur `production` redémarre le backend : les premiers chargements qui
+  suivent prennent 10 à 14 s.
 - **Backend** : PR #8 (`perf/be-dashboard-load`) fusionnée dans `main` par Hoang, pas encore sur
-  `production` — voir « Blocages ».
+  `production` — voir « Blocages ». `main` a donc un commit de plus que `develop` et
+  `production` ; `develop` y a été fusionné par un commit de fusion.
 - **Reste** : une fois la PR #8 déployée (branche `production`), appeler `GET /api/dashboard/portfolio`
   depuis `lib/api/dashboard.ts` (une requête au lieu de trois vagues), puis remesurer.
 - `pnpm lint`, `pnpm typecheck` propres, 154 tests verts.

@@ -37,7 +37,11 @@ banner at its top) and is no longer the thing to check before calling an endpoin
       SQLite file. **Never run against Neon**; the gain is not measured. (a) and (c) are left to
       Thư.
     - Frontend side (done, 2026-10-07): the regulation page loads in 2 waves, and the dashboard
-      sends 3 requests instead of `1 + N + N` (`document_ids` / `requirement_ids` batched). To do
+      loads regulations in at most 4 parallel groups (10 requests instead of 16 for 7
+      regulations). Measured on the hosted instance: content after 5.1–5.3 s instead of
+      5.5–6.5 s — a small gain. One request for all regulations was slower (6.3–8.3 s): above
+      200 requirements the pages follow one another, and a batch of 100 `requirement_ids`
+      answers in ~2 s against ~1.3 s for a small one. To do
       once PR #8 is deployed: call `GET /api/dashboard/portfolio` from
       `lib/api/dashboard.ts` instead of the three waves.
 
