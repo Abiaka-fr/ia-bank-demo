@@ -185,6 +185,20 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Blocages / Questions ouvertes
 
+- **2026-10-07 — pour Thư : lenteur du backend hébergé, mesurée (détail et pistes dans
+  `docs/api-requests.md` #16).** Toute requête qui touche la base prend au moins 0,75 s
+  (`/health` 0,73–0,85 s contre 0,22 s sans base ; exigences et mappings 1,3–2,2 s), et seules
+  5 requêtes sont servies vite en même temps (au-delà : +0,9 s, cohérent avec `pool_size=5`).
+  Conséquence mesurée sur `ia-bank-demo-one.vercel.app` : tableau de bord affiché après
+  5,5 à 6,5 s (7 régulations, 16 requêtes), page d'une régulation après 4,7 à 5,0 s.
+  **Proposé sur la branche `perf/be-dashboard-load` (PR #8, à relire par Thư — rien n'entre dans
+  `main` sans elle)**, à la demande de Hoang : `pool_size=20` et `GET /api/dashboard/portfolio`
+  (documents, exigences, mappings imbriqués et assignés des escalades en une réponse ;
+  `backend/API.md` § 5.5 à jour sur la branche). 30 tests verts, `ruff` propre, essai HTTP avec
+  uvicorn sur une base SQLite temporaire. **Jamais exécuté contre Neon : le gain n'est pas
+  mesuré.** À vérifier par Thư avant de fusionner : `pool_size=20` face à la limite de connexions
+  de Neon (endpoint poolé ou non, nombre de workers uvicorn sur Railway). Pistes laissées à Thư :
+  même région pour Neon et Railway, `pool_recycle` à la place de `pool_pre_ping`.
 - **2026-10-02 — pour Thư : correctifs proposés sur la branche `fix/be-review` (PR à relire).**
   À la demande de Hoang, les points ci-dessous ont été corrigés dans `backend/` sur une branche
   séparée — **rien n'entre dans `main` sans la relecture de Thư**. `backend/API.md` est à jour sur
@@ -298,6 +312,24 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   n'arrivent jamais sur Vercel.
 
 ## Notes de fin de session
+
+### 2026-10-07 (3) — Lenteur mesurée sur l'instance hébergée, tableau de bord en 3 requêtes, PR backend #8
+
+- **Mesure** (`ia-bank-demo-one.vercel.app`, backend Railway) : tableau de bord affiché après
+  5,5 à 6,5 s, page d'une régulation après 4,7 à 5,0 s. Le temps est celui du backend : 0,75 s
+  au minimum par requête qui touche la base, et 5 requêtes servies vite à la fois. Détail dans
+  « Blocages » ci-dessus et `docs/api-requests.md` #16.
+- **Frontend (`b4d68ca`)** : `loadPortfolioData` charge tout le portefeuille en trois requêtes
+  (liste, exigences de toutes les régulations, constats de toutes les exigences) au lieu de
+  `1 + N + N`. `fetchRequirements` accepte plusieurs documents ; `fetchFindingsOfRequirements`
+  remplace l'option `requirements` de `fetchFindings`. Vérifié dans le navigateur contre le faux
+  backend local (4 à 5 requêtes au lieu de 11, mêmes écrans). **Gain non mesuré sur l'instance
+  hébergée** tant que ce n'est pas déployé.
+- **Backend** : rien de modifié sur `develop`/`main`. Proposition sur `perf/be-dashboard-load`
+  (PR #8), voir « Blocages ».
+- **Reste** : une fois la PR #8 fusionnée et déployée, appeler `GET /api/dashboard/portfolio`
+  depuis `lib/api/dashboard.ts` (une requête au lieu de trois vagues), puis remesurer.
+- `pnpm lint`, `pnpm typecheck` propres, 154 tests verts.
 
 ### 2026-10-07 (2) — Tests du mode mock périmés : suite de nouveau verte (branche `develop`, non poussé)
 
