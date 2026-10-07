@@ -11,6 +11,10 @@ engine = create_engine(
     settings.database_url,
     echo=False,  # Disable SQL query logging (use logging config instead)
     pool_pre_ping=True,
+    # The default (5) is fewer than the requests one screen sends at once: each one beyond
+    # it opened a throwaway connection, ~0.9 s more against Neon. Measured 2026-10-07 on
+    # the hosted instance, 12 parallel /health: 5 answers in ~0.8 s, 7 in ~1.7 s.
+    pool_size=20,
 )
 
 # Create session factory
