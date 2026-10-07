@@ -191,14 +191,16 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   5 requêtes sont servies vite en même temps (au-delà : +0,9 s, cohérent avec `pool_size=5`).
   Conséquence mesurée sur `ia-bank-demo-one.vercel.app` : tableau de bord affiché après
   5,5 à 6,5 s (7 régulations, 16 requêtes), page d'une régulation après 4,7 à 5,0 s.
-  **PR #8 fusionnée dans `main` par Hoang le 2026-10-07 (`f648402`), sans relecture de Thư ; pas
-  encore sur `production`, la branche que Railway et Vercel déploient** : `pool_size=20` et
-  `GET /api/dashboard/portfolio` (documents, exigences, mappings imbriqués et assignés des
-  escalades en une réponse ; `backend/API.md` § 5.5). 30 tests verts, `ruff` propre, essai HTTP
-  avec uvicorn sur une base SQLite temporaire. **Jamais exécuté contre Neon : le gain n'est pas
-  mesuré.** À vérifier par Thư avant de déployer : `pool_size=20` face à la limite de connexions
-  de Neon (endpoint poolé ou non, nombre de workers uvicorn sur Railway). Pistes laissées à Thư :
-  même région pour Neon et Railway, `pool_recycle` à la place de `pool_pre_ping`.
+  **PR #8 fusionnée par Hoang et déployée le 2026-10-07 (branche `production`), sans relecture
+  de Thư** : `pool_size=20` et `GET /api/dashboard/portfolio` (documents, exigences, mappings
+  imbriqués et assignés des escalades en une réponse ; `backend/API.md` § 5.5). Mesuré après
+  déploiement, donc contre Neon : 12 `/health` en parallèle répondent tous en 0,83 à 0,96 s
+  (avant : 5 rapides, 7 à ~1,7 s) ; la route d'agrégats répond en 1,8 à 4,0 s (médiane ~2,5 s,
+  502 Ko de JSON avant compression) ; tableau de bord affiché après 2,1 à 4,5 s (médiane ~3,1 s)
+  au lieu de 5,5 à 6,5 s. **À faire par Thư : relire la PR #8 après coup**, notamment
+  `pool_size=20` face à la limite de connexions de Neon. Pistes qui restent : même région pour
+  Neon et Railway, `pool_recycle` à la place de `pool_pre_ping`, alléger la réponse d'agrégats
+  (elle porte le texte entier de chaque exigence, que le tableau de bord n'affiche pas).
 - **2026-10-02 — pour Thư : correctifs proposés sur la branche `fix/be-review` (PR à relire).**
   À la demande de Hoang, les points ci-dessous ont été corrigés dans `backend/` sur une branche
   séparée — **rien n'entre dans `main` sans la relecture de Thư**. `backend/API.md` est à jour sur
@@ -313,7 +315,7 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Notes de fin de session
 
-### 2026-10-07 (3) — Lenteur mesurée sur l'instance hébergée, tableau de bord par groupes, PR backend #8
+### 2026-10-07 (3) — Lenteur mesurée sur l'instance hébergée ; tableau de bord en une requête (PR backend #8 déployée)
 
 - **Mesure** (`ia-bank-demo-one.vercel.app`, backend Railway) : tableau de bord affiché après
   5,5 à 6,5 s, page d'une régulation après 4,7 à 5,0 s. Le temps est celui du backend : 0,75 s
@@ -332,12 +334,17 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 - **Déploiement, constaté** : Vercel (production) et Railway déploient la branche `production`,
   pas `main`. Chaque push sur `production` redémarre le backend : les premiers chargements qui
   suivent prennent 10 à 14 s.
-- **Backend** : PR #8 (`perf/be-dashboard-load`) fusionnée dans `main` par Hoang, pas encore sur
-  `production` — voir « Blocages ». `main` a donc un commit de plus que `develop` et
-  `production` ; `develop` y a été fusionné par un commit de fusion.
-- **Reste** : une fois la PR #8 déployée (branche `production`), appeler `GET /api/dashboard/portfolio`
-  depuis `lib/api/dashboard.ts` (une requête au lieu de trois vagues), puis remesurer.
-- `pnpm lint`, `pnpm typecheck` propres, 154 tests verts.
+- **Backend** : PR #8 (`perf/be-dashboard-load`) fusionnée dans `main` par Hoang, puis amenée
+  sur `develop` et `production` (commit de fusion `266ffe3`) et déployée — voir « Blocages ».
+- **Frontend, troisième version (`5b33db3`), en ligne** : le tableau de bord appelle
+  `GET /api/dashboard/portfolio` (`fetchPortfolio`). **Mesuré : affiché après 2,1 à 4,5 s,
+  médiane ~3,1 s sur 7 chargements**, contre 5,5 à 6,5 s le matin. Si la route échoue pour une
+  autre raison qu'une session expirée, repli sur les 4 groupes (`loadByRequests`) — à retirer
+  quand tous les environnements auront la route (le VPS de démo doit redémarrer `ia-backend`
+  après mise à jour, sinon il reste sur le repli).
+- **Inchangé** : la page d'une régulation, 4,3 à 5,1 s (6 requêtes en deux vagues).
+- **Branches** : `develop`, `main` et `production` sur le même commit, à cette note près.
+- `pnpm lint`, `pnpm typecheck` propres, 155 tests verts ; backend : 30 tests verts.
 
 ### 2026-10-07 (2) — Tests du mode mock périmés : suite de nouveau verte (branche `develop`, non poussé)
 
