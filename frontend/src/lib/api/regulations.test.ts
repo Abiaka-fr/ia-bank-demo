@@ -3,16 +3,7 @@ import { expect, it, vi } from "vitest";
 
 import { server } from "@/lib/mocks/server";
 
-import { analyzeMappings, extractRequirements, processExtractionJobs } from "./regulations";
-
-it("le mode mock sert l'extraction par jobs et l'analyse d'impact", async () => {
-  const { jobs } = await extractRequirements("REG-EBA-GL-2026-03");
-
-  expect(await processExtractionJobs(jobs.map((job) => job.job_id))).toEqual([]);
-  expect(await analyzeMappings(["REQ-0001"])).toEqual([
-    { requirement_id: "REQ-0001", mappings_created: 0, mapping_ids: [], warnings: [] },
-  ]);
-});
+import { processExtractionJobs } from "./regulations";
 
 it("renvoie les jobs en échec : réponse FAILED ou appel rejeté", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});

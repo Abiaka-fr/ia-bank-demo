@@ -5,7 +5,7 @@ import { server } from "@/lib/mocks/server";
 
 import { readToken, writeToken } from "../token";
 
-import { fetchEscalationAssignees, fetchUsers, signIn } from "./resources";
+import { fetchEscalationAssignees, fetchUsers, signIn, validateMapping } from "./resources";
 
 afterEach(() => window.localStorage.clear());
 
@@ -119,4 +119,52 @@ it("partage les GET identiques simultanés, jamais par-dessus une écriture", as
   await signIn({ email: "u1@iabank.fr", password: "x" });
   await Promise.all([before, fetchUsers()]);
   expect(reads).toBe(3);
+});
+
+it("enregistre une escalade avec le verbe du backend, la personne en charge et le commentaire", async () => {
+  writeToken("jwt");
+  let sent: unknown;
+  server.use(
+    http.put("/api/mappings/MAP-1/human-status", async ({ request }) => {
+      sent = await request.json();
+      return HttpResponse.json({
+        mapping_id: "MAP-1",
+        requirement_id: "REQ-1",
+        procedure_id: "PROC-1",
+        assessment: "POTENTIAL_GAP",
+        human_status: "ESCALATE",
+      });
+    }),
+  );
+
+  const finding = await validateMapping("MAP-1", {
+    human_status: "ESCALATED",
+    assignee_id: "USR-2",
+    custom_action: "À arbitrer avec la Direction Conformité",
+    actor_id: "USR-1",
+  });
+
+  expect(sent).toEqual({
+    human_status: "ESCALATE",
+    assignee: "USR-2",
+    comment: "À arbitrer avec la Direction Conformité",
+  });
+  expect(finding).toMatchObject({
+    finding_id: "MAP-1",
+    human_status: "ESCALATED",
+    assignee_id: "USR-2",
+  });
+});
+
+it("remonte le message du backend pour un constat inconnu", async () => {
+  writeToken("jwt");
+  server.use(
+    http.put("/api/mappings/MAP-INCONNU/human-status", () =>
+      HttpResponse.json({ detail: "Mapping not found" }, { status: 404 }),
+    ),
+  );
+
+  await expect(
+    validateMapping("MAP-INCONNU", { human_status: "ACCEPTED", actor_id: "USR-1" }),
+  ).rejects.toMatchObject({ code: "BACKEND_ERROR", message: "Mapping not found", status: 404 });
 });

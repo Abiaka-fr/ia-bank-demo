@@ -299,6 +299,32 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
 
 ## Notes de fin de session
 
+### 2026-10-07 (2) — Tests du mode mock périmés : suite de nouveau verte (branche `develop`, non poussé)
+
+- **Cause** : `4f56230` a retiré le corpus et les handlers MSW (`lib/mocks/handlers.ts`,
+  `store.ts`, `data/`) ; 19 tests interrogeaient encore ce faux serveur.
+- **Supprimés, leur sujet n'existe plus** : `auth.test.ts` et `users.test.ts` en entier, les
+  tests « validation d'un constat » et « cloisonnement » de `client.test.ts`, le test « mode
+  mock » de `regulations.test.ts`.
+- **Réécrits contre le backend réel** (handlers déclarés par test, comme `resources.test.ts`) :
+  `apiFetch` (3 tests, `client.test.ts`) ; validation humaine dans `resources.test.ts`
+  (`validateMapping` : verbe `ESCALATE`, personne en charge, commentaire ; message du backend
+  sur un 404) ; import dans `upload.test.ts` (métadonnées de la modale, date en `T00:00:00`,
+  second appel d'assignation).
+- `pnpm test` : 154 tests dans 27 fichiers, tous verts ; `pnpm lint` et `pnpm typecheck` propres.
+- **Code mort constaté, laissé en place — à trancher avec Thư et Giang** :
+  - toutes les branches « mode mock » de `lib/api/*.ts` (`if (isBackendLive) … ; return
+    apiFetch(…)`) : sans handler, un `NEXT_PUBLIC_API_BASE_URL` vide ne donne que des écrans en
+    erreur ; `apiFetch` (`client.ts`) n'a plus d'appelant utile en mode réel ;
+  - `fetchFindingsByRequirement` et `analyzeRegulation` n'ont aucun appelant ;
+    `MOCK_UPLOAD_ID_PREFIX` ne correspond plus à aucun identifiant créable ;
+  - `MockProvider` démarre un worker MSW sans aucun handler ;
+  - `lib/mocks/summary.ts` est du code du mode réel malgré son dossier, et son test
+    (`summary.test.ts`, 243 lignes) a été supprimé par `4f56230` : ses agrégats ne sont plus
+    couverts qu'indirectement, par `dashboard.test.ts`.
+- **Docs à réaligner** : `frontend/CLAUDE.md` (pile MSW, dossier `lib/mocks/`),
+  `scripts/local-dev/README.md` (`NEXT_PUBLIC_BACKEND_URL`, « mode mock par défaut »).
+
 ### 2026-10-07 — Retour de démo : carte des impacts repliée sur le tableau de bord, chargement plus court (branche `develop`)
 
 - **Carte des impacts, tableau de bord** : seules les régulations sont affichées ; un clic sur
