@@ -11,8 +11,9 @@ vi.mock("./backend/config", () => ({ isBackendLive: true, API_BASE_URL: "" }));
 
 afterEach(() => window.localStorage.clear());
 
-it("charge tout le portefeuille en trois requêtes, quel que soit le nombre de régulations", async () => {
+it("charge le portefeuille par groupes de régulations, quatre au plus en parallèle", async () => {
   writeToken("jwt");
+  const regulationIds = Array.from({ length: 9 }, (_, index) => `REG-${index + 1}`);
   const calls: string[] = [];
   const page = (items: unknown[]) => ({ total: items.length, items, limit: 200, offset: 0 });
   // REQ-n appartient à REG-n.
@@ -24,7 +25,7 @@ it("charge tout le portefeuille en trois requêtes, quel que soit le nombre de r
       calls.push("documents");
       return HttpResponse.json(
         page(
-          ["REG-1", "REG-2"].map((document_id) => ({
+          regulationIds.map((document_id) => ({
             document_id,
             title: "Regulation",
             category: "EXTERNAL",
@@ -75,10 +76,11 @@ it("charge tout le portefeuille en trois requêtes, quel que soit le nombre de r
 
   const [summary, map] = await Promise.all([fetchPortfolioSummary(), fetchRegulationMap()]);
 
-  // Deux régulations : toujours une liste, une page d'exigences, un lot de mappings —
-  // partagés par les agrégats et la carte, et aucun texte de procédure.
-  expect([...calls].sort()).toEqual(["documents", "mappings", "requirements"]);
-  expect(summary.requirements_identified).toBe(2);
+  // Neuf régulations en trois groupes : une liste, puis trois requêtes d'exigences et trois
+  // de mappings (et non neuf de chaque) — partagées par les agrégats et la carte.
+  const count = (name: string) => calls.filter((call) => call === name).length;
+  expect([count("documents"), count("requirements"), count("mappings")]).toEqual([1, 3, 3]);
+  expect(summary.requirements_identified).toBe(9);
   // Chaque exigence et son constat reviennent sous leur propre régulation.
   expect(
     map.map((regulation) => [
@@ -88,10 +90,13 @@ it("charge tout le portefeuille en trois requêtes, quel que soit le nombre de r
         requirement.procedures.map((procedure) => procedure.finding_id),
       ),
     ]),
-  ).toEqual([
-    ["REG-1", ["REQ-1"], ["MAP-REQ-1"]],
-    ["REG-2", ["REQ-2"], ["MAP-REQ-2"]],
-  ]);
+  ).toEqual(
+    regulationIds.map((id) => [
+      id,
+      [id.replace("REG", "REQ")],
+      [`MAP-${id.replace("REG", "REQ")}`],
+    ]),
+  );
 
   // Une seule régulation : ses exigences partent sans attendre la liste des documents.
   calls.length = 0;

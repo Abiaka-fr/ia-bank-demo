@@ -21,19 +21,42 @@ function groupBy<T>(items: readonly T[], keyOf: (item: T) => string): Map<string
 }
 
 /**
+ * Groupes de régulations chargés en parallèle. Mesuré le 2026-10-07 sur le backend hébergé,
+ * qui ne sert vite que 5 requêtes à la fois :
+ * - une requête par régulation (7 en parallèle) : tableau de bord affiché après 5,5 à 6,5 s ;
+ * - tout en une requête : 6,3 à 8,3 s — au-delà de 200 exigences les pages se suivent, et un
+ *   lot de 100 exigences répond bien plus lentement qu'un petit.
+ * ponytail: groupes égaux en nombre de régulations, pas d'exigences ; à remplacer par
+ * `GET /api/dashboard/portfolio` (une seule requête) dès qu'il est déployé.
+ */
+const MAX_PARALLEL_GROUPS = 4;
+
+function inGroups<T>(items: readonly T[], count: number): T[][] {
+  const size = Math.ceil(items.length / count);
+  const groups: T[][] = [];
+  for (let start = 0; start < items.length; start += size) {
+    groups.push(items.slice(start, start + size));
+  }
+  return groups;
+}
+
+/**
  * Régulations (toutes, ou une seule) avec leurs exigences et leurs constats — matière
  * première des agrégats et de la carte mentale, recalculés côté client faute d'endpoint
  * `/api/dashboard/*` côté backend.
- *
- * Trois requêtes à la suite quel que soit le nombre de régulations : la liste, toutes les
- * exigences, tous les constats. Une requête d'exigences et une de constats par régulation
- * dépassaient ce que le backend hébergé sert vite en même temps (mesuré le 2026-10-07 :
- * 16 requêtes pour 7 régulations, tableau de bord affiché après 5,5 à 6,5 s).
  */
 async function loadPortfolioData(regulationId?: string) {
   const load = async (ids: readonly string[]) => {
     const requirements = await backend.fetchRequirements(ids);
     return { requirements, findings: await backend.fetchFindingsOfRequirements(requirements) };
+  };
+  // Chaque groupe enchaîne ses exigences puis ses constats sans attendre les autres.
+  const loadInGroups = async (ids: readonly string[]) => {
+    const groups = await Promise.all(inGroups(ids, MAX_PARALLEL_GROUPS).map(load));
+    return {
+      requirements: groups.flatMap((group) => group.requirements),
+      findings: groups.flatMap((group) => group.findings),
+    };
   };
 
   // Une seule régulation : son identifiant est déjà connu, ses exigences partent en même
@@ -43,7 +66,9 @@ async function loadPortfolioData(regulationId?: string) {
     listing,
     regulationId
       ? load([regulationId])
-      : listing.then((listed) => load(listed.map((regulation) => regulation.document_id))),
+      : listing.then((listed) =>
+          loadInGroups(listed.map((regulation) => regulation.document_id)),
+        ),
   ]);
   const regulations = regulationId
     ? all.filter((regulation) => regulation.document_id === regulationId)
