@@ -232,6 +232,18 @@ export const backendRequirementWithProceduresSchema = z.object({
   total_procedures: z.number(),
 });
 
+/**
+ * `GET /api/dashboard/portfolio` (2026-10-07, `backend/API.md` § 5.5) — les mêmes éléments
+ * que les trois routes que le tableau de bord enchaînait, en une réponse.
+ */
+export const backendPortfolioSchema = z.object({
+  documents: z.array(backendDocumentSchema),
+  requirements: z.array(backendRequirementSchema),
+  mappings: z.array(backendRequirementWithProceduresSchema),
+  /** `mapping_id` → personne à qui le constat est actuellement escaladé. */
+  escalation_assignees: z.record(z.string(), z.string()),
+});
+
 export const backendRequirementsToProceduresSchema = z.object({
   total_requirements: z.number(),
   total_mappings: z.number(),

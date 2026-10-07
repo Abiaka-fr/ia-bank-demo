@@ -11,14 +11,81 @@ vi.mock("./backend/config", () => ({ isBackendLive: true, API_BASE_URL: "" }));
 
 afterEach(() => window.localStorage.clear());
 
-it("charge le portefeuille par groupes de régulations, quatre au plus en parallèle", async () => {
+it("charge tout le portefeuille en une seule requête", async () => {
   writeToken("jwt");
+  let calls = 0;
+  const mapping = (id: string, requirement_id: string, human_status: string) => ({
+    procedure: { procedure_id: "PROC-1", document_id: "PROC-1", name: "KYC procedure" },
+    mapping: { mapping_id: id, requirement_id, procedure_id: "PROC-1", assessment: "POTENTIAL_GAP", human_status },
+  });
+  server.use(
+    http.get("/api/dashboard/portfolio", () => {
+      calls += 1;
+      return HttpResponse.json({
+        documents: ["REG-1", "REG-2"].map((document_id) => ({
+          document_id,
+          title: "Regulation",
+          category: "EXTERNAL",
+          assignee: "USR-OWNER",
+        })),
+        requirements: [
+          { requirement_id: "REQ-1", source_document_id: "REG-1", title: "Requirement 1" },
+          { requirement_id: "REQ-2", source_document_id: "REG-2", title: "Requirement 2" },
+        ],
+        mappings: [
+          {
+            requirement: { requirement_id: "REQ-1", source_document_id: "REG-1" },
+            procedures: [mapping("MAP-1", "REQ-1", "ESCALATE")],
+            total_procedures: 1,
+          },
+          {
+            requirement: { requirement_id: "REQ-2", source_document_id: "REG-2" },
+            procedures: [mapping("MAP-2", "REQ-2", "PENDING_REVIEW")],
+            total_procedures: 1,
+          },
+        ],
+        escalation_assignees: { "MAP-1": "USR-ESCALATED" },
+      });
+    }),
+  );
+
+  const [summary, map] = await Promise.all([fetchPortfolioSummary(), fetchRegulationMap()]);
+
+  // Agrégats et carte lancés ensemble : une requête, et aucune des trois routes d'avant
+  // (MSW rejetterait tout appel non déclaré).
+  expect(calls).toBe(1);
+  expect(summary.requirements_identified).toBe(2);
+  expect(
+    map.map((regulation) => [
+      regulation.regulation_id,
+      regulation.requirements.flatMap((requirement) =>
+        requirement.procedures.map((procedure) => procedure.finding_id),
+      ),
+    ]),
+  ).toEqual([
+    ["REG-1", ["MAP-1"]],
+    ["REG-2", ["MAP-2"]],
+  ]);
+  // La personne à qui le constat est escaladé vient de la même réponse.
+  expect(summary.by_regulation.map((row) => row.escalated_assignee_ids)).toEqual([
+    ["USR-ESCALATED"],
+    [],
+  ]);
+});
+
+it("sans la route d'agrégats, retombe sur des groupes de régulations, quatre au plus en parallèle", async () => {
+  writeToken("jwt");
+  vi.spyOn(console, "error").mockImplementation(() => {});
   const regulationIds = Array.from({ length: 9 }, (_, index) => `REG-${index + 1}`);
   const calls: string[] = [];
   const page = (items: unknown[]) => ({ total: items.length, items, limit: 200, offset: 0 });
   // REQ-n appartient à REG-n.
   const regulationOf = (requirementId: string) => requirementId.replace("REQ", "REG");
   server.use(
+    // Backend qui n'a pas encore la route.
+    http.get("/api/dashboard/portfolio", () =>
+      HttpResponse.json({ detail: "Not Found" }, { status: 404 }),
+    ),
     http.get("/api/documents", async () => {
       // Notée à la réponse : permet de voir ce qui est parti sans l'attendre.
       await delay(30);

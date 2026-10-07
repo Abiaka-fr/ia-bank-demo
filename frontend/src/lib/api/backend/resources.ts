@@ -63,8 +63,10 @@ import {
   backendMappingDetailSchema,
   backendMappingHistorySchema,
   backendMappingSchema,
+  backendPortfolioSchema,
   backendRequirementListSchema,
   backendRequirementSchema,
+  backendRequirementWithProceduresSchema,
   backendRequirementsToProceduresSchema,
   backendTokenSchema,
   backendUserListSchema,
@@ -325,14 +327,12 @@ export async function fetchFindingsOfRequirements(
       ),
     ),
   );
-  const nested = { data: nestedBatches.flatMap((batch) => batch.data) };
-
-  const requirementsById = new Map(requirements.map((r) => [r.requirement_id, r]));
+  const nested = nestedBatches.flatMap((batch) => batch.data);
 
   // Une requête de plus seulement s'il existe au moins une escalade.
   // ponytail: tous les identifiants dans une seule URL — par lots (`inBatches`) si un
   // portefeuille dépasse une centaine d'exigences escaladées.
-  const escalatedRequirementIds = nested.data
+  const escalatedRequirementIds = nested
     .filter((item) =>
       item.procedures.some(
         ({ mapping }) => adaptHumanStatus(mapping.human_status) === "ESCALATED",
@@ -343,9 +343,42 @@ export async function fetchFindingsOfRequirements(
     ? await fetchEscalationAssignees({ requirement_ids: escalatedRequirementIds })
     : new Map<string, string>();
 
+  return assembleFindings(requirements, nested, escalationAssignees);
+}
+
+/**
+ * Tout le portefeuille en une requête : `GET /api/dashboard/portfolio` (2026-10-07). Mêmes
+ * éléments que la liste des régulations, leurs exigences et leurs constats chargés un à un,
+ * assignés des escalades compris.
+ */
+export async function fetchPortfolio(): Promise<{
+  regulations: DocumentMeta[];
+  requirements: Requirement[];
+  findings: Finding[];
+}> {
+  const portfolio = await backendFetch("/api/dashboard/portfolio", backendPortfolioSchema);
+  const requirements = portfolio.requirements.map(adaptRequirement);
+  return {
+    regulations: portfolio.documents.map(adaptDocument),
+    requirements,
+    findings: assembleFindings(
+      requirements,
+      portfolio.mappings,
+      new Map(Object.entries(portfolio.escalation_assignees)),
+    ),
+  };
+}
+
+/** Un constat par couple exigence × procédure, ou un seul pour une exigence sans procédure. */
+function assembleFindings(
+  requirements: readonly Requirement[],
+  nested: readonly z.infer<typeof backendRequirementWithProceduresSchema>[],
+  escalationAssignees: ReadonlyMap<string, string>,
+): Finding[] {
+  const requirementsById = new Map(requirements.map((r) => [r.requirement_id, r]));
   const findings: Finding[] = [];
 
-  for (const item of nested.data) {
+  for (const item of nested) {
     const requirement = requirementsById.get(item.requirement.requirement_id);
     if (!requirement) {
       // Ne devrait pas arriver : on a demandé exactement ces identifiants. Une ligne
