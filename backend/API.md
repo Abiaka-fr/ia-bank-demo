@@ -1608,6 +1608,77 @@ GET /api/mappings/procedures-to-requirements?procedure_ids=PRC-KYC-002&domain=KY
 
 ---
 
+## 5.5. Dashboard
+
+### Portfolio (every regulation with its requirements and mappings)
+
+#### `GET /api/dashboard/portfolio`
+Everything the dashboard needs, in one response: every regulation (document of category
+`EXTERNAL`), the requirements of those regulations, and each requirement with the procedures
+it maps to.
+
+It returns the same items as three existing endpoints, which the dashboard called one after
+the other (`1 + N + N` requests for `N` regulations before 2026-10-07):
+
+| Field | Same items as |
+|---|---|
+| `documents` | `GET /api/documents?category=EXTERNAL` (`items`), ordered by `created_at`, `document_id` |
+| `requirements` | `GET /api/requirements/by-documents` (`items`) for those documents, ordered by `created_at`, `requirement_id` |
+| `mappings` | `GET /api/mappings/requirements-to-procedures` (`data`) for those requirements |
+| `escalation_assignees` | `mapping_id` → `assignee` of the latest `ESCALATE` row in `GET /api/mappings/history`, only for mappings whose `human_status` is currently `ESCALATE` |
+
+No query parameter, no pagination: the whole portfolio is returned.
+
+**Authentication** Required (Bearer token)
+
+**Response (200 OK)**
+```json
+{
+  "documents": [
+    {
+      "document_id": "EXT-EU-AML-001",
+      "title": "AML Directive",
+      "category": "EXTERNAL",
+      "domain": "AML/CFT",
+      "language": "EN",
+      "summary": "...",
+      "current_version": "1.0",
+      "created_at": "2026-09-01T08:00:00",
+      "assignee": "USR-0001"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement_id": "REQ-0001",
+      "source_document_id": "EXT-EU-AML-001",
+      "title": "Risk classification",
+      "title_lang_fr": "Classification des risques",
+      "requirement_text": "...",
+      "risk_level": "MEDIUM",
+      "source_reference": "Art. 8",
+      "status": "ACTIVE"
+    }
+  ],
+  "mappings": [
+    {
+      "requirement": { "requirement_id": "REQ-0001", "source_document_id": "EXT-EU-AML-001" },
+      "procedures": [
+        {
+          "procedure": { "procedure_id": "INT-PROC-AML", "document_id": "INT-PROC-AML", "name": "Risk Classification Process" },
+          "mapping": { "mapping_id": "MAP-0001", "assessment": "POTENTIAL_GAP", "human_status": "ESCALATE" }
+        }
+      ],
+      "total_procedures": 1
+    }
+  ],
+  "escalation_assignees": { "MAP-0001": "USR-0002" }
+}
+```
+
+**Response (401)** missing, invalid or expired token.
+
+---
+
 ## 6. User Management
 
 ### List Users

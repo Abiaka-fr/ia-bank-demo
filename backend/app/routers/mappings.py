@@ -36,44 +36,16 @@ from app.services.requirement_procedure_mapping import RequirementProcedureMappi
 router = APIRouter(prefix="/api/mappings", tags=["mappings"])
 
 
-@router.get("/requirements-to-procedures", response_model=NestedMappingResponse)
-def get_requirements_with_procedures(
-    requirement_ids: list[str] = Query(..., description="List of requirement IDs"),
-    assessment: str | None = Query(None, description="Filter by assessment status"),
-    risk_level: str | None = Query(None, description="Filter requirements by risk level"),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-) -> NestedMappingResponse:
+def nest_procedures(
+    db: Session,
+    requirements: list[RegulatoryRequirement],
+    assessment: str | None = None,
+) -> tuple[list[RequirementWithProceduresRead], int]:
     """
-    Get nested map: requirements with all procedures they map to.
+    Each requirement with the procedures it maps to, plus the number of mappings.
 
-    Returns a hierarchical structure showing each requirement and the procedures that address it.
-
-    **Query Parameters:**
-    - `requirement_ids` (required, list): List of requirement IDs to expand
-      Example: `?requirement_ids=REQ-0001&requirement_ids=REQ-0002`
-    - `assessment` (optional): Filter mappings by assessment (COVERED, PARTIALLY_COVERED, POTENTIAL_GAP, HUMAN_REVIEW)
-    - `risk_level` (optional): Filter requirements by risk level (LOW, MEDIUM, HIGH)
-
-    **Example URLs:**
-    - `/api/mappings/requirements-to-procedures?requirement_ids=REQ-0001`
-    - `/api/mappings/requirements-to-procedures?requirement_ids=REQ-0001&requirement_ids=REQ-0002&assessment=COVERED`
-    - `/api/mappings/requirements-to-procedures?requirement_ids=REQ-0001&risk_level=HIGH`
+    Shared by `GET /api/mappings/requirements-to-procedures` and `GET /api/dashboard/portfolio`.
     """
-    if not requirement_ids or len(requirement_ids) == 0:
-        raise HTTPException(status_code=400, detail="At least one requirement_id is required")
-
-    query = db.query(RegulatoryRequirement).filter(
-        RegulatoryRequirement.requirement_id.in_(requirement_ids)
-    )
-
-    if risk_level:
-        query = query.filter(RegulatoryRequirement.risk_level == risk_level)
-
-    requirements = query.order_by(
-        RegulatoryRequirement.created_at, RegulatoryRequirement.requirement_id
-    ).all()
-
     # Two queries for all the requirements — it was one per requirement plus one per
     # mapping, i.e. hundreds of round trips to a remote database for one regulation.
     mapping_query = db.query(RequirementProcedureMap).filter(
@@ -82,7 +54,6 @@ def get_requirements_with_procedures(
     if assessment:
         mapping_query = mapping_query.filter(RequirementProcedureMap.assessment == assessment)
     all_mappings = mapping_query.order_by(RequirementProcedureMap.mapping_id).all()
-    total_mappings = len(all_mappings)
 
     mappings_by_requirement: dict[str, list[RequirementProcedureMap]] = {}
     for mapping in all_mappings:
@@ -130,6 +101,49 @@ def get_requirements_with_procedures(
                 total_procedures=len(procedures_list),
             )
         )
+
+    return result_data, len(all_mappings)
+
+
+@router.get("/requirements-to-procedures", response_model=NestedMappingResponse)
+def get_requirements_with_procedures(
+    requirement_ids: list[str] = Query(..., description="List of requirement IDs"),
+    assessment: str | None = Query(None, description="Filter by assessment status"),
+    risk_level: str | None = Query(None, description="Filter requirements by risk level"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> NestedMappingResponse:
+    """
+    Get nested map: requirements with all procedures they map to.
+
+    Returns a hierarchical structure showing each requirement and the procedures that address it.
+
+    **Query Parameters:**
+    - `requirement_ids` (required, list): List of requirement IDs to expand
+      Example: `?requirement_ids=REQ-0001&requirement_ids=REQ-0002`
+    - `assessment` (optional): Filter mappings by assessment (COVERED, PARTIALLY_COVERED, POTENTIAL_GAP, HUMAN_REVIEW)
+    - `risk_level` (optional): Filter requirements by risk level (LOW, MEDIUM, HIGH)
+
+    **Example URLs:**
+    - `/api/mappings/requirements-to-procedures?requirement_ids=REQ-0001`
+    - `/api/mappings/requirements-to-procedures?requirement_ids=REQ-0001&requirement_ids=REQ-0002&assessment=COVERED`
+    - `/api/mappings/requirements-to-procedures?requirement_ids=REQ-0001&risk_level=HIGH`
+    """
+    if not requirement_ids or len(requirement_ids) == 0:
+        raise HTTPException(status_code=400, detail="At least one requirement_id is required")
+
+    query = db.query(RegulatoryRequirement).filter(
+        RegulatoryRequirement.requirement_id.in_(requirement_ids)
+    )
+
+    if risk_level:
+        query = query.filter(RegulatoryRequirement.risk_level == risk_level)
+
+    requirements = query.order_by(
+        RegulatoryRequirement.created_at, RegulatoryRequirement.requirement_id
+    ).all()
+
+    result_data, total_mappings = nest_procedures(db, requirements, assessment)
 
     return NestedMappingResponse(
         total_requirements=len(requirements),
