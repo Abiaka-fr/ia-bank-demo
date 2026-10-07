@@ -30,14 +30,15 @@ banner at its top) and is no longer the thing to check before calling an endpoin
       one per regulation); (c) `pool_pre_ping=True` adds one database round trip to every request —
       `pool_recycle` would avoid it; (d) one aggregated endpoint for the dashboard (regulations
       with their requirements and mappings) instead of `1 + N + N` requests.
-    - **Proposed on branch `perf/be-dashboard-load` (PR #8, awaiting Thư's review):** (b)
-      `pool_size=20` and (d) `GET /api/dashboard/portfolio` (documents, requirements, nested
-      mappings and escalation assignees in one response; `backend/API.md` § 5.5 on the branch).
-      30 tests pass, HTTP run on a temporary SQLite file. **Never run against Neon**; the gain is
-      not measured. (a) and (c) are left to Thư.
+    - **PR #8 merged into `main` by Hoang on 2026-10-07 (`f648402`), not reviewed by Thư and not
+      yet on `production`, the branch Railway and Vercel deploy:** (b) `pool_size=20` and (d)
+      `GET /api/dashboard/portfolio` (documents, requirements, nested mappings and escalation
+      assignees in one response; `backend/API.md` § 5.5). 30 tests pass, HTTP run on a temporary
+      SQLite file. **Never run against Neon**; the gain is not measured. (a) and (c) are left to
+      Thư.
     - Frontend side (done, 2026-10-07): the regulation page loads in 2 waves, and the dashboard
       sends 3 requests instead of `1 + N + N` (`document_ids` / `requirement_ids` batched). To do
-      once PR #8 is merged and deployed: call `GET /api/dashboard/portfolio` from
+      once PR #8 is deployed: call `GET /api/dashboard/portfolio` from
       `lib/api/dashboard.ts` instead of the three waves.
 
 15. **Impact analysis drops the assessment when no modification can be grounded** (2026-10-02).

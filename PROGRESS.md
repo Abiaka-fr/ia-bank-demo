@@ -191,12 +191,12 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   5 requêtes sont servies vite en même temps (au-delà : +0,9 s, cohérent avec `pool_size=5`).
   Conséquence mesurée sur `ia-bank-demo-one.vercel.app` : tableau de bord affiché après
   5,5 à 6,5 s (7 régulations, 16 requêtes), page d'une régulation après 4,7 à 5,0 s.
-  **Proposé sur la branche `perf/be-dashboard-load` (PR #8, à relire par Thư — rien n'entre dans
-  `main` sans elle)**, à la demande de Hoang : `pool_size=20` et `GET /api/dashboard/portfolio`
-  (documents, exigences, mappings imbriqués et assignés des escalades en une réponse ;
-  `backend/API.md` § 5.5 à jour sur la branche). 30 tests verts, `ruff` propre, essai HTTP avec
-  uvicorn sur une base SQLite temporaire. **Jamais exécuté contre Neon : le gain n'est pas
-  mesuré.** À vérifier par Thư avant de fusionner : `pool_size=20` face à la limite de connexions
+  **PR #8 fusionnée dans `main` par Hoang le 2026-10-07 (`f648402`), sans relecture de Thư ; pas
+  encore sur `production`, la branche que Railway et Vercel déploient** : `pool_size=20` et
+  `GET /api/dashboard/portfolio` (documents, exigences, mappings imbriqués et assignés des
+  escalades en une réponse ; `backend/API.md` § 5.5). 30 tests verts, `ruff` propre, essai HTTP
+  avec uvicorn sur une base SQLite temporaire. **Jamais exécuté contre Neon : le gain n'est pas
+  mesuré.** À vérifier par Thư avant de déployer : `pool_size=20` face à la limite de connexions
   de Neon (endpoint poolé ou non, nombre de workers uvicorn sur Railway). Pistes laissées à Thư :
   même région pour Neon et Railway, `pool_recycle` à la place de `pool_pre_ping`.
 - **2026-10-02 — pour Thư : correctifs proposés sur la branche `fix/be-review` (PR à relire).**
@@ -325,9 +325,9 @@ Phase 0 — Initialisation : terminée le 2026-09-04.
   remplace l'option `requirements` de `fetchFindings`. Vérifié dans le navigateur contre le faux
   backend local (4 à 5 requêtes au lieu de 11, mêmes écrans). **Gain non mesuré sur l'instance
   hébergée** tant que ce n'est pas déployé.
-- **Backend** : rien de modifié sur `develop`/`main`. Proposition sur `perf/be-dashboard-load`
-  (PR #8), voir « Blocages ».
-- **Reste** : une fois la PR #8 fusionnée et déployée, appeler `GET /api/dashboard/portfolio`
+- **Backend** : PR #8 (`perf/be-dashboard-load`) fusionnée dans `main` par Hoang, pas encore sur
+  `production` — voir « Blocages ».
+- **Reste** : une fois la PR #8 déployée (branche `production`), appeler `GET /api/dashboard/portfolio`
   depuis `lib/api/dashboard.ts` (une requête au lieu de trois vagues), puis remesurer.
 - `pnpm lint`, `pnpm typecheck` propres, 154 tests verts.
 
