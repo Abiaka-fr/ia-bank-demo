@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "cn";
-import { Wrench } from "lucide-react";
+import { ChevronRight, Wrench } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -46,7 +46,9 @@ export function RegulationMindmap({
    * Régulation unique (onglet « Vue d'ensemble » d'une régulation) : pas de
    * pagination, et la régulation reste affichée même entièrement traitée — c'est SA
    * propre page, elle n'a pas à disparaître d'elle-même. Omis = mode portefeuille
-   * (écran d'accueil) : régulations entièrement traitées masquées, paginé.
+   * (écran d'accueil) : régulations entièrement traitées masquées, paginé, et seules
+   * les régulations sont affichées — un clic sur l'une d'elles déplie ses exigences et
+   * procédures (retour de démo du 2026-10-07 : la carte entière était trop longue).
    */
   regulationId?: string;
 }) {
@@ -55,6 +57,14 @@ export function RegulationMindmap({
   const assessmentLabels = useTranslations("assessment");
   const statusLabels = useTranslations("humanStatus");
   const [page, setPage] = useState(1);
+  const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(new Set());
+
+  const toggle = (id: string) =>
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
 
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.regulationMap(regulationId),
@@ -125,7 +135,20 @@ export function RegulationMindmap({
     }),
   );
 
-  const { nodes, edges, width, height } = layoutMindmap(roots);
+  // Mode portefeuille : une régulation qui a des exigences devient repliable. Son clic
+  // déplie au lieu de naviguer — elle reste accessible par ses exigences et par le
+  // tableau « Détail par régulation » juste au-dessus.
+  const expandedOf = new Map<string, boolean>();
+  const shownRoots = regulationId
+    ? roots
+    : roots.map((root) => {
+        if (!root.children?.length) return root;
+        const isExpanded = expandedIds.has(root.id);
+        expandedOf.set(root.id, isExpanded);
+        return { ...root, href: undefined, children: isExpanded ? root.children : [] };
+      });
+
+  const { nodes, edges, width, height } = layoutMindmap(shownRoots);
 
   return (
     <div className="space-y-3">
@@ -159,6 +182,8 @@ export function RegulationMindmap({
               key={node.id}
               node={node}
               assessment={assessmentOf.get(node.id)}
+              expanded={expandedOf.get(node.id)}
+              onToggle={() => toggle(node.id)}
             />
           ))}
         </div>
@@ -174,19 +199,25 @@ export function RegulationMindmap({
 function MindmapNodeBox({
   node,
   assessment,
+  expanded,
+  onToggle,
 }: {
   node: MindmapNode;
   assessment: Assessment | undefined;
+  /** Défini seulement pour un nœud repliable : le clic déplie/replie au lieu de naviguer. */
+  expanded: boolean | undefined;
+  onToggle: () => void;
 }) {
   const awaitingT = useTranslations("awaitingBackend");
   const branchColor = categoricalColor(node.colorIndex);
   const isRoot = node.depth === 0;
+  const isCollapsible = expanded !== undefined;
 
   const box = (
     <span
       className={cn(
         "flex h-full w-full items-center gap-2 rounded-lg border bg-card px-2.5 py-1.5 shadow-sm transition-colors",
-        node.href && "hover:bg-accent",
+        (node.href || isCollapsible) && "hover:bg-accent",
         isRoot && "font-medium",
       )}
       style={{ borderLeft: `3px solid ${branchColor}` }}
@@ -227,6 +258,16 @@ function MindmapNodeBox({
           />
         </span>
       ) : null}
+
+      {isCollapsible ? (
+        <ChevronRight
+          aria-hidden
+          className={cn(
+            "size-3.5 shrink-0 text-muted-foreground transition-transform",
+            expanded && "rotate-90",
+          )}
+        />
+      ) : null}
     </span>
   );
 
@@ -242,8 +283,17 @@ function MindmapNodeBox({
       role="treeitem"
       aria-level={node.depth + 1}
       aria-selected={false}
+      aria-expanded={expanded}
     >
-      {node.href ? (
+      {isCollapsible ? (
+        <button
+          type="button"
+          onClick={onToggle}
+          className="block h-full w-full cursor-pointer rounded-lg text-left focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          {box}
+        </button>
+      ) : node.href ? (
         <Link
           href={node.href}
           className="block h-full rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2"
