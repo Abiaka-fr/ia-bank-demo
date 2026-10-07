@@ -13,6 +13,34 @@ banner at its top) and is no longer the thing to check before calling an endpoin
 
 ## Open / deferred
 
+16. **Hosted backend: every request that touches the database takes 0.75 s or more** (measured
+    2026-10-07, frontend `ia-bank-demo-one.vercel.app`, backend
+    `ia-bank-demo-production.up.railway.app`, from a browser in Vietnam).
+    - No database (`GET /`): ~0.22 s. `GET /health`: 0.73–0.85 s. `GET /api/auth/me`: 0.75–0.83 s.
+      `GET /api/documents`: 1.1–1.2 s. `GET /api/requirements/by-documents`: 1.3–2.2 s.
+      `GET /api/mappings/requirements-to-procedures`: 1.3–1.9 s.
+    - Only 5 database-backed requests are served fast at once: 12 parallel `GET /health`, twice,
+      gave 5 answers at ~0.8 s and 7 at ~1.7 s. Matches SQLAlchemy's default `pool_size=5`
+      (`app/db/session.py`): each extra request opens a new connection (~0.9 s more).
+    - Result for the user: the dashboard (7 regulations, 16 requests in 3 waves) shows its content
+      after 5.5–6.5 s; a regulation page after 4.7–5.0 s (7 requests in 2 waves).
+    - **Suggested, in order of expected gain (none tried):** (a) check that the Neon database and
+      the Railway service are in the same region — ~0.5 s for a trivial query suggests they are
+      not; (b) raise `pool_size` above the number of parallel requests a page sends (dashboard:
+      one per regulation); (c) `pool_pre_ping=True` adds one database round trip to every request —
+      `pool_recycle` would avoid it; (d) one aggregated endpoint for the dashboard (regulations
+      with their requirements and mappings) instead of `1 + N + N` requests.
+    - **PR #8 merged into `main` by Hoang on 2026-10-07 (`f648402`), not reviewed by Thư and not
+      yet on `production`, the branch Railway and Vercel deploy:** (b) `pool_size=20` and (d)
+      `GET /api/dashboard/portfolio` (documents, requirements, nested mappings and escalation
+      assignees in one response; `backend/API.md` § 5.5). 30 tests pass, HTTP run on a temporary
+      SQLite file. **Never run against Neon**; the gain is not measured. (a) and (c) are left to
+      Thư.
+    - Frontend side (done, 2026-10-07): the regulation page loads in 2 waves, and the dashboard
+      sends 3 requests instead of `1 + N + N` (`document_ids` / `requirement_ids` batched). To do
+      once PR #8 is deployed: call `GET /api/dashboard/portfolio` from
+      `lib/api/dashboard.ts` instead of the three waves.
+
 15. **Impact analysis drops the assessment when no modification can be grounded** (2026-10-02).
     **Proposed fix on branch `fix/be-review` (PR awaiting Thư's review):** the mapping is stored
     without modifications, and an already analysed pair is skipped.

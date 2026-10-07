@@ -275,16 +275,20 @@ export async function fetchDocumentVersionText(versionId: string): Promise<strin
  * charger pour filtrer côté client.
  */
 export async function fetchRequirements(
-  documentId: string,
+  documentIds: string | readonly string[],
   filters: { domain?: string } = {},
 ): Promise<Requirement[]> {
-  const items = await fetchAllPages(
-    "/api/requirements/by-documents",
-    backendRequirementListSchema,
-    { document_ids: [documentId], domain: filters.domain },
+  // Plusieurs documents en une requête (tableau de bord) plutôt qu'une par document.
+  const pages = await Promise.all(
+    inBatches([documentIds].flat()).map((document_ids) =>
+      fetchAllPages("/api/requirements/by-documents", backendRequirementListSchema, {
+        document_ids,
+        domain: filters.domain,
+      }),
+    ),
   );
 
-  return items.map(adaptRequirement);
+  return pages.flat().map(adaptRequirement);
 }
 
 // --- Constats (couples exigence × procédure) --------------------------------
@@ -297,21 +301,20 @@ export async function fetchRequirements(
  * déjà présent dans la réponse (`procedure.name` → `Finding.procedure_title`). Le charger
  * coûtait deux requêtes par procédure à chaque (re)chargement de l'onglet « Exigences ».
  * Les preuves détaillées sont celles de la page d'un constat (`fetchMappingDetail`).
- *
- * `requirements`, si fourni, évite un second appel à `fetchRequirements` quand
- * l'appelant les a déjà en main (voir `dashboard.ts`, qui construit le portefeuille
- * sur plusieurs régulations à la fois).
  */
-export async function fetchFindings(
-  regulationId: string,
-  options: { requirements?: Requirement[] } = {},
-): Promise<Finding[]> {
-  const requirements = options.requirements ?? (await fetchRequirements(regulationId));
-  if (requirements.length === 0) return [];
+export async function fetchFindings(regulationId: string): Promise<Finding[]> {
+  return fetchFindingsOfRequirements(await fetchRequirements(regulationId));
+}
 
-  // Titre de `regulatory_evidence` : aucun écran ne l'affiche depuis cette liste,
-  // l'identifiant évite un appel de plus.
-  const regulationTitle = regulationId;
+/**
+ * Constats d'exigences déjà chargées, d'une ou de plusieurs régulations : `dashboard.ts`
+ * construit ainsi tout le portefeuille en une requête par lot de 100 exigences, au lieu
+ * d'une par régulation.
+ */
+export async function fetchFindingsOfRequirements(
+  requirements: readonly Requirement[],
+): Promise<Finding[]> {
+  if (requirements.length === 0) return [];
 
   const nestedBatches = await Promise.all(
     inBatches(requirements.map((r) => r.requirement_id)).map((requirement_ids) =>
@@ -327,6 +330,8 @@ export async function fetchFindings(
   const requirementsById = new Map(requirements.map((r) => [r.requirement_id, r]));
 
   // Une requête de plus seulement s'il existe au moins une escalade.
+  // ponytail: tous les identifiants dans une seule URL — par lots (`inBatches`) si un
+  // portefeuille dépasse une centaine d'exigences escaladées.
   const escalatedRequirementIds = nested.data
     .filter((item) =>
       item.procedures.some(
@@ -356,7 +361,9 @@ export async function fetchFindings(
         assembleUnmappedFinding({
           requirement,
           riskLevel: item.requirement.risk_level,
-          regulationTitle,
+          // Titre de `regulatory_evidence` : aucun écran ne l'affiche depuis cette
+          // liste, l'identifiant évite un appel de plus.
+          regulationTitle: requirement.source_document_id,
         }),
       );
       continue;
@@ -369,7 +376,7 @@ export async function fetchFindings(
           mapping,
           requirement,
           riskLevel: item.requirement.risk_level,
-          regulationTitle,
+          regulationTitle: requirement.source_document_id,
           procedure: typedProcedure,
           escalationAssignee: escalationAssignees.get(mapping.mapping_id),
         }),

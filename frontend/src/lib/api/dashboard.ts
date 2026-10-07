@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import type { Finding, Requirement } from "@/types/api";
 import {
   dashboardSummarySchema,
   portfolioSummarySchema,
@@ -11,37 +10,52 @@ import { isBackendLive } from "./backend/config";
 import * as backend from "./backend/resources";
 import { apiFetch } from "./client";
 
+function groupBy<T>(items: readonly T[], keyOf: (item: T) => string): Map<string, T[]> {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const group = groups.get(keyOf(item));
+    if (group) group.push(item);
+    else groups.set(keyOf(item), [item]);
+  }
+  return groups;
+}
+
 /**
- * Régulations (toutes, ou une seule) avec leurs exigences et leurs constats, chargés en
- * parallèle — matière première des agrégats et de la carte mentale, recalculés côté
- * client faute d'endpoint `/api/dashboard/*` côté backend.
+ * Régulations (toutes, ou une seule) avec leurs exigences et leurs constats — matière
+ * première des agrégats et de la carte mentale, recalculés côté client faute d'endpoint
+ * `/api/dashboard/*` côté backend.
+ *
+ * Trois requêtes à la suite quel que soit le nombre de régulations : la liste, toutes les
+ * exigences, tous les constats. Une requête d'exigences et une de constats par régulation
+ * dépassaient ce que le backend hébergé sert vite en même temps (mesuré le 2026-10-07 :
+ * 16 requêtes pour 7 régulations, tableau de bord affiché après 5,5 à 6,5 s).
  */
 async function loadPortfolioData(regulationId?: string) {
-  const loadOne = async (id: string) => {
-    const requirements = await backend.fetchRequirements(id);
-    const findings = await backend.fetchFindings(id, { requirements });
-    return { regulationId: id, requirements, findings };
+  const load = async (ids: readonly string[]) => {
+    const requirements = await backend.fetchRequirements(ids);
+    return { requirements, findings: await backend.fetchFindingsOfRequirements(requirements) };
   };
 
   // Une seule régulation : son identifiant est déjà connu, ses exigences partent en même
   // temps que la liste au lieu de l'attendre (un aller-retour de moins avant l'affichage).
-  const [all, single] = await Promise.all([
-    backend.fetchRegulations(),
-    regulationId ? loadOne(regulationId) : undefined,
+  const listing = backend.fetchRegulations();
+  const [all, { requirements, findings }] = await Promise.all([
+    listing,
+    regulationId
+      ? load([regulationId])
+      : listing.then((listed) => load(listed.map((regulation) => regulation.document_id))),
   ]);
   const regulations = regulationId
     ? all.filter((regulation) => regulation.document_id === regulationId)
     : all;
 
-  const perRegulation = single
-    ? [single]
-    : await Promise.all(regulations.map((regulation) => loadOne(regulation.document_id)));
-
-  const requirementsById = new Map<string, Requirement[]>(
-    perRegulation.map((entry) => [entry.regulationId, entry.requirements]),
+  const regulationOf = new Map(
+    requirements.map((requirement) => [requirement.requirement_id, requirement.source_document_id]),
   );
-  const findingsById = new Map<string, Finding[]>(
-    perRegulation.map((entry) => [entry.regulationId, entry.findings]),
+  const requirementsById = groupBy(requirements, (requirement) => requirement.source_document_id);
+  const findingsById = groupBy(
+    findings,
+    (finding) => regulationOf.get(finding.requirement_id) ?? "",
   );
 
   return {
